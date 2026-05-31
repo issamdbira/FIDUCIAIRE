@@ -45,6 +45,10 @@ export default function Home() {
     }
   ];
 
+  const handleAbout = () => {
+    window.location.href = '/about';
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -60,13 +64,13 @@ export default function Home() {
               </h1>
             </div>
             <nav className="hidden md:flex gap-8">
-              <a href="#" className="text-gray-700 hover:text-blue-700 transition-colors font-medium">
+              <a href="/" className="text-gray-700 hover:text-blue-700 transition-colors font-medium">
                 Accueil
               </a>
               <a href="#calculateurs" className="text-gray-700 hover:text-blue-700 transition-colors font-medium">
                 Calculateurs
               </a>
-              <a href="#" className="text-gray-700 hover:text-blue-700 transition-colors font-medium">
+              <a href="/about" className="text-gray-700 hover:text-blue-700 transition-colors font-medium">
                 À propos
               </a>
             </nav>
