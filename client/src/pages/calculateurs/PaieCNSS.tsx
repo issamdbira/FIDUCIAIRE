@@ -7,11 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
+import { calculerCotisationCNSS, calculerCSS } from "@/lib/payroll/cnss";
+import { calculerDeductionsMensuelles, calculerIRPPAnnuel } from "@/lib/payroll/irpp";
 
 /**
  * Design: Minimaliste & Professionnel
  * Calculateur de Paie CNSS (Salariés du secteur privé)
- * Formules extraites de secu.tn
+ *
+ * Les formules (CNSS, CSS, IRPP) sont centralisées dans src/lib/payroll/
+ * pour être réutilisées par le futur moteur de paie (PayrollEngine) sans
+ * duplication. Ne pas recopier de constantes ici — importer depuis lib/payroll.
  */
 
 interface PayeResult {
@@ -23,25 +28,6 @@ interface PayeResult {
   salaireNet: number;
 }
 
-const TAUX_COTISATION_CNSS = 0.0968; // 9.68% depuis 2025 (9.18% avant) - source secu.tn/fr/calculateur-retraite-cnss.html
-// CSS : 0.5% en 2023-2024-2025, supprimée à partir de janvier 2026 (loi de finances 2026)
-// SOURCE: secu.tn/fr/calculateur-retraite-cnss.html, section "Différence entre pension brute et nette"
-function getTauxCSS(annee: number): number {
-  if (annee >= 2026) return 0;
-  return 0.005;
-}
-
-// Barème IRPP 2025
-const BAREME_IRPP = [
-  { min: 0, max: 5000, taux: 0 },
-  { min: 5000, max: 10000, taux: 0.15 },
-  { min: 10000, max: 20000, taux: 0.25 },
-  { min: 20000, max: 30000, taux: 0.30 },
-  { min: 30000, max: 40000, taux: 0.33 },
-  { min: 40000, max: 50000, taux: 0.36 },
-  { min: 50000, max: 70000, taux: 0.38 },
-  { min: 70000, max: Infinity, taux: 0.40 }
-];
 
 const SMIG_2025 = 508; // Dinars
 
@@ -55,51 +41,20 @@ export default function PaieCNSS() {
   const [autresDeductions, setAutresDeductions] = useState(0);
   const [result, setResult] = useState<PayeResult | null>(null);
 
-  const calculerIRPP = (assiette: number, deductions: number): number => {
-    const assietteFiscale = assiette - deductions;
-    if (assietteFiscale <= 0) return 0;
-
-    let irpp = 0;
-    for (const tranche of BAREME_IRPP) {
-      if (assietteFiscale > tranche.min) {
-        const montantTranche = Math.min(assietteFiscale, tranche.max) - tranche.min;
-        irpp += montantTranche * tranche.taux;
-      }
-    }
-    return Math.round(irpp * 100) / 100;
-  };
-
-  const calculerDeductions = (): number => {
-    let deductions = 0;
-
-    // Chef de famille
-    if (chefFamille) {
-      deductions += 300;
-    }
-
-    // Enfants (100 D par enfant, max 4)
-    deductions += Math.min(enfants, 4) * 100;
-
-    // Étudiants (1000 D par étudiant, max 4)
-    deductions += Math.min(etudiants, 4) * 1000;
-
-    // Enfants infirmes (2000 D par enfant)
-    deductions += infirmes * 2000;
-
-    // Autres déductions annuelles (convertir en mensuel)
-    deductions += autresDeductions / 12;
-
-    return deductions;
-  };
-
   const handleCalculer = () => {
-    const cotisationsCNSS = salaireBrut * TAUX_COTISATION_CNSS;
+    const cotisationsCNSS = calculerCotisationCNSS(salaireBrut, annee);
     const salaireImposable = salaireBrut - cotisationsCNSS;
-    
-    const deductions = calculerDeductions();
-    const irpp = calculerIRPP(salaireImposable * 12, deductions) / 12;
-    
-    const css = salaireImposable * getTauxCSS(annee);
+
+    const deductions = calculerDeductionsMensuelles({
+      chefFamille,
+      enfants,
+      etudiants,
+      infirmes,
+      autresDeductionsAnnuelles: autresDeductions,
+    });
+    const irpp = calculerIRPPAnnuel(salaireImposable * 12, deductions * 12) / 12;
+
+    const css = calculerCSS(salaireImposable, annee);
     const salaireNet = salaireBrut - cotisationsCNSS - irpp - css;
 
     setResult({

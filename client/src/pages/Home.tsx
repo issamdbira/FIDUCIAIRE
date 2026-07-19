@@ -42,6 +42,14 @@ export default function Home() {
       icon: Calculator,
       href: "/calculateurs/paie-cnrps",
       color: "from-blue-600 to-blue-700"
+    },
+    {
+      id: "actualisation-salaire",
+      title: "Actualisation des Salaires",
+      description: "Actualisez un salaire brut par le coefficient CNSS de son année pour le calcul de la retraite",
+      icon: TrendingUp,
+      href: "/calculateurs/actualisation-salaire",
+      color: "from-blue-500 to-blue-600"
     }
   ];
 
@@ -89,13 +97,24 @@ export default function Home() {
               LE FIDUCIAIRE vous aide à calculer votre paie, votre retraite et vos impôts en Tunisie. 
               Gratuit, transparent et facile d'utilisation.
             </p>
-            <Button 
-              size="lg" 
-              className="bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-semibold"
-              onClick={() => document.getElementById("calculateurs")?.scrollIntoView({ behavior: "smooth" })}
-            >
-              Commencer
-            </Button>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/fiche-de-paie">
+                <Button
+                  size="lg"
+                  className="bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-semibold"
+                >
+                  Générer une fiche de paie
+                </Button>
+              </Link>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-white text-white hover:bg-white/10"
+                onClick={() => document.getElementById("calculateurs")?.scrollIntoView({ behavior: "smooth" })}
+              >
+                Voir les calculateurs gratuits
+              </Button>
+            </div>
           </div>
         </div>
       </section>

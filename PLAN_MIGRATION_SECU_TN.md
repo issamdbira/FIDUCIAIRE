@@ -77,4 +77,30 @@ Ordre choisi pour l'efficacité : corriger l'existant avant d'empiler du neuf de
 
 Mettre à jour ce fichier au fur et à mesure : cocher les cases, ajouter une ligne "Dernière mise à jour" en bas.
 
-**Dernière mise à jour :** 19/07/2026 — Phase 1 terminée (audit + corrections PaieCNSS, RetraiteCNSS, IRPP). Prochaine étape : Phase 2 (actualisation salaires + retraite complémentaire).
+**Dernière mise à jour :** 19/07/2026 — Phase 1 terminée (audit + corrections PaieCNSS, RetraiteCNSS, IRPP). Volet 2 démarré (moteur de paie central).
+
+---
+
+# VOLET 2 — MOTEUR DE PAIE & GÉNÉRATEUR DE FICHE DE PAIE
+
+Nouvelle direction du projet (cf. PROMPT MAÎTRE et PROMPT STRATÉGIE reçus le 19/07/2026) :
+faire évoluer Le Fiduciaire vers un MVP de génération de fiche de paie, en 4 couches :
+1. Calculateurs gratuits (existant, conservés)
+2. Moteur central de paie (`PayrollInput → PayrollEngine → PayrollResult`)
+3. Générateur de fiche de paie (parcours guidé, 1 salarié / 1 période / 1 fiche, gratuit)
+4. Extensions futures (multi-salariés, conventions collectives, export...) — hors MVP
+
+**Règle absolue :** ne jamais inventer de règle pour les avantages en nature (décret 1098-2003).
+Tout élément sans règle validée reste `traitement: "en_attente_de_regle"` et est exclu du calcul,
+remonté séparément à l'utilisateur plutôt que de produire un résultat silencieusement faux.
+
+## Avancement
+
+- [x] **Étape 1 (audit)** : fait en Phase 1 ci-dessus — formules CNSS/IRPP identifiées, dupliquées entre `PaieCNSS.tsx` et `IRPP.tsx`.
+- [x] **Étape 2 (extraction)** : créé `client/src/lib/payroll/` avec `cnss.ts`, `irpp.ts` — fonctions centralisées, `PaieCNSS.tsx` refactorisé pour les utiliser (formules non dupliquées).
+- [x] **Étape 3 (moteur central)** : créé `client/src/lib/payroll/types.ts` (PayrollInput/PayrollItem/PayrollResult) et `engine.ts` (`runPayrollEngine`), indépendant de React. Validé numériquement (CSS=0 en 2026 ✓).
+- [x] **Étape 5 (BenefitEngine, en parallèle)** : créé `client/src/lib/payroll/benefits.ts` — registre `BENEFIT_RULES` **volontairement vide**, aucune règle inventée. Structure prête à recevoir des règles une fois sourcées.
+- [x] **Étape 4 (générateur de fiche de paie)** : créé `GenerateurFichePaie.tsx` — parcours guidé 6 étapes (Salarié → Période → Éléments → Vérification → Résultat → Fiche), route `/fiche-de-paie`, lien mis en avant sur l'accueil. Utilise `runPayrollEngine` (aucune formule dupliquée). Les éléments de type "avantage" sont automatiquement exclus du calcul et signalés (aucune règle inventée, conformément à la contrainte).
+- [ ] Refactoriser `IRPP.tsx` pour utiliser aussi `lib/payroll/irpp.ts` (actuellement encore dupliqué, non prioritaire car pas de bug).
+- [ ] Table SMIG à compléter (2016-2019 manquants) dans `lib/payroll/cnss.ts`.
+- [ ] Sourcer les règles d'avantages en nature (décret 1098-2003) avant d'en implémenter une seule.

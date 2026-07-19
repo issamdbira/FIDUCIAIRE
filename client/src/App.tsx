@@ -10,6 +10,8 @@ import PaieCNSS from "./pages/calculateurs/PaieCNSS";
 import RetraiteCNSS from "./pages/calculateurs/RetraiteCNSS";
 import IRPP from "./pages/calculateurs/IRPP";
 import PaieCNRPS from "./pages/calculateurs/PaieCNRPS";
+import ActualisationSalaire from "./pages/calculateurs/ActualisationSalaire";
+import GenerateurFichePaie from "./pages/calculateurs/GenerateurFichePaie";
 
 
 function Router() {
@@ -21,6 +23,8 @@ function Router() {
       <Route path="/calculateurs/retraite-cnss" component={RetraiteCNSS} />
       <Route path="/calculateurs/irpp" component={IRPP} />
       <Route path="/calculateurs/paie-cnrps" component={PaieCNRPS} />
+      <Route path="/calculateurs/actualisation-salaire" component={ActualisationSalaire} />
+      <Route path="/fiche-de-paie" component={GenerateurFichePaie} />
       <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
