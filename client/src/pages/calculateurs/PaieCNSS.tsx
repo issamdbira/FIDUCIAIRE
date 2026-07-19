@@ -23,8 +23,13 @@ interface PayeResult {
   salaireNet: number;
 }
 
-const TAUX_COTISATION_CNSS = 0.0968; // 9.68% depuis 2025
-const TAUX_CSS = 0.005; // 0.5% pour 2023-2025
+const TAUX_COTISATION_CNSS = 0.0968; // 9.68% depuis 2025 (9.18% avant) - source secu.tn/fr/calculateur-retraite-cnss.html
+// CSS : 0.5% en 2023-2024-2025, supprimée à partir de janvier 2026 (loi de finances 2026)
+// SOURCE: secu.tn/fr/calculateur-retraite-cnss.html, section "Différence entre pension brute et nette"
+function getTauxCSS(annee: number): number {
+  if (annee >= 2026) return 0;
+  return 0.005;
+}
 
 // Barème IRPP 2025
 const BAREME_IRPP = [
@@ -42,6 +47,7 @@ const SMIG_2025 = 508; // Dinars
 
 export default function PaieCNSS() {
   const [salaireBrut, setSalaireBrut] = useState<number>(1000);
+  const [annee, setAnnee] = useState<number>(2026);
   const [chefFamille, setChefFamille] = useState(false);
   const [enfants, setEnfants] = useState(0);
   const [etudiants, setEtudiants] = useState(0);
@@ -93,7 +99,7 @@ export default function PaieCNSS() {
     const deductions = calculerDeductions();
     const irpp = calculerIRPP(salaireImposable * 12, deductions) / 12;
     
-    const css = salaireImposable * TAUX_CSS;
+    const css = salaireImposable * getTauxCSS(annee);
     const salaireNet = salaireBrut - cotisationsCNSS - irpp - css;
 
     setResult({
@@ -144,6 +150,22 @@ export default function PaieCNSS() {
                   className="text-lg p-3"
                   min="0"
                 />
+              </div>
+
+              {/* Année */}
+              <div>
+                <Label className="text-base font-semibold text-blue-900 mb-2 block">
+                  Année
+                </Label>
+                <Select value={annee.toString()} onValueChange={(v) => setAnnee(parseInt(v))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2025">2025 (CSS 0.5% applicable)</SelectItem>
+                    <SelectItem value="2026">2026 (CSS supprimée)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Situation Familiale */}
@@ -271,10 +293,12 @@ export default function PaieCNSS() {
                   <span className="font-semibold text-red-600">-{result.irpp.toFixed(2)} D</span>
                 </div>
 
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                  <span className="text-gray-700">CSS (0.5%)</span>
-                  <span className="font-semibold text-red-600">-{result.css.toFixed(2)} D</span>
-                </div>
+                {result.css > 0 && (
+                  <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                    <span className="text-gray-700">CSS (0.5%)</span>
+                    <span className="font-semibold text-red-600">-{result.css.toFixed(2)} D</span>
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center py-4 bg-gradient-to-r from-blue-50 to-blue-100 px-4 rounded-lg">
                   <span className="text-lg font-bold text-blue-900">Salaire Net</span>
@@ -284,8 +308,9 @@ export default function PaieCNSS() {
 
               <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                 <p className="text-sm text-gray-600">
-                  <strong>Note :</strong> Ce calculateur est basé sur la réglementation tunisienne 2025. 
-                  La CSS a été supprimée à partir de janvier 2026. Consultez votre employeur pour les détails exacts.
+                  <strong>Note :</strong> La CSS (0.5%) s'applique en 2023-2025 et a été supprimée à partir de
+                  janvier 2026 (loi de finances 2026). Ce calculateur applique automatiquement la bonne règle
+                  selon l'année choisie ci-dessus. Source : secu.tn.
                 </p>
               </div>
             </Card>
