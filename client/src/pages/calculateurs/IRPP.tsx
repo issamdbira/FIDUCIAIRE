@@ -7,17 +7,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
+import { calculerCotisationCNSS } from "@/lib/payroll/cnss";
+import { calculerFraisProfessionnels, calculerIRPPAnnuel } from "@/lib/payroll/irpp";
 
 /**
  * Design: Minimaliste & Professionnel
  * Calculateur IRPP (Impôt sur le Revenu des Personnes Physiques)
- * Formules extraites de secu.tn et finances.gov.tn
+ *
+ * Barème, frais professionnels (10%) et taux CNSS centralisés dans
+ * src/lib/payroll/ (source : référence CNSS-DS, cf. PLAN_MIGRATION_SECU_TN.md).
+ * Ce fichier garde ses propres déductions spécifiques (intérêts crédit
+ * immobilier, cotisations syndicales, crédits d'impôt) qui n'existent pas
+ * ailleurs dans le projet.
  */
 
 interface IRPPResult {
   revenuAnnuel: number;
   cotisationsCNSS: number;
   revenuImposable: number;
+  fraisProfessionnels: number;
   deductions: number;
   assietteFiscale: number;
   irpp: number;
@@ -25,20 +33,6 @@ interface IRPPResult {
   irppNet: number;
   tauxEffectif: number;
 }
-
-// Barème IRPP 2025 (Progressif)
-const BAREME_IRPP_2025 = [
-  { min: 0, max: 5000, taux: 0 },
-  { min: 5000, max: 10000, taux: 0.15 },
-  { min: 10000, max: 20000, taux: 0.25 },
-  { min: 20000, max: 30000, taux: 0.30 },
-  { min: 30000, max: 40000, taux: 0.33 },
-  { min: 40000, max: 50000, taux: 0.36 },
-  { min: 50000, max: 70000, taux: 0.38 },
-  { min: 70000, max: Infinity, taux: 0.40 }
-];
-
-const TAUX_COTISATION_CNSS = 0.0968; // 9.68%
 
 export default function IRPP() {
   const [revenuAnnuel, setRevenuAnnuel] = useState<number>(18000);
@@ -59,8 +53,8 @@ export default function IRPP() {
       deductions += 300 * 12; // Annuel
     }
 
-    // Enfants (100 D par enfant, max 4)
-    deductions += Math.min(enfants, 4) * 100 * 12;
+    // Enfants (150 D/mois par enfant, sans plafond - cohérent avec lib/payroll/irpp.ts)
+    deductions += enfants * 150 * 12;
 
     // Étudiants (1000 D par étudiant, max 4)
     deductions += Math.min(etudiants, 4) * 1000 * 12;
@@ -78,25 +72,13 @@ export default function IRPP() {
     return deductions;
   };
 
-  const calculerIRPP = (assiette: number): number => {
-    if (assiette <= 0) return 0;
-
-    let irpp = 0;
-    for (const tranche of BAREME_IRPP_2025) {
-      if (assiette > tranche.min) {
-        const montantTranche = Math.min(assiette, tranche.max) - tranche.min;
-        irpp += montantTranche * tranche.taux;
-      }
-    }
-    return irpp;
-  };
-
   const handleCalculer = () => {
-    const cotisationsCNSS = revenuAnnuel * TAUX_COTISATION_CNSS;
+    const cotisationsCNSS = calculerCotisationCNSS(revenuAnnuel, new Date().getFullYear());
     const revenuImposable = revenuAnnuel - cotisationsCNSS;
+    const fraisProfessionnels = calculerFraisProfessionnels(revenuImposable);
     const deductions = calculerDeductions();
-    const assietteFiscale = Math.max(revenuImposable - deductions, 0);
-    const irpp = calculerIRPP(assietteFiscale);
+    const assietteFiscale = Math.max(revenuImposable - fraisProfessionnels - deductions, 0);
+    const irpp = calculerIRPPAnnuel(assietteFiscale, 0);
 
     // Crédits d'impôt
     let creditsImpot = 0;
@@ -112,6 +94,7 @@ export default function IRPP() {
       revenuAnnuel: Math.round(revenuAnnuel * 100) / 100,
       cotisationsCNSS: Math.round(cotisationsCNSS * 100) / 100,
       revenuImposable: Math.round(revenuImposable * 100) / 100,
+      fraisProfessionnels: Math.round(fraisProfessionnels * 100) / 100,
       deductions: Math.round(deductions * 100) / 100,
       assietteFiscale: Math.round(assietteFiscale * 100) / 100,
       irpp: Math.round(irpp * 100) / 100,
@@ -313,6 +296,11 @@ export default function IRPP() {
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">Revenu Imposable</span>
                   <span className="font-semibold text-blue-900">{result.revenuImposable.toFixed(2)} D</span>
+                </div>
+
+                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                  <span className="text-gray-700">Frais Professionnels (10%)</span>
+                  <span className="font-semibold text-green-600">-{result.fraisProfessionnels.toFixed(2)} D</span>
                 </div>
 
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">

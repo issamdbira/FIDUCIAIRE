@@ -101,7 +101,7 @@ remonté séparément à l'utilisateur plutôt que de produire un résultat sile
 - [x] **Étape 3 (moteur central)** : créé `client/src/lib/payroll/types.ts` (PayrollInput/PayrollItem/PayrollResult) et `engine.ts` (`runPayrollEngine`), indépendant de React. Validé numériquement (CSS=0 en 2026 ✓).
 - [x] **Étape 5 (BenefitEngine, en parallèle)** : créé `client/src/lib/payroll/benefits.ts` — registre `BENEFIT_RULES` **volontairement vide**, aucune règle inventée. Structure prête à recevoir des règles une fois sourcées.
 - [x] **Étape 4 (générateur de fiche de paie)** : créé `GenerateurFichePaie.tsx` — parcours guidé 6 étapes (Salarié → Période → Éléments → Vérification → Résultat → Fiche), route `/fiche-de-paie`, lien mis en avant sur l'accueil. Utilise `runPayrollEngine` (aucune formule dupliquée). Les éléments de type "avantage" sont automatiquement exclus du calcul et signalés (aucune règle inventée, conformément à la contrainte).
-- [ ] Refactoriser `IRPP.tsx` pour utiliser aussi `lib/payroll/irpp.ts` (actuellement encore dupliqué, non prioritaire car pas de bug).
+- [x] Refactoriser `IRPP.tsx` pour utiliser `lib/payroll/irpp.ts` et `lib/payroll/cnss.ts` — barème, frais professionnels 10% et déduction enfants (150D/mois) désormais cohérents avec le reste du projet. Ses déductions propres (intérêts crédit immobilier, cotisations syndicales) sont conservées, non dupliquées ailleurs.
 - [ ] Table SMIG à compléter (2016-2019 manquants) dans `lib/payroll/cnss.ts`.
 - [ ] Sourcer les règles d'avantages en nature (décret 1098-2003) avant d'en implémenter une seule.
 
