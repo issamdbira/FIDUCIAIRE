@@ -1,20 +1,21 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ArrowRight, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Download, Plus, Trash2, Upload } from "lucide-react";
 import { Link } from "wouter";
 import { runPayrollEngine } from "@/lib/payroll/engine";
-import type { PayrollItem, PayrollItemType, PayrollResult, Salarie } from "@/lib/payroll/types";
+import type { Employeur, PayrollItem, PayrollItemType, PayrollResult, Salarie } from "@/lib/payroll/types";
 
 /**
- * Générateur de fiche de paie — MVP (couche 3).
- * 1 salarié, 1 période, 1 fiche. Parcours guidé en 6 étapes.
+ * Générateur de fiche de paie — MVP (couches 2 et 3).
+ * 1 employeur, 1 salarié, 1 période, 1 fiche. Parcours guidé en 7 étapes.
  * Réutilise le PayrollEngine (lib/payroll/engine.ts) - aucune formule
- * dupliquée ici.
+ * dupliquée ici. Les taux/barèmes/règles métier restent définis exclusivement
+ * dans lib/payroll/ - ce fichier ne fait qu'orchestrer l'UI.
  */
 
 const TYPES_ELEMENT: { value: PayrollItemType; label: string }[] = [
@@ -33,10 +34,21 @@ function nextId() {
   return `item-${idCounter}`;
 }
 
-const ETAPES = ["Salarié", "Période", "Éléments", "Vérification", "Résultat", "Fiche de paie"];
+const ETAPES = ["Employeur", "Salarié", "Période", "Éléments", "Vérification", "Résultat", "Fiche de paie"];
 
 export default function GenerateurFichePaie() {
   const [etape, setEtape] = useState(0);
+  const ficheRef = useRef<HTMLDivElement>(null);
+  const [exportEnCours, setExportEnCours] = useState(false);
+
+  const [employeur, setEmployeur] = useState<Employeur>({
+    nom: "",
+    logoDataUrl: undefined,
+    adresse: "",
+    telephone: "",
+    email: "",
+    matriculeCNSS: "",
+  });
 
   const [salarie, setSalarie] = useState<Salarie>({
     nom: "",
@@ -58,6 +70,15 @@ export default function GenerateurFichePaie() {
 
   const [resultat, setResultat] = useState<PayrollResult | null>(null);
 
+  const handleLogoUpload = (file: File | undefined) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setEmployeur((prev) => ({ ...prev, logoDataUrl: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const ajouterElement = () => {
     setElements([
       ...elements,
@@ -75,6 +96,7 @@ export default function GenerateurFichePaie() {
 
   const lancerCalcul = () => {
     const res = runPayrollEngine({
+      employeur,
       salarie,
       periode: { mois, annee },
       elements: elements.map((e) => ({
@@ -84,9 +106,30 @@ export default function GenerateurFichePaie() {
       })),
     });
     setResultat(res);
-    setEtape(4);
+    setEtape(5);
   };
 
+  const exporterPDF = async () => {
+    if (!ficheRef.current) return;
+    setExportEnCours(true);
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
+      await html2pdf()
+        .set({
+          margin: 10,
+          filename: `fiche_paie_${salarie.nom || "salarie"}_${mois}-${annee}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        })
+        .from(ficheRef.current)
+        .save();
+    } finally {
+      setExportEnCours(false);
+    }
+  };
+
+  const canAdvanceFromEmployeur = employeur.nom.trim() !== "";
   const canAdvanceFromSalarie = salarie.nom.trim() !== "" && salarie.prenom.trim() !== "";
   const canAdvanceFromElements = elements.length > 0 && elements.every((e) => e.label.trim() !== "");
 
@@ -130,8 +173,67 @@ export default function GenerateurFichePaie() {
             ))}
           </div>
 
-          {/* Étape 1 : Salarié */}
+          {/* Étape 1 : Employeur */}
           {etape === 0 && (
+            <Card className="p-8 border-0 shadow-sm space-y-5">
+              <h2 className="text-xl font-bold text-blue-900" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                Informations de l'employeur
+              </h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="mb-2 block">Nom / Raison sociale *</Label>
+                  <Input value={employeur.nom} onChange={(e) => setEmployeur({ ...employeur, nom: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="mb-2 block">Matricule CNSS employeur</Label>
+                  <Input value={employeur.matriculeCNSS} onChange={(e) => setEmployeur({ ...employeur, matriculeCNSS: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="mb-2 block">Adresse</Label>
+                  <Input value={employeur.adresse} onChange={(e) => setEmployeur({ ...employeur, adresse: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="mb-2 block">Téléphone</Label>
+                  <Input value={employeur.telephone} onChange={(e) => setEmployeur({ ...employeur, telephone: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="mb-2 block">Email</Label>
+                  <Input type="email" value={employeur.email} onChange={(e) => setEmployeur({ ...employeur, email: e.target.value })} />
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 pt-4">
+                <Label className="mb-2 block font-semibold text-blue-900">Logo de l'entreprise</Label>
+                <div className="flex items-center gap-4">
+                  {employeur.logoDataUrl && (
+                    <img src={employeur.logoDataUrl} alt="Logo" className="h-16 w-16 object-contain border border-gray-200 rounded" />
+                  )}
+                  <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-blue-300 rounded-lg cursor-pointer text-blue-700 hover:bg-blue-50">
+                    <Upload className="w-4 h-4" />
+                    {employeur.logoDataUrl ? "Changer le logo" : "Ajouter un logo"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleLogoUpload(e.target.files?.[0])}
+                    />
+                  </label>
+                </div>
+                <p className="text-xs text-gray-400 mt-2">
+                  Le logo reste dans votre navigateur (aucun envoi vers un serveur) et sera inclus dans la fiche PDF.
+                </p>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <Button disabled={!canAdvanceFromEmployeur} onClick={() => setEtape(1)} className="bg-blue-700 hover:bg-blue-800 gap-2">
+                  Suivant <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {/* Étape 2 : Salarié */}
+          {etape === 1 && (
             <Card className="p-8 border-0 shadow-sm space-y-5">
               <h2 className="text-xl font-bold text-blue-900" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Informations du salarié
@@ -168,11 +270,11 @@ export default function GenerateurFichePaie() {
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <Label className="mb-2 block text-sm">Enfants</Label>
-                    <Input type="number" min="0" max="4" value={salarie.enfants} onChange={(e) => setSalarie({ ...salarie, enfants: parseInt(e.target.value) || 0 })} />
+                    <Input type="number" min="0" value={salarie.enfants} onChange={(e) => setSalarie({ ...salarie, enfants: parseInt(e.target.value) || 0 })} />
                   </div>
                   <div>
                     <Label className="mb-2 block text-sm">Étudiants</Label>
-                    <Input type="number" min="0" max="4" value={salarie.etudiants} onChange={(e) => setSalarie({ ...salarie, etudiants: parseInt(e.target.value) || 0 })} />
+                    <Input type="number" min="0" value={salarie.etudiants} onChange={(e) => setSalarie({ ...salarie, etudiants: parseInt(e.target.value) || 0 })} />
                   </div>
                   <div>
                     <Label className="mb-2 block text-sm">Enfants handicapés</Label>
@@ -181,16 +283,17 @@ export default function GenerateurFichePaie() {
                 </div>
               </div>
 
-              <div className="flex justify-end pt-2">
-                <Button disabled={!canAdvanceFromSalarie} onClick={() => setEtape(1)} className="bg-blue-700 hover:bg-blue-800 gap-2">
+              <div className="flex justify-between pt-2">
+                <Button variant="ghost" onClick={() => setEtape(0)}>Retour</Button>
+                <Button disabled={!canAdvanceFromSalarie} onClick={() => setEtape(2)} className="bg-blue-700 hover:bg-blue-800 gap-2">
                   Suivant <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
             </Card>
           )}
 
-          {/* Étape 2 : Période */}
-          {etape === 1 && (
+          {/* Étape 3 : Période */}
+          {etape === 2 && (
             <Card className="p-8 border-0 shadow-sm space-y-5">
               <h2 className="text-xl font-bold text-blue-900" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Période de paie
@@ -220,16 +323,16 @@ export default function GenerateurFichePaie() {
                 </div>
               </div>
               <div className="flex justify-between pt-2">
-                <Button variant="ghost" onClick={() => setEtape(0)}>Retour</Button>
-                <Button onClick={() => setEtape(2)} className="bg-blue-700 hover:bg-blue-800 gap-2">
+                <Button variant="ghost" onClick={() => setEtape(1)}>Retour</Button>
+                <Button onClick={() => setEtape(3)} className="bg-blue-700 hover:bg-blue-800 gap-2">
                   Suivant <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
             </Card>
           )}
 
-          {/* Étape 3 : Éléments de rémunération */}
-          {etape === 2 && (
+          {/* Étape 4 : Éléments de rémunération */}
+          {etape === 3 && (
             <Card className="p-8 border-0 shadow-sm space-y-5">
               <h2 className="text-xl font-bold text-blue-900" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Éléments de rémunération
@@ -278,34 +381,38 @@ export default function GenerateurFichePaie() {
               </Button>
 
               <div className="flex justify-between pt-2">
-                <Button variant="ghost" onClick={() => setEtape(1)}>Retour</Button>
-                <Button disabled={!canAdvanceFromElements} onClick={() => setEtape(3)} className="bg-blue-700 hover:bg-blue-800 gap-2">
+                <Button variant="ghost" onClick={() => setEtape(2)}>Retour</Button>
+                <Button disabled={!canAdvanceFromElements} onClick={() => setEtape(4)} className="bg-blue-700 hover:bg-blue-800 gap-2">
                   Suivant <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
             </Card>
           )}
 
-          {/* Étape 4 : Vérification */}
-          {etape === 3 && (
+          {/* Étape 5 : Vérification */}
+          {etape === 4 && (
             <Card className="p-8 border-0 shadow-sm space-y-5">
               <h2 className="text-xl font-bold text-blue-900" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Vérification avant calcul
               </h2>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-3 text-sm">
+                <p><strong>Employeur :</strong> {employeur.nom} {employeur.matriculeCNSS && `(CNSS: ${employeur.matriculeCNSS})`}</p>
                 <p><strong>Salarié :</strong> {salarie.prenom} {salarie.nom} {salarie.matricule && `(${salarie.matricule})`}</p>
                 <p><strong>Période :</strong> {mois}/{annee}</p>
                 <div className="pt-2">
                   <strong>Éléments :</strong>
                   <ul className="list-disc list-inside mt-1">
                     {elements.map((e) => (
-                      <li key={e.id}>{e.label} — {e.type === "absence" || e.type === "retenue" ? "-" : ""}{e.montant} D</li>
+                      <li key={e.id}>
+                        {e.label} — {e.type === "absence" || e.type === "retenue" ? "-" : ""}{e.montant} D
+                        {e.type === "avantage" && <span className="text-amber-600"> (en attente de règle validée)</span>}
+                      </li>
                     ))}
                   </ul>
                 </div>
               </div>
               <div className="flex justify-between pt-2">
-                <Button variant="ghost" onClick={() => setEtape(2)}>Retour</Button>
+                <Button variant="ghost" onClick={() => setEtape(3)}>Retour</Button>
                 <Button onClick={lancerCalcul} className="bg-blue-700 hover:bg-blue-800 gap-2">
                   Calculer <ArrowRight className="w-4 h-4" />
                 </Button>
@@ -313,28 +420,46 @@ export default function GenerateurFichePaie() {
             </Card>
           )}
 
-          {/* Étape 5 : Résultat détaillé */}
-          {etape === 4 && resultat && (
+          {/* Étape 6 : Résultat détaillé (avec détail technique par élément) */}
+          {etape === 5 && resultat && (
             <Card className="p-8 border-0 shadow-sm space-y-4">
               <h2 className="text-xl font-bold text-blue-900" style={{ fontFamily: "Montserrat, sans-serif" }}>
-                Détail du calcul
+                Détail technique du traitement
               </h2>
 
-              <div className="space-y-1">
-                {resultat.elements.map((e) => (
-                  <div key={e.id} className="flex justify-between py-1 text-sm">
-                    <span className="text-gray-700">{e.label}</span>
-                    <span className="font-medium">{e.montant.toFixed(2)} D</span>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-300 text-gray-500 text-left">
+                      <th className="py-2 pr-2">Désignation</th>
+                      <th className="py-2 pr-2">Montant</th>
+                      <th className="py-2 pr-2">Brut</th>
+                      <th className="py-2 pr-2">Base CNSS</th>
+                      <th className="py-2 pr-2">Base fiscale</th>
+                      <th className="py-2 pr-2">Règle appliquée</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {resultat.elements.map((e) => (
+                      <tr key={e.id} className="border-b border-gray-100">
+                        <td className="py-2 pr-2">{e.label}</td>
+                        <td className="py-2 pr-2">{e.montant.toFixed(2)} D</td>
+                        <td className="py-2 pr-2">{e.inclusDansBrut ? "Oui" : "Non"}</td>
+                        <td className="py-2 pr-2">{e.inclusBaseCNSS ? "Oui" : "Non"}</td>
+                        <td className="py-2 pr-2">{e.inclusBaseFiscale ? "Oui" : "Non"}</td>
+                        <td className="py-2 pr-2 text-gray-500">{e.regleAppliquee}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
 
-              <div className="border-t border-gray-200 pt-3 space-y-2">
+              <div className="border-t border-gray-200 pt-3 space-y-2 text-sm">
                 <div className="flex justify-between font-semibold">
                   <span>Rémunération brute</span>
                   <span>{resultat.totalRemunerationBrute.toFixed(2)} D</span>
                 </div>
-                <div className="flex justify-between text-sm text-gray-600">
+                <div className="flex justify-between text-gray-600">
                   <span>Base CNSS</span>
                   <span>{resultat.baseCNSS.toFixed(2)} D</span>
                 </div>
@@ -342,7 +467,7 @@ export default function GenerateurFichePaie() {
                   <span>Cotisation CNSS</span>
                   <span>-{resultat.cotisationCNSS.toFixed(2)} D</span>
                 </div>
-                <div className="flex justify-between text-sm text-gray-600">
+                <div className="flex justify-between text-gray-600">
                   <span>Base fiscale</span>
                   <span>{resultat.baseFiscaleMensuelle.toFixed(2)} D</span>
                 </div>
@@ -363,7 +488,11 @@ export default function GenerateurFichePaie() {
                   <strong>Éléments non calculés (règle en attente de validation) :</strong>
                   <ul className="list-disc list-inside mt-1">
                     {resultat.elementsEnAttente.map((e) => (
-                      <li key={e.id}>{e.label} — {e.noteReglementaire || "règle non sourcée"}</li>
+                      <li key={e.id}>
+                        {e.label} — {e.montant.toFixed(2)} D — {e.noteReglementaire || "règle non sourcée"}
+                        <br />
+                        <span className="text-xs text-gray-500">Calcul automatique : non — {e.regleAppliquee}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -375,78 +504,92 @@ export default function GenerateurFichePaie() {
               </div>
 
               <div className="flex justify-between pt-2">
-                <Button variant="ghost" onClick={() => setEtape(2)}>Modifier les éléments</Button>
-                <Button onClick={() => setEtape(5)} className="bg-blue-700 hover:bg-blue-800 gap-2">
+                <Button variant="ghost" onClick={() => setEtape(3)}>Modifier les éléments</Button>
+                <Button onClick={() => setEtape(6)} className="bg-blue-700 hover:bg-blue-800 gap-2">
                   Voir la fiche de paie <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
             </Card>
           )}
 
-          {/* Étape 6 : Fiche de paie */}
-          {etape === 5 && resultat && (
-            <Card className="p-10 border-0 shadow-sm bg-white">
-              <div className="flex justify-between items-start border-b-2 border-blue-900 pb-4 mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-blue-900" style={{ fontFamily: "Montserrat, sans-serif" }}>
-                    Fiche de Paie
-                  </h2>
-                  <p className="text-sm text-gray-500">Période : {mois}/{annee}</p>
+          {/* Étape 7 : Fiche de paie */}
+          {etape === 6 && resultat && (
+            <>
+              <div ref={ficheRef}>
+              <Card className="p-10 border-0 shadow-sm bg-white">
+                <div className="flex justify-between items-start border-b-2 border-blue-900 pb-4 mb-6">
+                  <div className="flex items-center gap-4">
+                    {employeur.logoDataUrl && (
+                      <img src={employeur.logoDataUrl} alt="Logo" className="h-14 w-14 object-contain" />
+                    )}
+                    <div>
+                      <h2 className="text-2xl font-bold text-blue-900" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                        Fiche de Paie
+                      </h2>
+                      <p className="text-sm text-gray-600 font-medium">{employeur.nom}</p>
+                      {employeur.adresse && <p className="text-xs text-gray-400">{employeur.adresse}</p>}
+                      <p className="text-sm text-gray-500">Période : {mois}/{annee}</p>
+                    </div>
+                  </div>
+                  <div className="text-right text-sm text-gray-600">
+                    <p className="font-semibold">{salarie.prenom} {salarie.nom}</p>
+                    {salarie.matricule && <p>Matricule : {salarie.matricule}</p>}
+                  </div>
                 </div>
-                <div className="text-right text-sm text-gray-600">
-                  <p className="font-semibold">{salarie.prenom} {salarie.nom}</p>
-                  {salarie.matricule && <p>Matricule : {salarie.matricule}</p>}
-                </div>
-              </div>
 
-              <table className="w-full text-sm mb-6">
-                <thead>
-                  <tr className="border-b border-gray-300 text-gray-500">
-                    <th className="text-left py-2">Désignation</th>
-                    <th className="text-right py-2">Montant</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {resultat.elements.map((e) => (
-                    <tr key={e.id} className="border-b border-gray-100">
-                      <td className="py-2">{e.label}</td>
-                      <td className="text-right py-2">{e.montant.toFixed(2)} D</td>
+                <table className="w-full text-sm mb-6">
+                  <thead>
+                    <tr className="border-b border-gray-300 text-gray-500">
+                      <th className="text-left py-2">Désignation</th>
+                      <th className="text-right py-2">Montant</th>
                     </tr>
-                  ))}
-                  <tr className="border-b border-gray-100 font-semibold">
-                    <td className="py-2">Rémunération brute</td>
-                    <td className="text-right py-2">{resultat.totalRemunerationBrute.toFixed(2)} D</td>
-                  </tr>
-                  <tr className="border-b border-gray-100 text-red-600">
-                    <td className="py-2">Cotisation CNSS</td>
-                    <td className="text-right py-2">-{resultat.cotisationCNSS.toFixed(2)} D</td>
-                  </tr>
-                  <tr className="border-b border-gray-100 text-red-600">
-                    <td className="py-2">IRPP</td>
-                    <td className="text-right py-2">-{resultat.irppMensuel.toFixed(2)} D</td>
-                  </tr>
-                  {resultat.css > 0 && (
+                  </thead>
+                  <tbody>
+                    {resultat.elements.map((e) => (
+                      <tr key={e.id} className="border-b border-gray-100">
+                        <td className="py-2">{e.label}</td>
+                        <td className="text-right py-2">{e.montant.toFixed(2)} D</td>
+                      </tr>
+                    ))}
+                    <tr className="border-b border-gray-100 font-semibold">
+                      <td className="py-2">Rémunération brute</td>
+                      <td className="text-right py-2">{resultat.totalRemunerationBrute.toFixed(2)} D</td>
+                    </tr>
                     <tr className="border-b border-gray-100 text-red-600">
-                      <td className="py-2">CSS</td>
-                      <td className="text-right py-2">-{resultat.css.toFixed(2)} D</td>
+                      <td className="py-2">Cotisation CNSS</td>
+                      <td className="text-right py-2">-{resultat.cotisationCNSS.toFixed(2)} D</td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                    <tr className="border-b border-gray-100 text-red-600">
+                      <td className="py-2">IRPP</td>
+                      <td className="text-right py-2">-{resultat.irppMensuel.toFixed(2)} D</td>
+                    </tr>
+                    {resultat.css > 0 && (
+                      <tr className="border-b border-gray-100 text-red-600">
+                        <td className="py-2">CSS</td>
+                        <td className="text-right py-2">-{resultat.css.toFixed(2)} D</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
 
-              <div className="flex justify-between items-center py-4 bg-blue-900 text-white px-6 rounded-lg">
-                <span className="text-lg font-bold">Net à Payer</span>
-                <span className="text-2xl font-bold">{resultat.netAPayer.toFixed(2)} D</span>
+                <div className="flex justify-between items-center py-4 bg-blue-900 text-white px-6 rounded-lg">
+                  <span className="text-lg font-bold">Net à Payer</span>
+                  <span className="text-2xl font-bold">{resultat.netAPayer.toFixed(2)} D</span>
+                </div>
+
+                <p className="text-xs text-gray-400 mt-6">
+                  Document généré par Le Fiduciaire le {new Date().toLocaleDateString("fr-TN")}.
+                </p>
+              </Card>
               </div>
 
-              <p className="text-xs text-gray-400 mt-6">
-                Document généré à titre indicatif par Le Fiduciaire — export PDF à venir.
-              </p>
-
-              <div className="flex justify-start pt-6">
-                <Button variant="ghost" onClick={() => setEtape(4)}>Retour au détail</Button>
+              <div className="flex justify-between pt-6">
+                <Button variant="ghost" onClick={() => setEtape(5)}>Retour au détail</Button>
+                <Button onClick={exporterPDF} disabled={exportEnCours} className="bg-blue-700 hover:bg-blue-800 gap-2">
+                  <Download className="w-4 h-4" /> {exportEnCours ? "Export en cours..." : "Exporter en PDF"}
+                </Button>
               </div>
-            </Card>
+            </>
           )}
         </div>
       </div>

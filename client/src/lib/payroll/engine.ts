@@ -31,11 +31,38 @@ function partSoumiseCNSS(item: PayrollItem): number {
   return 0; // exonere_partiel sans règle validée : ne devrait pas arriver ici
 }
 
+/**
+ * Documente la règle appliquée à un élément pour l'affichage du détail
+ * technique (section 9 du prompt de finalisation).
+ */
+function documenterElement(item: PayrollItem): PayrollItem {
+  if (item.traitement === "en_attente_de_regle") {
+    return {
+      ...item,
+      inclusDansBrut: false,
+      inclusBaseCNSS: false,
+      inclusBaseFiscale: false,
+      regleAppliquee: "aucune (en attente de validation)",
+    };
+  }
+  const inclusCNSS = item.traitement === "standard";
+  return {
+    ...item,
+    inclusDansBrut: true,
+    inclusBaseCNSS: inclusCNSS,
+    inclusBaseFiscale: inclusCNSS, // MVP : même base que CNSS pour les éléments standard
+    regleAppliquee:
+      item.traitement === "standard"
+        ? "règle standard : 100% soumis CNSS et IRPP"
+        : "exonération totale CNSS/IRPP",
+  };
+}
+
 export function runPayrollEngine(input: PayrollInput): PayrollResult {
   const { salarie, periode, elements, autresDeductionsFiscalesAnnuelles = 0 } = input;
 
-  const elementsCalculables = elements.filter(estCalculable);
-  const elementsEnAttente = elements.filter((e) => !estCalculable(e));
+  const elementsCalculables = elements.filter(estCalculable).map(documenterElement);
+  const elementsEnAttente = elements.filter((e) => !estCalculable(e)).map(documenterElement);
 
   const totalRemunerationBrute = elementsCalculables.reduce((sum, e) => sum + e.montant, 0);
 

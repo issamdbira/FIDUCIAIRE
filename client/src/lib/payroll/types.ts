@@ -29,6 +29,22 @@ export interface PayrollItem {
   // Si traitement = "en_attente_de_regle", ce champ documente ce qui manque
   // (ex: "règle du décret 1098-2003 non sourcée pour ce type d'avantage")
   noteReglementaire?: string;
+  // Champs de traçabilité, remplis par le PayrollEngine dans le résultat
+  // (cf. section 9 du prompt de finalisation : détail technique du traitement)
+  inclusDansBrut?: boolean;
+  inclusBaseCNSS?: boolean;
+  inclusBaseFiscale?: boolean;
+  regleAppliquee?: string;
+  reference?: string;
+}
+
+export interface Employeur {
+  nom: string;
+  logoDataUrl?: string; // image encodée en base64 (data URL), pas de stockage serveur pour le MVP
+  adresse?: string;
+  telephone?: string;
+  email?: string;
+  matriculeCNSS?: string;
 }
 
 export interface Salarie {
@@ -48,6 +64,7 @@ export interface PeriodePaie {
 }
 
 export interface PayrollInput {
+  employeur: Employeur;
   salarie: Salarie;
   periode: PeriodePaie;
   elements: PayrollItem[];

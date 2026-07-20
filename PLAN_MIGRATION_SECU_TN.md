@@ -118,6 +118,21 @@ Changements :
 - [x] Déduction enfants passée de 100 D/mois à 150 D/mois (source CNSS-DS), sans plafond
 - [x] Nouveau fichier `lib/payroll/constantes-complementaires.ts` : SMIG 2026 (40h/48h), primes transport/présence par défaut, taux CNSS par secteur (agricole/non-agricole), taux horaire heures sup, taux accident du travail
 
-**Points restés ouverts (non tranchés) :**
+## Mise à jour du 19/07/2026 (suite) — Finalisation MVP : employeur, détail technique, PDF
+
+Comparaison HTML de référence (CNSS-DS) vs générateur React — fonctionnalités identifiées comme
+manquantes et maintenant intégrées :
+- [x] Étape "Employeur" ajoutée (nom, adresse, téléphone, email, matricule CNSS, **logo** en base64 côté client, aucun stockage serveur)
+- [x] `PayrollItem` enrichi de champs de traçabilité (`inclusDansBrut`, `inclusBaseCNSS`, `inclusBaseFiscale`, `regleAppliquee`) — détail technique par élément affiché à l'étape Résultat (tableau ligne par ligne)
+- [x] Fiche de paie : logo + infos employeur affichés en en-tête
+- [x] Export PDF fonctionnel via `html2pdf.js` (nouvelle dépendance npm, à installer par `pnpm install` — Vercel le fera automatiquement au prochain déploiement), déclaration de type manuelle ajoutée (`client/src/types/html2pdf.d.ts`)
+- [x] Parcours passé de 6 à 7 étapes : Employeur → Salarié → Période → Éléments → Vérification → Résultat → Fiche
+
+**Aucun taux/formule n'a été modifié dans ce lot** — uniquement de la structure/UI, conformément à la
+répartition des rôles (taux/règles = utilisateur, développement = Claude).
+
+**Points toujours ouverts (côté utilisateur, taux/règles) :**
 - ⚠️ CSS en 2026 : CNSS-DS l'applique encore à 0.5%, notre code la met à 0% (supprimée depuis janvier 2026 selon secu.tn). **Décision actuelle : on garde 0% en 2026**, à confirmer.
-- ⚠️ Déductions "chef de famille" (300D), "étudiants" (1000D), "infirmes" (2000D) : présentes dans l'ancien code mais absentes de la référence CNSS-DS — montants non confirmés par cette nouvelle source, à valider.
+- ⚠️ Déductions "chef de famille" (300D), "étudiants" (1000D), "infirmes" (2000D) : présentes dans l'ancien code mais absentes de la référence CNSS-DS — montants non confirmés.
+- ⚠️ Taux patronal CNSS : 17,07% chez nous vs un taux global de 25,75% mentionné par Jornata (suggérant peut-être 16,07% patronal) — à vérifier.
+- ⚠️ Avantages en nature (décret 1098-2003) : toujours aucune règle, registre `BENEFIT_RULES` vide.
