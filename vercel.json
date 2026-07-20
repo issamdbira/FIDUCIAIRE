@@ -6,6 +6,7 @@
     "NODE_ENV": "production"
   },
   "routes": [
+    { "handle": "filesystem" },
     {
       "src": "^/(?!.*\\.).*$",
       "dest": "/index.html"
