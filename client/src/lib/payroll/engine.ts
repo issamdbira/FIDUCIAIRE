@@ -12,7 +12,7 @@
  */
 
 import { calculerCotisationCNSS, calculerCSS } from "./cnss";
-import { calculerDeductionsMensuelles, calculerIRPPAnnuel } from "./irpp";
+import { calculerDeductionsMensuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "./irpp";
 import type { PayrollInput, PayrollItem, PayrollResult } from "./types";
 
 function estCalculable(item: PayrollItem): boolean {
@@ -55,7 +55,10 @@ export function runPayrollEngine(input: PayrollInput): PayrollResult {
     autresDeductionsAnnuelles: autresDeductionsFiscalesAnnuelles,
   });
 
-  const irppMensuel = calculerIRPPAnnuel(baseFiscaleMensuelle * 12, deductionsMensuelles * 12) / 12;
+  const netAnnuelAvantImpot = baseFiscaleMensuelle * 12;
+  const fraisProfessionnelsAnnuels = calculerFraisProfessionnels(netAnnuelAvantImpot);
+  const deductionsAnnuelles = deductionsMensuelles * 12 + fraisProfessionnelsAnnuels;
+  const irppMensuel = calculerIRPPAnnuel(netAnnuelAvantImpot, deductionsAnnuelles) / 12;
 
   const css = calculerCSS(baseFiscaleMensuelle, periode.annee);
 

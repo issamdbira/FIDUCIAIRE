@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { calculerCotisationCNSS, calculerCSS } from "@/lib/payroll/cnss";
-import { calculerDeductionsMensuelles, calculerIRPPAnnuel } from "@/lib/payroll/irpp";
+import { calculerDeductionsMensuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "@/lib/payroll/irpp";
 
 /**
  * Design: Minimaliste & Professionnel
@@ -52,7 +52,10 @@ export default function PaieCNSS() {
       infirmes,
       autresDeductionsAnnuelles: autresDeductions,
     });
-    const irpp = calculerIRPPAnnuel(salaireImposable * 12, deductions * 12) / 12;
+    const irpp = calculerIRPPAnnuel(
+      salaireImposable * 12,
+      deductions * 12 + calculerFraisProfessionnels(salaireImposable * 12)
+    ) / 12;
 
     const css = calculerCSS(salaireImposable, annee);
     const salaireNet = salaireBrut - cotisationsCNSS - irpp - css;

@@ -104,3 +104,20 @@ remonté séparément à l'utilisateur plutôt que de produire un résultat sile
 - [ ] Refactoriser `IRPP.tsx` pour utiliser aussi `lib/payroll/irpp.ts` (actuellement encore dupliqué, non prioritaire car pas de bug).
 - [ ] Table SMIG à compléter (2016-2019 manquants) dans `lib/payroll/cnss.ts`.
 - [ ] Sourcer les règles d'avantages en nature (décret 1098-2003) avant d'en implémenter une seule.
+
+## Mise à jour du 19/07/2026 — Référence CNSS-DS
+
+L'utilisateur a fourni un outil de référence local (CNSS-DS) avec un barème IRPP et des déductions
+différents de ceux sourcés depuis secu.tn. Décision : **la référence CNSS-DS fait foi** pour l'IRPP.
+`lib/payroll/irpp.ts` et `engine.ts` ont été mis à jour et validés numériquement (10.659 D d'IRPP
+mensuel sur 600D brut, 0 enfant — identique dans les deux implémentations).
+
+Changements :
+- [x] Nouveau barème IRPP (0/15/20/25/30/35/40% sur 5000/8333/12500/16666/25000/70000)
+- [x] Ajout de la déduction "frais professionnels" (10% forfaitaire du net annuel avant impôt) — **absente de l'ancien code, correction importante**
+- [x] Déduction enfants passée de 100 D/mois à 150 D/mois (source CNSS-DS), sans plafond
+- [x] Nouveau fichier `lib/payroll/constantes-complementaires.ts` : SMIG 2026 (40h/48h), primes transport/présence par défaut, taux CNSS par secteur (agricole/non-agricole), taux horaire heures sup, taux accident du travail
+
+**Points restés ouverts (non tranchés) :**
+- ⚠️ CSS en 2026 : CNSS-DS l'applique encore à 0.5%, notre code la met à 0% (supprimée depuis janvier 2026 selon secu.tn). **Décision actuelle : on garde 0% en 2026**, à confirmer.
+- ⚠️ Déductions "chef de famille" (300D), "étudiants" (1000D), "infirmes" (2000D) : présentes dans l'ancien code mais absentes de la référence CNSS-DS — montants non confirmés par cette nouvelle source, à valider.
