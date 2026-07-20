@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
-import { Calculator, TrendingUp, FileText, DollarSign } from "lucide-react";
+import { Calculator, TrendingUp, FileText, DollarSign, ClipboardCheck } from "lucide-react";
 
 /**
  * Design: Minimaliste & Professionnel
@@ -50,6 +50,14 @@ export default function Home() {
       icon: TrendingUp,
       href: "/calculateurs/actualisation-salaire",
       color: "from-blue-500 to-blue-600"
+    },
+    {
+      id: "declarations-cnss",
+      title: "Déclarations CNSS",
+      description: "Générez vos fichiers de déclaration trimestrielle CNSS (TXT), par saisie manuelle ou import CSV/Excel",
+      icon: ClipboardCheck,
+      href: "/calculateurs/declarations-cnss",
+      color: "from-blue-700 to-blue-800"
     }
   ];
 

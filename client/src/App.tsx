@@ -12,6 +12,8 @@ import IRPP from "./pages/calculateurs/IRPP";
 import PaieCNRPS from "./pages/calculateurs/PaieCNRPS";
 import ActualisationSalaire from "./pages/calculateurs/ActualisationSalaire";
 import GenerateurFichePaie from "./pages/calculateurs/GenerateurFichePaie";
+import DeclarationsCNSS from "./pages/calculateurs/DeclarationsCNSS";
+import TesteurTXT from "./pages/calculateurs/TesteurTXT";
 
 
 function Router() {
@@ -24,6 +26,8 @@ function Router() {
       <Route path="/calculateurs/irpp" component={IRPP} />
       <Route path="/calculateurs/paie-cnrps" component={PaieCNRPS} />
       <Route path="/calculateurs/actualisation-salaire" component={ActualisationSalaire} />
+      <Route path="/calculateurs/declarations-cnss" component={DeclarationsCNSS} />
+      <Route path="/calculateurs/testeur-txt-cnss" component={TesteurTXT} />
       <Route path="/fiche-de-paie" component={GenerateurFichePaie} />
       <Route path="/404" component={NotFound} />
       {/* Final fallback route */}

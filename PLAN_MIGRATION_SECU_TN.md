@@ -131,6 +131,24 @@ manquantes et maintenant intégrées :
 **Aucun taux/formule n'a été modifié dans ce lot** — uniquement de la structure/UI, conformément à la
 répartition des rôles (taux/règles = utilisateur, développement = Claude).
 
+## Mise à jour du 19/07/2026 (suite) — Déclarations CNSS + Testeur TXT (portés depuis CNSS-DS)
+
+À la demande explicite de l'utilisateur ("ne pas abandonner de fonction déjà prête"), l'intégralité des
+fonctions de l'outil HTML de référence CNSS-DS a été portée dans l'application React. Il s'agit de
+logique de **formatage pur** (format fixe 122 caractères, spécification CNSS 2012), sans aucun taux ni
+barème — donc rien à valider côté utilisateur ici.
+
+- [x] `client/src/lib/cnss-declarations/` : `types.ts`, `validator.ts`, `generator.ts` (génération lignes/fichiers TXT), `tester.ts` (parsing/validation TXT), `import.ts` (import CSV/Excel via papaparse + xlsx), `zip.ts` (export groupé via jszip)
+- [x] `DeclarationsCNSS.tsx` (route `/calculateurs/declarations-cnss`) : configuration employeur, saisie manuelle, import CSV/Excel, liste des déclarations avec aperçu TXT, téléchargement individuel ou ZIP groupé — persistance locale via `localStorage` (aucune transmission serveur, cohérent avec le principe de confidentialité du projet)
+- [x] `TesteurTXT.tsx` (route `/calculateurs/testeur-txt-cnss`) : glisser-déposer de fichiers TXT, validation ligne par ligne, récapitulatif global
+- [x] Nouvelles dépendances : `papaparse`, `xlsx`, `jszip`, `@types/papaparse` — installées et vérifiées (`pnpm run check` + `pnpm run build` réussis en local avant push)
+- [x] Lien ajouté sur l'accueil
+
+**Note de cohérence architecture :** ce module introduit une gestion multi-salariés (déclarations
+trimestrielles), ce qui dépasse le périmètre "1 salarié/1 période" défini pour le générateur de fiche de
+paie dans les prompts précédents. C'est un choix assumé de l'utilisateur, présenté comme un service
+distinct et complémentaire (déclaration CNSS ≠ fiche de paie individuelle), pas une fusion des deux.
+
 **Points toujours ouverts (côté utilisateur, taux/règles) :**
 - ⚠️ CSS en 2026 : CNSS-DS l'applique encore à 0.5%, notre code la met à 0% (supprimée depuis janvier 2026 selon secu.tn). **Décision actuelle : on garde 0% en 2026**, à confirmer.
 - ⚠️ Déductions "chef de famille" (300D), "étudiants" (1000D), "infirmes" (2000D) : présentes dans l'ancien code mais absentes de la référence CNSS-DS — montants non confirmés.
