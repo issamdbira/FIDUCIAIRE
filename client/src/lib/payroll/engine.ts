@@ -13,6 +13,7 @@
 
 import { calculerCotisationCNSS, calculerCSS } from "./cnss";
 import { calculerDeductionsMensuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "./irpp";
+import { TAUX_CNSS_PAR_SECTEUR } from "./constantes-complementaires";
 import type { PayrollInput, PayrollItem, PayrollResult } from "./types";
 
 function estCalculable(item: PayrollItem): boolean {
@@ -59,7 +60,7 @@ function documenterElement(item: PayrollItem): PayrollItem {
 }
 
 export function runPayrollEngine(input: PayrollInput): PayrollResult {
-  const { salarie, periode, elements, autresDeductionsFiscalesAnnuelles = 0 } = input;
+  const { employeur, salarie, periode, elements, autresDeductionsFiscalesAnnuelles = 0 } = input;
 
   const elementsCalculables = elements.filter(estCalculable).map(documenterElement);
   const elementsEnAttente = elements.filter((e) => !estCalculable(e)).map(documenterElement);
@@ -67,7 +68,15 @@ export function runPayrollEngine(input: PayrollInput): PayrollResult {
   const totalRemunerationBrute = elementsCalculables.reduce((sum, e) => sum + e.montant, 0);
 
   const baseCNSS = elementsCalculables.reduce((sum, e) => sum + partSoumiseCNSS(e), 0);
-  const cotisationCNSS = calculerCotisationCNSS(baseCNSS, periode.annee);
+  // Secteur agricole : taux spécifique (source CNSS-DS). Non-agricole (défaut) :
+  // taux standard, dépendant de l'année (cf. cnss.ts).
+  const cotisationCNSS =
+    employeur.secteur === "agricole"
+      ? baseCNSS * TAUX_CNSS_PAR_SECTEUR.agricole.salarial
+      : calculerCotisationCNSS(baseCNSS, periode.annee);
+  const tauxPatronal =
+    employeur.secteur === "agricole" ? TAUX_CNSS_PAR_SECTEUR.agricole.patronal : TAUX_CNSS_PAR_SECTEUR.non_agricole.patronal;
+  const cotisationPatronale = baseCNSS * tauxPatronal;
 
   // Base fiscale mensuelle = rémunération brute - cotisation CNSS (les éléments
   // exonérés totalement d'IRPP ne sont pas encore gérés séparément - MVP : même
@@ -102,6 +111,7 @@ export function runPayrollEngine(input: PayrollInput): PayrollResult {
     totalRemunerationBrute: round2(totalRemunerationBrute),
     baseCNSS: round2(baseCNSS),
     cotisationCNSS: round2(cotisationCNSS),
+    cotisationPatronale: round2(cotisationPatronale),
     baseFiscaleMensuelle: round2(baseFiscaleMensuelle),
     irppMensuel: round2(irppMensuel),
     css: round2(css),

@@ -8,6 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, ArrowRight, Download, Plus, Trash2, Upload } from "lucide-react";
 import { Link } from "wouter";
 import { runPayrollEngine } from "@/lib/payroll/engine";
+import {
+  PRIME_PRESENCE_DEFAUT,
+  PRIME_TRANSPORT_DEFAUT,
+  TAUX_HORAIRE_PAR_REGIME,
+} from "@/lib/payroll/constantes-complementaires";
 import type { Employeur, PayrollItem, PayrollItemType, PayrollResult, Salarie } from "@/lib/payroll/types";
 
 /**
@@ -48,7 +53,12 @@ export default function GenerateurFichePaie() {
     telephone: "",
     email: "",
     matriculeCNSS: "",
+    secteur: "non_agricole",
   });
+
+  const [regime, setRegime] = useState<40 | 48>(40);
+  const [heuresSup, setHeuresSup] = useState(0);
+  const [majorationHS, setMajorationHS] = useState(25);
 
   const [salarie, setSalarie] = useState<Salarie>({
     nom: "",
@@ -59,6 +69,9 @@ export default function GenerateurFichePaie() {
     enfants: 0,
     etudiants: 0,
     infirmes: 0,
+    modePaiement: "espece",
+    banque: "",
+    rib: "",
   });
 
   const [mois, setMois] = useState(new Date().getMonth() + 1);
@@ -189,6 +202,26 @@ export default function GenerateurFichePaie() {
                   <Input value={employeur.matriculeCNSS} onChange={(e) => setEmployeur({ ...employeur, matriculeCNSS: e.target.value })} />
                 </div>
                 <div>
+                  <Label className="mb-2 block">Secteur d'activité</Label>
+                  <Select value={employeur.secteur} onValueChange={(v) => setEmployeur({ ...employeur, secteur: v as "non_agricole" | "agricole" })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="non_agricole">Non agricole (9.68% / 17.07%)</SelectItem>
+                      <SelectItem value="agricole">Agricole (9.18% / 16.57%)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="mb-2 block">Régime hebdomadaire</Label>
+                  <Select value={regime.toString()} onValueChange={(v) => setRegime(parseInt(v) as 40 | 48)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="40">40h/semaine</SelectItem>
+                      <SelectItem value="48">48h/semaine</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
                   <Label className="mb-2 block">Adresse</Label>
                   <Input value={employeur.adresse} onChange={(e) => setEmployeur({ ...employeur, adresse: e.target.value })} />
                 </div>
@@ -280,6 +313,34 @@ export default function GenerateurFichePaie() {
                     <Label className="mb-2 block text-sm">Enfants handicapés</Label>
                     <Input type="number" min="0" value={salarie.infirmes} onChange={(e) => setSalarie({ ...salarie, infirmes: parseInt(e.target.value) || 0 })} />
                   </div>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 pt-4">
+                <h3 className="font-semibold text-blue-900 mb-3">Mode de paiement</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label className="mb-2 block text-sm">Mode</Label>
+                    <Select value={salarie.modePaiement} onValueChange={(v) => setSalarie({ ...salarie, modePaiement: v as "espece" | "virement" })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="espece">Espèce</SelectItem>
+                        <SelectItem value="virement">Virement bancaire</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {salarie.modePaiement === "virement" && (
+                    <>
+                      <div>
+                        <Label className="mb-2 block text-sm">Banque</Label>
+                        <Input value={salarie.banque} onChange={(e) => setSalarie({ ...salarie, banque: e.target.value })} />
+                      </div>
+                      <div>
+                        <Label className="mb-2 block text-sm">RIB</Label>
+                        <Input value={salarie.rib} onChange={(e) => setSalarie({ ...salarie, rib: e.target.value })} />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -376,8 +437,73 @@ export default function GenerateurFichePaie() {
                 </div>
               )}
 
+              <div className="p-4 bg-gray-50 rounded-lg space-y-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase">Ajouts rapides</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setElements([...elements, { id: nextId(), type: "prime", label: "Prime de transport", montant: PRIME_TRANSPORT_DEFAUT, traitement: "standard" }])
+                    }
+                  >
+                    + Transport ({PRIME_TRANSPORT_DEFAUT} D)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setElements([...elements, { id: nextId(), type: "prime", label: "Prime de présence", montant: PRIME_PRESENCE_DEFAUT, traitement: "standard" }])
+                    }
+                  >
+                    + Présence ({PRIME_PRESENCE_DEFAUT} D)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setElements([...elements, { id: nextId(), type: "retenue", label: "Avance sur salaire", montant: 0, traitement: "standard" }])
+                    }
+                  >
+                    + Avance
+                  </Button>
+                </div>
+
+                <div className="flex items-end gap-2 pt-2 border-t border-gray-200">
+                  <div className="w-24">
+                    <Label className="text-xs mb-1 block">Heures sup</Label>
+                    <Input type="number" min="0" value={heuresSup} onChange={(e) => setHeuresSup(parseFloat(e.target.value) || 0)} />
+                  </div>
+                  <div className="w-28">
+                    <Label className="text-xs mb-1 block">Majoration</Label>
+                    <Select value={majorationHS.toString()} onValueChange={(v) => setMajorationHS(parseInt(v))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="25">25%</SelectItem>
+                        <SelectItem value="50">50%</SelectItem>
+                        <SelectItem value="100">100%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-xs text-gray-500 flex-1">
+                    Taux horaire {regime}h : {TAUX_HORAIRE_PAR_REGIME[regime]} D/h → {(heuresSup * TAUX_HORAIRE_PAR_REGIME[regime] * (1 + majorationHS / 100)).toFixed(2)} D
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (heuresSup <= 0) return;
+                      const montant = Math.round(heuresSup * TAUX_HORAIRE_PAR_REGIME[regime] * (1 + majorationHS / 100) * 100) / 100;
+                      setElements([...elements, { id: nextId(), type: "indemnite", label: `Heures supplémentaires (${heuresSup}h × ${majorationHS}%)`, montant, traitement: "standard" }]);
+                      setHeuresSup(0);
+                    }}
+                  >
+                    Ajouter
+                  </Button>
+                </div>
+              </div>
+
               <Button variant="outline" onClick={ajouterElement} className="gap-2 border-blue-300 text-blue-700">
-                <Plus className="w-4 h-4" /> Ajouter un élément
+                <Plus className="w-4 h-4" /> Ajouter un élément vide
               </Button>
 
               <div className="flex justify-between pt-2">
@@ -464,8 +590,12 @@ export default function GenerateurFichePaie() {
                   <span>{resultat.baseCNSS.toFixed(2)} D</span>
                 </div>
                 <div className="flex justify-between text-red-600">
-                  <span>Cotisation CNSS</span>
+                  <span>Cotisation CNSS (salarié)</span>
                   <span>-{resultat.cotisationCNSS.toFixed(2)} D</span>
+                </div>
+                <div className="flex justify-between text-gray-400 text-xs">
+                  <span>Cotisation patronale (à la charge de l'employeur, n'affecte pas le net)</span>
+                  <span>{resultat.cotisationPatronale.toFixed(2)} D</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Base fiscale</span>
@@ -575,6 +705,12 @@ export default function GenerateurFichePaie() {
                 <div className="flex justify-between items-center py-4 bg-blue-900 text-white px-6 rounded-lg">
                   <span className="text-lg font-bold">Net à Payer</span>
                   <span className="text-2xl font-bold">{resultat.netAPayer.toFixed(2)} D</span>
+                </div>
+
+                <div className="mt-4 text-sm text-gray-600">
+                  <strong>Paiement :</strong> {salarie.modePaiement === "virement" ? "Virement bancaire" : "Espèce"}
+                  {salarie.modePaiement === "virement" && salarie.banque && ` — ${salarie.banque}`}
+                  {salarie.modePaiement === "virement" && salarie.rib && ` — RIB : ${salarie.rib}`}
                 </div>
 
                 <p className="text-xs text-gray-400 mt-6">

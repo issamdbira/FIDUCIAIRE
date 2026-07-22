@@ -45,6 +45,8 @@ export interface Employeur {
   telephone?: string;
   email?: string;
   matriculeCNSS?: string;
+  // Secteur d'activité, détermine le taux CNSS applicable (cf. constantes-complementaires.ts)
+  secteur?: "non_agricole" | "agricole";
 }
 
 export interface Salarie {
@@ -56,6 +58,10 @@ export interface Salarie {
   enfants: number;
   etudiants: number;
   infirmes: number;
+  // Mode de paiement (affiché sur la fiche de paie, pas de traitement fiscal)
+  modePaiement?: "espece" | "virement";
+  banque?: string;
+  rib?: string;
 }
 
 export interface PeriodePaie {
@@ -76,6 +82,7 @@ export interface PayrollResult {
   totalRemunerationBrute: number;
   baseCNSS: number;
   cotisationCNSS: number;
+  cotisationPatronale: number; // informative, à la charge de l'employeur (n'affecte pas le net)
   baseFiscaleMensuelle: number;
   irppMensuel: number;
   css: number;

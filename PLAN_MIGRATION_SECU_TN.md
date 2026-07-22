@@ -159,6 +159,18 @@ distinct et complémentaire (déclaration CNSS ≠ fiche de paie individuelle), 
 
 **Aucune fonction existante supprimée** — uniquement réorganisation de la présentation et ajout du calcul inverse.
 
+## Mise à jour du 19/07/2026 (suite) — Champs structurels manquants ajoutés au générateur
+
+Comme dans le HTML CNSS-DS : valeurs par défaut pré-remplies, mais **tous les champs restent modifiables**
+(rien n'est figé).
+- [x] `Employeur` : secteur d'activité (agricole/non-agricole) → détermine le taux CNSS utilisé par le moteur
+- [x] `Salarie` : mode de paiement (espèce/virement + banque/RIB), affiché sur la fiche de paie
+- [x] `PayrollResult` : nouveau champ `cotisationPatronale` (informatif, n'affecte pas le net, affiché en petit dans le détail)
+- [x] Étape "Éléments" : ajouts rapides Transport (36.112D), Présence (2.080D), Avance, et un mini-calculateur d'heures supplémentaires (régime 40h/48h → taux horaire automatique, majoration 25/50/100%)
+- [x] `pnpm run check` + `pnpm run build` vérifiés avec succès
+
+**Point de vigilance :** le taux patronal CNSS utilisé (17,07%) reste celui signalé comme non confirmé (cf. écart avec Jornata plus haut) — la cotisation patronale affichée en hérite donc.
+
 **Points toujours ouverts (côté utilisateur, taux/règles) :**
 - ⚠️ CSS en 2026 : CNSS-DS l'applique encore à 0.5%, notre code la met à 0% (supprimée depuis janvier 2026 selon secu.tn). **Décision actuelle : on garde 0% en 2026**, à confirmer.
 - ⚠️ Déductions "chef de famille" (300D), "étudiants" (1000D), "infirmes" (2000D) : présentes dans l'ancien code mais absentes de la référence CNSS-DS — montants non confirmés.
