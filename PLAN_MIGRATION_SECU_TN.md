@@ -149,6 +149,16 @@ trimestrielles), ce qui dépasse le périmètre "1 salarié/1 période" défini 
 paie dans les prompts précédents. C'est un choix assumé de l'utilisateur, présenté comme un service
 distinct et complémentaire (déclaration CNSS ≠ fiche de paie individuelle), pas une fusion des deux.
 
+## Mise à jour du 19/07/2026 (suite) — Réorganisation MVP autour des besoins utilisateur
+
+- [x] Nouveau `lib/payroll/netToBrut.ts` : calcul Net→Brut par **recherche dichotomique sur le moteur central** (`runPayrollEngine`), pas de formule inverse inventée — validé numériquement (convergence à 0.001 D près)
+- [x] `CalculerSalaire.tsx` (route `/calculateurs/calculer-salaire`) : page unique Brut→Net / Net→Brut, un seul moteur pour les deux sens
+- [x] Accueil réorganisé en 3 catégories orientées action : **Traiter une paie** (Générer une fiche de paie, mis en avant en premier), **Calculer** (salaire, IRPP, retraite, actualisation, CNRPS), **Préparer une déclaration** (déclarations CNSS)
+- [x] `PaieCNSS.tsx` conservé tel quel (route toujours active, non supprimée) mais retiré de la mise en avant de l'accueil au profit de `CalculerSalaire.tsx`, plus clair pour l'utilisateur
+- [x] `pnpm run check` + `pnpm run build` vérifiés avec succès avant push
+
+**Aucune fonction existante supprimée** — uniquement réorganisation de la présentation et ajout du calcul inverse.
+
 **Points toujours ouverts (côté utilisateur, taux/règles) :**
 - ⚠️ CSS en 2026 : CNSS-DS l'applique encore à 0.5%, notre code la met à 0% (supprimée depuis janvier 2026 selon secu.tn). **Décision actuelle : on garde 0% en 2026**, à confirmer.
 - ⚠️ Déductions "chef de famille" (300D), "étudiants" (1000D), "infirmes" (2000D) : présentes dans l'ancien code mais absentes de la référence CNSS-DS — montants non confirmés.

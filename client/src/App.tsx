@@ -14,6 +14,7 @@ import ActualisationSalaire from "./pages/calculateurs/ActualisationSalaire";
 import GenerateurFichePaie from "./pages/calculateurs/GenerateurFichePaie";
 import DeclarationsCNSS from "./pages/calculateurs/DeclarationsCNSS";
 import TesteurTXT from "./pages/calculateurs/TesteurTXT";
+import CalculerSalaire from "./pages/calculateurs/CalculerSalaire";
 
 
 function Router() {
@@ -21,6 +22,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/about" component={About} />
+      <Route path="/calculateurs/calculer-salaire" component={CalculerSalaire} />
       <Route path="/calculateurs/paie-cnss" component={PaieCNSS} />
       <Route path="/calculateurs/retraite-cnss" component={RetraiteCNSS} />
       <Route path="/calculateurs/irpp" component={IRPP} />
