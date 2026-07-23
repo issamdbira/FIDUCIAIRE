@@ -171,6 +171,21 @@ Comme dans le HTML CNSS-DS : valeurs par défaut pré-remplies, mais **tous les 
 
 **Point de vigilance :** le taux patronal CNSS utilisé (17,07%) reste celui signalé comme non confirmé (cf. écart avec Jornata plus haut) — la cotisation patronale affichée en hérite donc.
 
+## Mise à jour du 19/07/2026 (suite) — Vérification finale (étapes 8-12 de la mission de finalisation)
+
+Tests exécutés sur le vrai code (bundlé via esbuild, pas des simulations manuelles) :
+
+- [x] **Moteur multi-éléments** : base+prime+indemnité+absence+retenue agrégés correctement (1200+300+50-80-100=1370 D brut), CNSS 132.62 D (9.68%), net 1222.84 D
+- [x] **Avantage en nature (règle non validée)** : correctement exclu du calcul, remonté dans `elementsEnAttente` avec `inclusDansBrut/CNSS/Fiscale = false` et la note réglementaire — aucun calcul silencieusement faux
+- [x] **Secteur agricole** : taux CNSS 9.18%/16.57% correctement appliqués (vs 9.68%/17.07% non-agricole), écart confirmé par calcul (91.80 D et 165.70 D sur 1000 D brut)
+- [x] **Déclaration CNSS round-trip** : génération TXT (122 caractères/ligne) → reparsing par le testeur → salariés, salaires (1200.000/850.000 DT), nom en majuscules tous retrouvés à l'identique
+- [x] **Net→Brut avec vrai moteur** (2 enfants, 2026) : brut trouvé 1142.37 D pour un net de 1000 D, écart de reconversion = 0
+- [x] `pnpm run check` + `pnpm run build` déjà vérifiés aux commits précédents
+
+**Non testable depuis cet environnement (pas de navigateur réel) :** rendu visuel du PDF (logo, mise en page, coupures de page) — à vérifier manuellement sur le site déployé. Le code d'export (`html2pdf.js`) est typé et compile sans erreur, mais le rendu final nécessite un test humain dans le navigateur.
+
+**État du MVP au 19/07/2026 :** les 3 parcours de la mission de finalisation (Calculer un salaire, Générer une fiche de paie, Préparer une déclaration CNSS) sont fonctionnels et vérifiés côté logique. Reste à vérifier manuellement : rendu PDF réel, et les points de taux/règles toujours en attente ci-dessous.
+
 **Points toujours ouverts (côté utilisateur, taux/règles) :**
 - ⚠️ CSS en 2026 : CNSS-DS l'applique encore à 0.5%, notre code la met à 0% (supprimée depuis janvier 2026 selon secu.tn). **Décision actuelle : on garde 0% en 2026**, à confirmer.
 - ⚠️ Déductions "chef de famille" (300D), "étudiants" (1000D), "infirmes" (2000D) : présentes dans l'ancien code mais absentes de la référence CNSS-DS — montants non confirmés.
