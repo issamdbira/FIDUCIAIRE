@@ -8,17 +8,24 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { calculerCotisationCNSS } from "@/lib/payroll/cnss";
-import { calculerFraisProfessionnels, calculerIRPPAnnuel } from "@/lib/payroll/irpp";
+import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "@/lib/payroll/irpp";
 
 /**
  * Design: Minimaliste & Professionnel
  * Calculateur IRPP (Impôt sur le Revenu des Personnes Physiques)
  *
- * Barème, frais professionnels (10%) et taux CNSS centralisés dans
- * src/lib/payroll/ (source : référence CNSS-DS, cf. PLAN_MIGRATION_SECU_TN.md).
- * Ce fichier garde ses propres déductions spécifiques (intérêts crédit
- * immobilier, cotisations syndicales, crédits d'impôt) qui n'existent pas
- * ailleurs dans le projet.
+ * Barème, frais professionnels et déductions familiales : centralisés dans
+ * lib/payroll/irpp.ts, vérifiés directement contre secu.tn/fr/calculateur-irpp-tunisie.html
+ * le 19/07/2026 (voir PLAN_MIGRATION_SECU_TN.md pour le détail des corrections).
+ *
+ * Ce fichier garde ses propres déductions spécifiques à la déclaration annuelle
+ * (intérêts crédit immobilier, cotisations syndicales) qui n'existent pas
+ * ailleurs dans le projet et sont mentionnées par secu.tn ("autres déductions").
+ *
+ * SUPPRIMÉ le 19/07/2026 : la section "crédits d'impôt" (50D/enfant, 500D
+ * handicap) qui existait ici ne correspond à aucun mécanisme documenté par
+ * secu.tn - elle semble avoir été inventée. Retirée pour ne pas produire un
+ * résultat faux présenté comme certain.
  */
 
 interface IRPPResult {
@@ -29,8 +36,6 @@ interface IRPPResult {
   deductions: number;
   assietteFiscale: number;
   irpp: number;
-  creditsImpot: number;
-  irppNet: number;
   tauxEffectif: number;
 }
 
@@ -42,33 +47,15 @@ export default function IRPP() {
   const [infirmes, setInfirmes] = useState(0);
   const [interetsCredit, setInteretsCredit] = useState(0);
   const [cotisationsSyndicales, setCotisationsSyndicales] = useState(0);
-  const [handicapPersonnel, setHandicapPersonnel] = useState(false);
   const [result, setResult] = useState<IRPPResult | null>(null);
 
-  const calculerDeductions = (): number => {
+  const calculerAutresDeductions = (): number => {
     let deductions = 0;
-
-    // Chef de famille
-    if (chefFamille) {
-      deductions += 300 * 12; // Annuel
-    }
-
-    // Enfants (150 D/mois par enfant, sans plafond - cohérent avec lib/payroll/irpp.ts)
-    deductions += enfants * 150 * 12;
-
-    // Étudiants (1000 D par étudiant, max 4)
-    deductions += Math.min(etudiants, 4) * 1000 * 12;
-
-    // Enfants infirmes (2000 D par enfant)
-    deductions += infirmes * 2000 * 12;
-
-    // Intérêts crédit immobilier (max 2000 D/an)
+    // Intérêts crédit immobilier première habitation (max 2000 D/an - secu.tn "autres déductions")
     deductions += Math.min(interetsCredit, 2000);
-
-    // Cotisations syndicales (max 5% du revenu)
+    // Cotisations syndicales (plafond usuel 5% du revenu - à confirmer précisément si besoin)
     const maxCotisations = revenuAnnuel * 0.05;
     deductions += Math.min(cotisationsSyndicales, maxCotisations);
-
     return deductions;
   };
 
@@ -76,30 +63,26 @@ export default function IRPP() {
     const cotisationsCNSS = calculerCotisationCNSS(revenuAnnuel, new Date().getFullYear());
     const revenuImposable = revenuAnnuel - cotisationsCNSS;
     const fraisProfessionnels = calculerFraisProfessionnels(revenuImposable);
-    const deductions = calculerDeductions();
-    const assietteFiscale = Math.max(revenuImposable - fraisProfessionnels - deductions, 0);
+    const deductionsFamiliales = calculerDeductionsAnnuelles({
+      chefFamille,
+      enfants,
+      etudiants,
+      infirmes,
+      autresDeductionsAnnuelles: calculerAutresDeductions(),
+    });
+    const assietteFiscale = Math.max(revenuImposable - fraisProfessionnels - deductionsFamiliales, 0);
     const irpp = calculerIRPPAnnuel(assietteFiscale, 0);
 
-    // Crédits d'impôt
-    let creditsImpot = 0;
-    creditsImpot += enfants * 50 * 12; // 50 D par enfant/mois
-    if (handicapPersonnel) {
-      creditsImpot += 500; // Crédit pour handicap
-    }
-
-    const irppNet = Math.max(irpp - creditsImpot, 0);
-    const tauxEffectif = revenuAnnuel > 0 ? (irppNet / revenuAnnuel) * 100 : 0;
+    const tauxEffectif = revenuAnnuel > 0 ? (irpp / revenuAnnuel) * 100 : 0;
 
     setResult({
       revenuAnnuel: Math.round(revenuAnnuel * 100) / 100,
       cotisationsCNSS: Math.round(cotisationsCNSS * 100) / 100,
       revenuImposable: Math.round(revenuImposable * 100) / 100,
       fraisProfessionnels: Math.round(fraisProfessionnels * 100) / 100,
-      deductions: Math.round(deductions * 100) / 100,
+      deductions: Math.round(deductionsFamiliales * 100) / 100,
       assietteFiscale: Math.round(assietteFiscale * 100) / 100,
       irpp: Math.round(irpp * 100) / 100,
-      creditsImpot: Math.round(creditsImpot * 100) / 100,
-      irppNet: Math.round(irppNet * 100) / 100,
       tauxEffectif: Math.round(tauxEffectif * 100) / 100
     });
   };
@@ -173,7 +156,7 @@ export default function IRPP() {
                       <SelectContent>
                         {[0, 1, 2, 3, 4, 5].map((n) => (
                           <SelectItem key={n} value={n.toString()}>
-                            {n} enfant{n !== 1 ? "s" : ""} ({n * 1200} D/an)
+                            {n} enfant{n !== 1 ? "s" : ""} ({n * 100} D/an)
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -191,7 +174,7 @@ export default function IRPP() {
                       <SelectContent>
                         {[0, 1, 2, 3, 4].map((n) => (
                           <SelectItem key={n} value={n.toString()}>
-                            {n} étudiant{n !== 1 ? "s" : ""} ({n * 12000} D/an)
+                            {n} étudiant{n !== 1 ? "s" : ""} ({n * 1000} D/an)
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -209,22 +192,11 @@ export default function IRPP() {
                       <SelectContent>
                         {[0, 1, 2, 3, 4].map((n) => (
                           <SelectItem key={n} value={n.toString()}>
-                            {n} enfant{n !== 1 ? "s" : ""} ({n * 24000} D/an)
+                            {n} enfant{n !== 1 ? "s" : ""} ({n * 2000} D/an)
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <Checkbox
-                      id="handicap"
-                      checked={handicapPersonnel}
-                      onCheckedChange={(checked) => setHandicapPersonnel(checked as boolean)}
-                    />
-                    <Label htmlFor="handicap" className="cursor-pointer">
-                      Vous êtes en situation de handicap (500 D crédit)
-                    </Label>
                   </div>
                 </div>
               </div>
@@ -313,19 +285,9 @@ export default function IRPP() {
                   <span className="font-semibold text-blue-900">{result.assietteFiscale.toFixed(2)} D</span>
                 </div>
 
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                  <span className="text-gray-700">IRPP Brut</span>
-                  <span className="font-semibold text-red-600">{result.irpp.toFixed(2)} D</span>
-                </div>
-
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                  <span className="text-gray-700">Crédits d'Impôt</span>
-                  <span className="font-semibold text-green-600">-{result.creditsImpot.toFixed(2)} D</span>
-                </div>
-
                 <div className="flex justify-between items-center py-4 bg-gradient-to-r from-blue-50 to-blue-100 px-4 rounded-lg">
-                  <span className="text-lg font-bold text-blue-900">IRPP Net Annuel</span>
-                  <span className="text-2xl font-bold text-blue-700">{result.irppNet.toFixed(2)} D</span>
+                  <span className="text-lg font-bold text-blue-900">IRPP Annuel</span>
+                  <span className="text-2xl font-bold text-blue-700">{result.irpp.toFixed(2)} D</span>
                 </div>
 
                 <div className="flex justify-between items-center py-3 bg-gray-100 px-4 rounded">
@@ -335,7 +297,7 @@ export default function IRPP() {
 
                 <div className="flex justify-between items-center py-3 bg-gray-100 px-4 rounded">
                   <span className="text-gray-700">IRPP Mensuel</span>
-                  <span className="font-semibold text-blue-900">{(result.irppNet / 12).toFixed(2)} D</span>
+                  <span className="font-semibold text-blue-900">{(result.irpp / 12).toFixed(2)} D</span>
                 </div>
               </div>
 

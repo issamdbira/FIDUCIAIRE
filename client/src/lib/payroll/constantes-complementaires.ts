@@ -24,9 +24,15 @@ export interface TauxCotisationSecteur {
   patronal: number; // taux CNSS employeur
 }
 
+// SOURCE : https://secu.tn/fr/calculateur-paie-cnss.html (vérifié le 19/07/2026)
+// Non-agricole : 9.68%/17.07% depuis janvier 2025 (9.18%/16.57% avant).
+// Agricole : régime spécial, total 19.47% (6.99% salarié + 12.48% patronal)
+// - CORRIGÉ : les valeurs 9.18%/16.57% précédemment utilisées ici (source
+// CNSS-DS) étaient en réalité les anciens taux NON-agricoles (avant 2025),
+// pas les taux agricoles réels. Confirmé par citation directe de secu.tn.
 export const TAUX_CNSS_PAR_SECTEUR: Record<SecteurCotisation, TauxCotisationSecteur> = {
   non_agricole: { salarial: 0.0968, patronal: 0.1707 },
-  agricole: { salarial: 0.0918, patronal: 0.1657 },
+  agricole: { salarial: 0.0699, patronal: 0.1248 },
 };
 
 // Taux horaire par défaut selon le régime (40h ou 48h/semaine)

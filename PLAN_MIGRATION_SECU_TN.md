@@ -169,7 +169,65 @@ Comme dans le HTML CNSS-DS : valeurs par défaut pré-remplies, mais **tous les 
 - [x] Étape "Éléments" : ajouts rapides Transport (36.112D), Présence (2.080D), Avance, et un mini-calculateur d'heures supplémentaires (régime 40h/48h → taux horaire automatique, majoration 25/50/100%)
 - [x] `pnpm run check` + `pnpm run build` vérifiés avec succès
 
-**Point de vigilance :** le taux patronal CNSS utilisé (17,07%) reste celui signalé comme non confirmé (cf. écart avec Jornata plus haut) — la cotisation patronale affichée en hérite donc.
+## Mise à jour du 19/07/2026 (suite) — VÉRIFICATION COMPLÈTE contre secu.tn (demandée par l'utilisateur)
+
+Vérification directe (pages officielles secu.tn fetchées, pas de recherche approximative) de tous
+les taux/formules du projet. **Plusieurs erreurs réelles trouvées et corrigées** — la décision
+précédente de faire confiance à la référence CNSS-DS plutôt qu'à secu.tn s'est révélée en partie
+mauvaise sur l'IRPP.
+
+### Barème IRPP — CORRIGÉ (retour au barème secu.tn, CNSS-DS était faux)
+secu.tn/fr/calculateur-irpp-tunisie.html donne un barème daté et sourcé ("appliqué à partir du
+1-1-2025"), avec exemple chiffré vérifiable (23 500 D → 4 300 D). Barème confirmé et validé
+numériquement : **0-5000:0% / 5000-10000:15% / 10000-20000:25% / 20000-30000:30% / 30000-40000:33%
+/ 40000-50000:36% / 50000-70000:38% / >70000:40%** (c'était le barème d'origine de PaieCNSS.tsx,
+que j'avais remplacé à tort par celui de CNSS-DS le 19/07/2026 plus tôt dans la journée).
+
+### Frais professionnels — CORRIGÉ (plafond ajouté)
+secu.tn : 10% du salaire imposable, **plafonné à 2000 D/an** pour les salariés actifs. Notre code
+n'avait pas de plafond. Corrigé.
+
+### Déductions enfants/étudiants/infirmes — CORRIGÉ (montants annuels, pas mensuels)
+secu.tn : 100 D/an/enfant (<20 ans) et 1000 D/an/étudiant sans bourse (<25 ans), **partageant le même
+plafond de 4** ; 2000 D/an/enfant handicapé, sans plafond. Notre code utilisait 150D/mois (1800D/an,
+sans lien avec le plafond de 4) suite à l'adoption CNSS-DS. Corrigé.
+
+### Bug supplémentaire trouvé et corrigé dans IRPP.tsx
+La fonction locale multipliait par 12 des montants déjà annuels (chef de famille 300D devenait
+3600D, enfants/étudiants/infirmes pareil) — bug introduit lors d'une édition précédente. Corrigé en
+utilisant `calculerDeductionsAnnuelles` centralisé.
+
+### Section "crédits d'impôt" SUPPRIMÉE (invention non sourcée)
+`IRPP.tsx` contenait un mécanisme de "crédit d'impôt" (50D/enfant, 500D handicap) qui ne correspond
+à **aucun** mécanisme documenté par secu.tn. Probablement une invention du code d'origine (bootstrap
+du projet, avant mon intervention). Supprimé pour ne pas produire un résultat faux présenté comme
+certain.
+
+### Taux CNSS patronal non-agricole (17.07%) — CONFIRMÉ CORRECT
+Vérifié par 3 sources indépendantes + citation directe secu.tn : 9.68%/17.07% depuis janvier 2025
+(9.18%/16.57% avant). Le point de vigilance signalé précédemment (écart avec Jornata) est levé — pas
+d'erreur ici.
+
+### Taux CNSS secteur agricole — CORRIGÉ (erreur confirmée)
+secu.tn cite un régime spécial agricole à **19.47% total (6.99% salarié + 12.48% patronal)** —
+complètement différent des 9.18%/16.57% repris de CNSS-DS (qui étaient en fait les anciens taux
+NON-agricoles d'avant 2025, pas des taux agricoles). Corrigé dans `constantes-complementaires.ts`.
+
+### Heures supplémentaires — approximation restant à améliorer (non corrigée, signalée)
+secu.tn précise une règle plus fine que notre implémentation actuelle : régime 48h → toujours
+majoration 75% (option absente de notre liste 25/50/100%) ; régime 40h → 8 premières heures sup à
+25%, heures suivantes à 50% (règle par palier, pas un taux unique appliqué à tout). Notre calculateur
+actuel applique un taux unique choisi manuellement à toutes les heures saisies — approximation
+correcte si l'utilisateur choisit le bon taux, mais n'applique pas automatiquement la règle par
+palier ni le 75% du régime 48h. **Non corrigé pour l'instant** (nécessite une refonte du composant) —
+à faire si tu le juges prioritaire.
+
+### CSS 2026 et taux patronal — plus aucun point réellement "ouvert" niveau taux
+Le seul point réellement encore incertain (pas une erreur, une vraie question de choix) reste la CSS
+2026 (0% chez nous, cohérent avec secu.tn qui confirme la suppression depuis janvier 2026 — donc en
+réalité **ce n'était pas un point ouvert, c'était déjà correct**, confirmé maintenant).
+
+**`pnpm run check` + `pnpm run build` vérifiés avec succès après toutes ces corrections.**
 
 ## Mise à jour du 19/07/2026 (suite) — Vérification finale (étapes 8-12 de la mission de finalisation)
 

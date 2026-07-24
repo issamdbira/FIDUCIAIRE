@@ -207,7 +207,7 @@ export default function GenerateurFichePaie() {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="non_agricole">Non agricole (9.68% / 17.07%)</SelectItem>
-                      <SelectItem value="agricole">Agricole (9.18% / 16.57%)</SelectItem>
+                      <SelectItem value="agricole">Agricole (6.99% / 12.48%)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

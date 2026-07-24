@@ -12,7 +12,7 @@
  */
 
 import { calculerCotisationCNSS, calculerCSS } from "./cnss";
-import { calculerDeductionsMensuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "./irpp";
+import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "./irpp";
 import { TAUX_CNSS_PAR_SECTEUR } from "./constantes-complementaires";
 import type { PayrollInput, PayrollItem, PayrollResult } from "./types";
 
@@ -83,7 +83,7 @@ export function runPayrollEngine(input: PayrollInput): PayrollResult {
   // base que CNSS pour les éléments standard)
   const baseFiscaleMensuelle = totalRemunerationBrute - cotisationCNSS;
 
-  const deductionsMensuelles = calculerDeductionsMensuelles({
+  const deductionsAnnuellesFamiliales = calculerDeductionsAnnuelles({
     chefFamille: salarie.chefFamille,
     enfants: salarie.enfants,
     etudiants: salarie.etudiants,
@@ -93,7 +93,7 @@ export function runPayrollEngine(input: PayrollInput): PayrollResult {
 
   const netAnnuelAvantImpot = baseFiscaleMensuelle * 12;
   const fraisProfessionnelsAnnuels = calculerFraisProfessionnels(netAnnuelAvantImpot);
-  const deductionsAnnuelles = deductionsMensuelles * 12 + fraisProfessionnelsAnnuels;
+  const deductionsAnnuelles = deductionsAnnuellesFamiliales + fraisProfessionnelsAnnuels;
   const irppMensuel = calculerIRPPAnnuel(netAnnuelAvantImpot, deductionsAnnuelles) / 12;
 
   const css = calculerCSS(baseFiscaleMensuelle, periode.annee);

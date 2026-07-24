@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { calculerCotisationCNSS, calculerCSS } from "@/lib/payroll/cnss";
-import { calculerDeductionsMensuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "@/lib/payroll/irpp";
+import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "@/lib/payroll/irpp";
 
 /**
  * Design: Minimaliste & Professionnel
@@ -45,7 +45,7 @@ export default function PaieCNSS() {
     const cotisationsCNSS = calculerCotisationCNSS(salaireBrut, annee);
     const salaireImposable = salaireBrut - cotisationsCNSS;
 
-    const deductions = calculerDeductionsMensuelles({
+    const deductions = calculerDeductionsAnnuelles({
       chefFamille,
       enfants,
       etudiants,
@@ -54,7 +54,7 @@ export default function PaieCNSS() {
     });
     const irpp = calculerIRPPAnnuel(
       salaireImposable * 12,
-      deductions * 12 + calculerFraisProfessionnels(salaireImposable * 12)
+      deductions + calculerFraisProfessionnels(salaireImposable * 12)
     ) / 12;
 
     const css = calculerCSS(salaireImposable, annee);
