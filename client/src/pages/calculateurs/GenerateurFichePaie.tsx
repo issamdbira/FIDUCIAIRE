@@ -522,9 +522,15 @@ export default function GenerateurFichePaie() {
                 Vérification avant calcul
               </h2>
               <div className="space-y-3 text-sm">
-                <p><strong>Employeur :</strong> {employeur.nom} {employeur.matriculeCNSS && `(CNSS: ${employeur.matriculeCNSS})`}</p>
+                <p>
+                  <strong>Employeur :</strong> {employeur.nom} {employeur.matriculeCNSS && `(CNSS: ${employeur.matriculeCNSS})`}
+                  {" — "}Secteur {employeur.secteur === "agricole" ? "agricole" : "non agricole"}
+                </p>
                 <p><strong>Salarié :</strong> {salarie.prenom} {salarie.nom} {salarie.matricule && `(${salarie.matricule})`}</p>
                 <p><strong>Période :</strong> {mois}/{annee}</p>
+                <p>
+                  <strong>Paiement :</strong> {salarie.modePaiement === "virement" ? `Virement${salarie.banque ? ` — ${salarie.banque}` : ""}` : "Espèce"}
+                </p>
                 <div className="pt-2">
                   <strong>Éléments :</strong>
                   <ul className="list-disc list-inside mt-1">

@@ -46,6 +46,12 @@ export default function DeclarationsCNSS() {
 
   const sauvegarderEmployeur = () => {
     localStorage.setItem(STORAGE_EMPLOYEUR, JSON.stringify(employeur));
+    // Bug corrigé : régénérer les déclarations déjà créées avec le nouvel employeur,
+    // sinon elles gardent l'ancien N°/Clé/Code dans le TXT (comme le faisait le HTML de référence).
+    if (declarations.length > 0) {
+      const regenerees = declarations.map((d) => regenererApercu(employeur, d));
+      sauvegarderDeclarations(regenerees);
+    }
     notifier("Employeur sauvegardé", "success");
   };
 
