@@ -227,6 +227,13 @@ Le seul point réellement encore incertain (pas une erreur, une vraie question d
 2026 (0% chez nous, cohérent avec secu.tn qui confirme la suppression depuis janvier 2026 — donc en
 réalité **ce n'était pas un point ouvert, c'était déjà correct**, confirmé maintenant).
 
+### Heures supplémentaires — CORRIGÉ (nouvelle règle par palier, plus de sélection manuelle)
+Nouvelle fonction `calculerMontantHeuresSupplementaires` dans `constantes-complementaires.ts` :
+régime 48h → majoration 75% automatique ; régime 40h → 8 premières heures à 25%, au-delà à 50%
+(règle exacte secu.tn, tableau daté 03-03-2025). Le sélecteur manuel de majoration (25/50/100%) a
+été retiré de l'UI — le calcul est maintenant automatique selon le régime choisi. Validé
+numériquement contre l'exemple officiel secu.tn (11h à 4D/h, régime 40h → 58D, exact).
+
 **`pnpm run check` + `pnpm run build` vérifiés avec succès après toutes ces corrections.**
 
 ## Mise à jour du 19/07/2026 (suite) — Vérification finale (étapes 8-12 de la mission de finalisation)

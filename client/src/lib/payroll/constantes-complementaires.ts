@@ -44,3 +44,27 @@ export const TAUX_HORAIRE_PAR_REGIME: Record<40 | 48, number> = {
 // Taux "accident du travail" : variable selon le risque du secteur (0.5% à 4.0%)
 export const TAUX_ACCIDENT_TRAVAIL_MIN = 0.005;
 export const TAUX_ACCIDENT_TRAVAIL_MAX = 0.04;
+
+/**
+ * Calcule le montant des heures supplémentaires selon la règle exacte
+ * publiée par secu.tn (calculateur-paie-cnss.html, tableau daté 03-03-2025) :
+ * - Régime 48h/semaine : toutes les heures sup sont majorées de 75%.
+ * - Régime 40h/semaine : les 8 premières heures sup sont majorées de 25%,
+ *   les heures suivantes de 50%.
+ * Le nombre d'heures saisi est traité comme le total de la période (pas
+ * nécessairement hebdomadaire) : la règle par palier de secu.tn est un
+ * barème par tranche d'heures, appliqué ici au total saisi.
+ */
+export function calculerMontantHeuresSupplementaires(heures: number, regime: 40 | 48): number {
+  const tauxHoraire = TAUX_HORAIRE_PAR_REGIME[regime];
+  if (heures <= 0) return 0;
+
+  if (regime === 48) {
+    return heures * tauxHoraire * 1.75;
+  }
+
+  // Régime 40h : 8 premières heures à 25%, le reste à 50%
+  const heuresA25 = Math.min(heures, 8);
+  const heuresA50 = Math.max(heures - 8, 0);
+  return heuresA25 * tauxHoraire * 1.25 + heuresA50 * tauxHoraire * 1.5;
+}

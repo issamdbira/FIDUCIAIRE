@@ -11,7 +11,7 @@ import { runPayrollEngine } from "@/lib/payroll/engine";
 import {
   PRIME_PRESENCE_DEFAUT,
   PRIME_TRANSPORT_DEFAUT,
-  TAUX_HORAIRE_PAR_REGIME,
+  calculerMontantHeuresSupplementaires,
 } from "@/lib/payroll/constantes-complementaires";
 import type { Employeur, PayrollItem, PayrollItemType, PayrollResult, Salarie } from "@/lib/payroll/types";
 
@@ -58,7 +58,6 @@ export default function GenerateurFichePaie() {
 
   const [regime, setRegime] = useState<40 | 48>(40);
   const [heuresSup, setHeuresSup] = useState(0);
-  const [majorationHS, setMajorationHS] = useState(25);
 
   const [salarie, setSalarie] = useState<Salarie>({
     nom: "",
@@ -474,26 +473,18 @@ export default function GenerateurFichePaie() {
                     <Label className="text-xs mb-1 block">Heures sup</Label>
                     <Input type="number" min="0" value={heuresSup} onChange={(e) => setHeuresSup(parseFloat(e.target.value) || 0)} />
                   </div>
-                  <div className="w-28">
-                    <Label className="text-xs mb-1 block">Majoration</Label>
-                    <Select value={majorationHS.toString()} onValueChange={(v) => setMajorationHS(parseInt(v))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="25">25%</SelectItem>
-                        <SelectItem value="50">50%</SelectItem>
-                        <SelectItem value="100">100%</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                   <p className="text-xs text-gray-500 flex-1">
-                    Taux horaire {regime}h : {TAUX_HORAIRE_PAR_REGIME[regime]} D/h → {(heuresSup * TAUX_HORAIRE_PAR_REGIME[regime] * (1 + majorationHS / 100)).toFixed(2)} D
+                    Régime {regime}h — {regime === 48
+                      ? "majoration 75% (secu.tn)"
+                      : "8 premières heures à 25%, au-delà à 50% (secu.tn)"}
+                    {" "}→ {calculerMontantHeuresSupplementaires(heuresSup, regime).toFixed(2)} D
                   </p>
                   <Button
                     size="sm"
                     onClick={() => {
                       if (heuresSup <= 0) return;
-                      const montant = Math.round(heuresSup * TAUX_HORAIRE_PAR_REGIME[regime] * (1 + majorationHS / 100) * 100) / 100;
-                      setElements([...elements, { id: nextId(), type: "indemnite", label: `Heures supplémentaires (${heuresSup}h × ${majorationHS}%)`, montant, traitement: "standard" }]);
+                      const montant = Math.round(calculerMontantHeuresSupplementaires(heuresSup, regime) * 100) / 100;
+                      setElements([...elements, { id: nextId(), type: "indemnite", label: `Heures supplémentaires (${heuresSup}h, régime ${regime}h)`, montant, traitement: "standard" }]);
                       setHeuresSup(0);
                     }}
                   >
