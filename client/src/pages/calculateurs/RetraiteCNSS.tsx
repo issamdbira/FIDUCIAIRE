@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
+import { getSmigPourAnnee } from "@/lib/payroll/cnss";
 
 /**
  * Design: Minimaliste & Professionnel
@@ -15,6 +16,8 @@ import { Link } from "wouter";
  * (dernière mise à jour secu.tn : 30-03-2025)
  * Coefficients d'actualisation : https://secu.tn/fr/calculateur-actualisation-salaire-cnss.html
  * (coefficients publiés le 19-07-2024, applicables aux retraites 2024 et suivantes)
+ * Table SMIG : centralisée dans lib/payroll/cnss.ts (corrigée le 19/07/2026
+ * avec les vraies valeurs officielles datées, cf. jurisitetunisie.com/tunisie/index/SMIG.htm)
  *
  * Formule officielle :
  * Pension brute = Salaire de référence x Taux de pension
@@ -37,18 +40,6 @@ interface RetraiteResult {
   pensionMinimaleApplicable: number;
   pensionRetenue: boolean;
 }
-
-// SMIG (régime 48h) par année - Journal Officiel / secu.tn
-// SOURCE: https://secu.tn/fr/smig-smag-tunisie.html (à revérifier - page non encore migrée)
-const SMIG_PAR_ANNEE: Record<number, number> = {
-  2015: 325.0,
-  2020: 372.0,
-  2021: 385.0,
-  2022: 406.0,
-  2023: 441.6,
-  2024: 472.6,
-  2025: 508.0,
-};
 
 // Coefficients d'actualisation publiés par le ministère des affaires sociales le 19/07/2024
 // SOURCE: https://secu.tn/fr/calculateur-actualisation-salaire-cnss.html
@@ -75,15 +66,6 @@ const COEFFICIENTS_ACTUALISATION_2024: Record<number, number> = {
   2022: 1.09323,
   2023: 1.0,
 };
-
-function getSmigPourAnnee(annee: number): number {
-  const annees = Object.keys(SMIG_PAR_ANNEE).map(Number).sort((a, b) => a - b);
-  let smig = SMIG_PAR_ANNEE[annees[0]];
-  for (const a of annees) {
-    if (a <= annee) smig = SMIG_PAR_ANNEE[a];
-  }
-  return smig;
-}
 
 export default function RetraiteCNSS() {
   const [salaireBrutMensuel, setSalaireBrutMensuel] = useState<number>(1000);

@@ -10,8 +10,12 @@
  */
 
 // SMIG/SMAG 2026 - à confirmer contre une source officielle avant usage en production
-export const SMIG_40H_2026 = 470.251;
-export const SMIG_48H_2026 = 554.793;
+import { SMIG_40H_PAR_ANNEE, SMIG_48H_PAR_ANNEE } from "./cnss";
+
+// SMIG 2026 (régime 40h/48h) — valeurs réutilisées depuis la table centralisée cnss.ts,
+// ne pas dupliquer ici (source : cnss.ts, à confirmer indépendamment de jurisitetunisie.com)
+export const SMIG_40H_2026 = SMIG_40H_PAR_ANNEE[2026];
+export const SMIG_48H_2026 = SMIG_48H_PAR_ANNEE[2026];
 
 // Primes standards mentionnées comme valeurs par défaut dans l'outil CNSS-DS
 export const PRIME_TRANSPORT_DEFAUT = 36.112;

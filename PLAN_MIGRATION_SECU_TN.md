@@ -234,7 +234,21 @@ régime 48h → majoration 75% automatique ; régime 40h → 8 premières heures
 été retiré de l'UI — le calcul est maintenant automatique selon le régime choisi. Validé
 numériquement contre l'exemple officiel secu.tn (11h à 4D/h, régime 40h → 58D, exact).
 
-**`pnpm run check` + `pnpm run build` vérifiés avec succès après toutes ces corrections.**
+### Table SMIG — CORRIGÉE (valeurs officielles réelles, régime 40h/48h séparés)
+Table précédente (325/372/385/406/441.6/472.6/508 par année) : approximée, ne correspondant à aucun
+décret réel. Remplacée par les vraies valeurs datées de jurisitetunisie.com/tunisie/index/SMIG.htm
+(table 2000-2025, référence décrets), avec distinction régime 40h/48h (le SMIG diffère selon le
+régime, ce que l'ancienne table ignorait). Exemple d'écart : 2025 réel = 528,320D (48h)/448,238D
+(40h), ancienne table avait 508D (ni l'un ni l'autre).
+
+**Bug de duplication corrigé en même temps** : `RetraiteCNSS.tsx` avait sa propre copie de la même
+table SMIG (fausse), au lieu d'utiliser `cnss.ts`. Corrigé pour importer `getSmigPourAnnee` centralisé.
+
+**Non vérifié indépendamment** : les valeurs 2026 (528,320×1,049≈554,793 / 448,238×1,049≈470,251)
+restent celles de CNSS-DS, jurisitetunisie.com ne les liste pas encore au 19/07/2026. Cohérentes avec
+la tendance d'augmentation observée, mais pas confirmées par une deuxième source indépendante.
+
+**`pnpm run check` + `pnpm run build` vérifiés avec succès.**
 
 ## Mise à jour du 19/07/2026 (suite) — Vérification finale (étapes 8-12 de la mission de finalisation)
 
