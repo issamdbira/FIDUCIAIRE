@@ -19,17 +19,28 @@ export function calculerCotisationCNSS(salaireBrut: number, annee: number): numb
 }
 
 /**
- * CSS (Contribution Sociale de Solidarité) : 0.5% en 2023-2024-2025.
- * Supprimée à partir de janvier 2026 (loi de finances 2026).
- * SOURCE : https://secu.tn/fr/calculateur-retraite-non-salaries.html
+ * CSS (Contribution Sociale de Solidarité) : 0.5% en 2023-2024-2025 (1% les
+ * autres années depuis 2018). Supprimée à partir de janvier 2026 (loi de
+ * finances 2026). SOURCE : https://secu.tn/fr/calculateur-retraite-non-salaries.html
+ *
+ * CORRIGÉ le 19/07/2026 : la CSS se calcule sur la MÊME assiette annuelle que
+ * l'IRPP (après frais professionnels et déductions familiales), pas sur le
+ * salaire imposable brut avant abattements. Exonérée si cette assiette est
+ * inférieure ou égale à 5000 D/an. Confirmé par vérification croisée
+ * indépendante (calculateur tiers : "CSS calculée sur la même base annuelle
+ * que l'IRPP, si cette base dépasse le seuil d'exonération de 5000 D/an").
  */
 export function getTauxCSS(annee: number): number {
   if (annee >= 2026) return 0;
   return 0.005;
 }
 
-export function calculerCSS(salaireImposable: number, annee: number): number {
-  return salaireImposable * getTauxCSS(annee);
+const SEUIL_EXONERATION_CSS_ANNUEL = 5000;
+
+/** `assietteFiscaleAnnuelle` = même base que l'IRPP (après tous abattements). Retourne le montant ANNUEL. */
+export function calculerCSSAnnuelle(assietteFiscaleAnnuelle: number, annee: number): number {
+  if (assietteFiscaleAnnuelle <= SEUIL_EXONERATION_CSS_ANNUEL) return 0;
+  return assietteFiscaleAnnuelle * getTauxCSS(annee);
 }
 
 /**

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
-import { calculerCotisationCNSS, calculerCSS } from "@/lib/payroll/cnss";
+import { calculerCotisationCNSS, calculerCSSAnnuelle } from "@/lib/payroll/cnss";
 import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "@/lib/payroll/irpp";
 
 /**
@@ -52,12 +52,12 @@ export default function PaieCNSS() {
       infirmes,
       autresDeductionsAnnuelles: autresDeductions,
     });
-    const irpp = calculerIRPPAnnuel(
-      salaireImposable * 12,
-      deductions + calculerFraisProfessionnels(salaireImposable * 12)
-    ) / 12;
+    const fraisPro = calculerFraisProfessionnels(salaireImposable * 12);
+    const irpp = calculerIRPPAnnuel(salaireImposable * 12, deductions + fraisPro) / 12;
 
-    const css = calculerCSS(salaireImposable, annee);
+    // CSS : même assiette annuelle que l'IRPP (après abattements), exonérée sous 5000D/an
+    const assietteFiscaleAnnuelle = Math.max(salaireImposable * 12 - deductions - fraisPro, 0);
+    const css = calculerCSSAnnuelle(assietteFiscaleAnnuelle, annee) / 12;
     const salaireNet = salaireBrut - cotisationsCNSS - irpp - css;
 
     setResult({

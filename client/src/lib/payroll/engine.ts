@@ -11,7 +11,7 @@
  * On n'invente jamais de règle par défaut pour ces éléments.
  */
 
-import { calculerCotisationCNSS, calculerCSS } from "./cnss";
+import { calculerCotisationCNSS, calculerCSSAnnuelle } from "./cnss";
 import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "./irpp";
 import { TAUX_CNSS_PAR_SECTEUR } from "./constantes-complementaires";
 import type { PayrollInput, PayrollItem, PayrollResult } from "./types";
@@ -94,9 +94,10 @@ export function runPayrollEngine(input: PayrollInput): PayrollResult {
   const netAnnuelAvantImpot = baseFiscaleMensuelle * 12;
   const fraisProfessionnelsAnnuels = calculerFraisProfessionnels(netAnnuelAvantImpot);
   const deductionsAnnuelles = deductionsAnnuellesFamiliales + fraisProfessionnelsAnnuels;
+  const assietteFiscaleAnnuelle = Math.max(netAnnuelAvantImpot - deductionsAnnuelles, 0);
   const irppMensuel = calculerIRPPAnnuel(netAnnuelAvantImpot, deductionsAnnuelles) / 12;
 
-  const css = calculerCSS(baseFiscaleMensuelle, periode.annee);
+  const css = calculerCSSAnnuelle(assietteFiscaleAnnuelle, periode.annee) / 12;
 
   // "Autres retenues" = éléments de type retenue/absence déjà inclus (montant négatif)
   // dans totalRemunerationBrute ; on les isole ici pour l'affichage détaillé.

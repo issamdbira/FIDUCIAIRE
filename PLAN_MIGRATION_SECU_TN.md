@@ -248,6 +248,16 @@ table SMIG (fausse), au lieu d'utiliser `cnss.ts`. Corrigé pour importer `getSm
 restent celles de CNSS-DS, jurisitetunisie.com ne les liste pas encore au 19/07/2026. Cohérentes avec
 la tendance d'augmentation observée, mais pas confirmées par une deuxième source indépendante.
 
+### CSS — CORRIGÉE (mauvaise assiette utilisée, exonération sous 5000D/an manquante)
+Vérification croisée avec un second simulateur professionnel tunisien : la CSS doit être calculée
+sur la **même assiette annuelle que l'IRPP** (après frais professionnels et déductions familiales),
+et elle est **exonérée si cette assiette ne dépasse pas 5000 D/an**. Notre code la calculait sur le
+salaire imposable brut, AVANT ces abattements — assiette trop large, CSS surestimée pour les revenus
+modestes, et l'exonération de 5000D/an était totalement absente. Corrigé (`calculerCSSAnnuelle` dans
+`cnss.ts`, utilisée par `engine.ts` et `PaieCNSS.tsx`). Cette correction n'a d'effet que sur les
+années où la CSS existe encore (jusqu'à 2025 ; supprimée en 2026, donc sans impact sur les calculs
+2026 par défaut).
+
 **`pnpm run check` + `pnpm run build` vérifiés avec succès.**
 
 ## Mise à jour du 19/07/2026 (suite) — Vérification finale (étapes 8-12 de la mission de finalisation)
