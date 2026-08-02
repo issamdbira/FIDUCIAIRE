@@ -260,6 +260,16 @@ années où la CSS existe encore (jusqu'à 2025 ; supprimée en 2026, donc sans 
 
 **`pnpm run check` + `pnpm run build` vérifiés avec succès.**
 
+## Mise à jour du 19/07/2026 (suite) — Validation croisée avec une seconde source indépendante
+
+Une source de vérification externe indépendante (formules de paie Tunisie 2025, fournie par
+l'utilisateur) a été comparée à notre moteur sur 3 profils différents (brut simple, chef de famille +
+2 enfants, chef de famille + 4 enfants). **Correspondance exacte** sur CNSS, IRPP et CSS (écarts de
+l'ordre du millime, dus à l'arrondi). Ceci confirme indépendamment les corrections apportées
+précédemment (barème IRPP, frais professionnels plafonnés à 2000D/an, déduction enfants 100D/enfant
+plafonnée à 4). Aucune correction supplémentaire nécessaire suite à cette validation — elle confirme
+que l'état actuel du moteur est correct.
+
 ## Mise à jour du 19/07/2026 (suite) — Vérification finale (étapes 8-12 de la mission de finalisation)
 
 Tests exécutés sur le vrai code (bundlé via esbuild, pas des simulations manuelles) :
