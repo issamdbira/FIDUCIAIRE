@@ -201,6 +201,14 @@ export default function GenerateurFichePaie() {
                   <Input value={employeur.matriculeCNSS} onChange={(e) => setEmployeur({ ...employeur, matriculeCNSS: e.target.value })} />
                 </div>
                 <div>
+                  <Label className="mb-2 block">Matricule fiscal</Label>
+                  <Input value={employeur.matriculeFiscal} onChange={(e) => setEmployeur({ ...employeur, matriculeFiscal: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="mb-2 block">Registre de commerce</Label>
+                  <Input value={employeur.registreCommerce} onChange={(e) => setEmployeur({ ...employeur, registreCommerce: e.target.value })} />
+                </div>
+                <div>
                   <Label className="mb-2 block">Secteur d'activité</Label>
                   <Select value={employeur.secteur} onValueChange={(v) => setEmployeur({ ...employeur, secteur: v as "non_agricole" | "agricole" })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -286,6 +294,14 @@ export default function GenerateurFichePaie() {
                 <div>
                   <Label className="mb-2 block">Date d'embauche</Label>
                   <Input type="date" value={salarie.dateEmbauche} onChange={(e) => setSalarie({ ...salarie, dateEmbauche: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="mb-2 block">Poste / Emploi</Label>
+                  <Input value={salarie.poste} onChange={(e) => setSalarie({ ...salarie, poste: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="mb-2 block">Catégorie professionnelle</Label>
+                  <Input value={salarie.categorieProfessionnelle} onChange={(e) => setSalarie({ ...salarie, categorieProfessionnelle: e.target.value })} placeholder="Ex: Cadre, Agent de maîtrise..." />
                 </div>
               </div>
 
@@ -655,12 +671,19 @@ export default function GenerateurFichePaie() {
                       </h2>
                       <p className="text-sm text-gray-600 font-medium">{employeur.nom}</p>
                       {employeur.adresse && <p className="text-xs text-gray-400">{employeur.adresse}</p>}
+                      <p className="text-xs text-gray-400">
+                        {employeur.matriculeCNSS && `CNSS : ${employeur.matriculeCNSS}`}
+                        {employeur.matriculeFiscal && ` — MF : ${employeur.matriculeFiscal}`}
+                        {employeur.registreCommerce && ` — RC : ${employeur.registreCommerce}`}
+                      </p>
                       <p className="text-sm text-gray-500">Période : {mois}/{annee}</p>
                     </div>
                   </div>
                   <div className="text-right text-sm text-gray-600">
                     <p className="font-semibold">{salarie.prenom} {salarie.nom}</p>
                     {salarie.matricule && <p>Matricule : {salarie.matricule}</p>}
+                    {salarie.poste && <p>{salarie.poste}{salarie.categorieProfessionnelle && ` — ${salarie.categorieProfessionnelle}`}</p>}
+                    {salarie.dateEmbauche && <p className="text-xs text-gray-400">Embauché(e) le {new Date(salarie.dateEmbauche).toLocaleDateString("fr-TN")}</p>}
                   </div>
                 </div>
 
@@ -683,8 +706,12 @@ export default function GenerateurFichePaie() {
                       <td className="text-right py-2">{resultat.totalRemunerationBrute.toFixed(2)} D</td>
                     </tr>
                     <tr className="border-b border-gray-100 text-red-600">
-                      <td className="py-2">Cotisation CNSS</td>
+                      <td className="py-2">Cotisation CNSS (salariale, {resultat.cotisationCNSS > 0 ? ((resultat.cotisationCNSS / resultat.baseCNSS) * 100).toFixed(2) : "0"}%)</td>
                       <td className="text-right py-2">-{resultat.cotisationCNSS.toFixed(2)} D</td>
+                    </tr>
+                    <tr className="border-b border-gray-100 text-gray-400 text-xs">
+                      <td className="py-2">Cotisation CNSS patronale (charge employeur, informative)</td>
+                      <td className="text-right py-2">{resultat.cotisationPatronale.toFixed(2)} D</td>
                     </tr>
                     <tr className="border-b border-gray-100 text-red-600">
                       <td className="py-2">IRPP</td>
@@ -712,6 +739,9 @@ export default function GenerateurFichePaie() {
 
                 <p className="text-xs text-gray-400 mt-6">
                   Document généré par Le Fiduciaire le {new Date().toLocaleDateString("fr-TN")}.
+                  Cette fiche couvre une période unique — les cumuls annuels (brut cumulé, assiette
+                  CNSS/IRPP cumulée) nécessaires à la déclaration annuelle ne sont pas encore gérés
+                  par cet outil (traitement multi-périodes hors périmètre du MVP actuel).
                 </p>
               </Card>
               </div>

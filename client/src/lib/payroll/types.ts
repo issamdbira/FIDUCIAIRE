@@ -45,6 +45,8 @@ export interface Employeur {
   telephone?: string;
   email?: string;
   matriculeCNSS?: string;
+  matriculeFiscal?: string; // mention obligatoire (Code du travail, art. 29-34)
+  registreCommerce?: string; // mention obligatoire
   // Secteur d'activité, détermine le taux CNSS applicable (cf. constantes-complementaires.ts)
   secteur?: "non_agricole" | "agricole";
 }
@@ -54,6 +56,8 @@ export interface Salarie {
   prenom: string;
   matricule?: string;
   dateEmbauche?: string;
+  poste?: string; // mention obligatoire (Code du travail, art. 29-34)
+  categorieProfessionnelle?: string; // mention obligatoire
   chefFamille: boolean;
   enfants: number;
   etudiants: number;

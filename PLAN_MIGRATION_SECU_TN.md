@@ -258,6 +258,24 @@ modestes, et l'exonération de 5000D/an était totalement absente. Corrigé (`ca
 années où la CSS existe encore (jusqu'à 2025 ; supprimée en 2026, donc sans impact sur les calculs
 2026 par défaut).
 
+## Mise à jour du 19/07/2026 (suite) — Fiche de paie vérifiée contre les mentions légales obligatoires
+
+Comparaison avec la liste des mentions obligatoires du Code du travail tunisien (art. 29-34), telle
+que documentée par un guide professionnel spécialisé. Mentions manquantes trouvées et ajoutées :
+
+- [x] **Employeur** : matricule fiscal, registre de commerce (en plus du matricule CNSS déjà présent)
+- [x] **Salarié** : poste/emploi, catégorie professionnelle (n'existaient pas du tout dans le formulaire)
+- [x] **Bug trouvé** : la date d'embauche était déjà collectée à l'étape Salarié mais **jamais affichée**
+  sur la fiche imprimée — corrigé
+- [x] Cotisation patronale CNSS ajoutée sur la fiche imprimée (mentionnée dans le modèle standard),
+  avec le taux salarial affiché en clair
+- [x] Note de transparence ajoutée : les cumuls annuels (brut/assiette CNSS/IRPP cumulés, nécessaires
+  à la déclaration annuelle) ne sont pas gérés — limite assumée du MVP single-période, indiquée
+  clairement plutôt que silencieusement absente
+
+**Reste hors périmètre, non ajouté (limite du MVP 1-période, pas une erreur)** : nombre de jours
+travaillés/congés dans la période, cumuls annuels. Nécessiteraient un traitement multi-périodes.
+
 **`pnpm run check` + `pnpm run build` vérifiés avec succès.**
 
 ## Mise à jour du 19/07/2026 (suite) — Validation croisée avec une seconde source indépendante
