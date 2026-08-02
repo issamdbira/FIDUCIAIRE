@@ -278,6 +278,18 @@ travaillés/congés dans la période, cumuls annuels. Nécessiteraient un traite
 
 **`pnpm run check` + `pnpm run build` vérifiés avec succès.**
 
+## Mise à jour du 19/07/2026 (suite) — Champs de la fiche de paie rendus optionnels
+
+À la demande de l'utilisateur : les mentions ajoutées à l'étape précédente (matricule fiscal,
+registre de commerce, poste, catégorie professionnelle, date d'embauche, mode de paiement,
+cotisation patronale) sont maintenant **optionnelles**, avec des cases à cocher à l'étape
+Vérification ("Champs à afficher sur la fiche de paie"). Tout est coché par défaut ; l'utilisateur
+peut décocher ce qu'il ne veut pas voir apparaître sur le document final. Les mentions strictement
+obligatoires (identité employeur/salarié, période, rémunération, CNSS salariale, IRPP, net à payer)
+restent toujours affichées, non désactivables.
+
+**`pnpm run check` + `pnpm run build` vérifiés avec succès.**
+
 ## Mise à jour du 19/07/2026 (suite) — Validation croisée avec une seconde source indépendante
 
 Une source de vérification externe indépendante (formules de paie Tunisie 2025, fournie par

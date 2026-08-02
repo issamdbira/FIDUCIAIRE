@@ -82,6 +82,18 @@ export default function GenerateurFichePaie() {
 
   const [resultat, setResultat] = useState<PayrollResult | null>(null);
 
+  const [champsAffiches, setChampsAffiches] = useState({
+    matriculeFiscal: true,
+    registreCommerce: true,
+    poste: true,
+    categorieProfessionnelle: true,
+    dateEmbauche: true,
+    modePaiement: true,
+    cotisationPatronale: true,
+  });
+  const toggleChamp = (champ: keyof typeof champsAffiches) =>
+    setChampsAffiches((prev) => ({ ...prev, [champ]: !prev[champ] }));
+
   const handleLogoUpload = (file: File | undefined) => {
     if (!file) return;
     const reader = new FileReader();
@@ -549,6 +561,31 @@ export default function GenerateurFichePaie() {
                     ))}
                   </ul>
                 </div>
+
+                <div className="border-t border-gray-200 pt-4">
+                  <strong>Champs à afficher sur la fiche de paie :</strong>
+                  <p className="text-xs text-gray-500 mb-2">Décoche ce que tu ne veux pas faire apparaître sur le document final.</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      ["matriculeFiscal", "Matricule fiscal employeur"],
+                      ["registreCommerce", "Registre de commerce"],
+                      ["poste", "Poste / emploi"],
+                      ["categorieProfessionnelle", "Catégorie professionnelle"],
+                      ["dateEmbauche", "Date d'embauche"],
+                      ["modePaiement", "Mode de paiement"],
+                      ["cotisationPatronale", "Cotisation patronale (informative)"],
+                    ] as const).map(([champ, label]) => (
+                      <div key={champ} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`champ-${champ}`}
+                          checked={champsAffiches[champ]}
+                          onCheckedChange={() => toggleChamp(champ)}
+                        />
+                        <Label htmlFor={`champ-${champ}`} className="cursor-pointer text-sm font-normal">{label}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
               <div className="flex justify-between pt-2">
                 <Button variant="ghost" onClick={() => setEtape(3)}>Retour</Button>
@@ -673,8 +710,8 @@ export default function GenerateurFichePaie() {
                       {employeur.adresse && <p className="text-xs text-gray-400">{employeur.adresse}</p>}
                       <p className="text-xs text-gray-400">
                         {employeur.matriculeCNSS && `CNSS : ${employeur.matriculeCNSS}`}
-                        {employeur.matriculeFiscal && ` — MF : ${employeur.matriculeFiscal}`}
-                        {employeur.registreCommerce && ` — RC : ${employeur.registreCommerce}`}
+                        {champsAffiches.matriculeFiscal && employeur.matriculeFiscal && ` — MF : ${employeur.matriculeFiscal}`}
+                        {champsAffiches.registreCommerce && employeur.registreCommerce && ` — RC : ${employeur.registreCommerce}`}
                       </p>
                       <p className="text-sm text-gray-500">Période : {mois}/{annee}</p>
                     </div>
@@ -682,8 +719,13 @@ export default function GenerateurFichePaie() {
                   <div className="text-right text-sm text-gray-600">
                     <p className="font-semibold">{salarie.prenom} {salarie.nom}</p>
                     {salarie.matricule && <p>Matricule : {salarie.matricule}</p>}
-                    {salarie.poste && <p>{salarie.poste}{salarie.categorieProfessionnelle && ` — ${salarie.categorieProfessionnelle}`}</p>}
-                    {salarie.dateEmbauche && <p className="text-xs text-gray-400">Embauché(e) le {new Date(salarie.dateEmbauche).toLocaleDateString("fr-TN")}</p>}
+                    {(champsAffiches.poste || champsAffiches.categorieProfessionnelle) && salarie.poste && (
+                      <p>
+                        {champsAffiches.poste && salarie.poste}
+                        {champsAffiches.categorieProfessionnelle && salarie.categorieProfessionnelle && ` — ${salarie.categorieProfessionnelle}`}
+                      </p>
+                    )}
+                    {champsAffiches.dateEmbauche && salarie.dateEmbauche && <p className="text-xs text-gray-400">Embauché(e) le {new Date(salarie.dateEmbauche).toLocaleDateString("fr-TN")}</p>}
                   </div>
                 </div>
 
@@ -709,10 +751,12 @@ export default function GenerateurFichePaie() {
                       <td className="py-2">Cotisation CNSS (salariale, {resultat.cotisationCNSS > 0 ? ((resultat.cotisationCNSS / resultat.baseCNSS) * 100).toFixed(2) : "0"}%)</td>
                       <td className="text-right py-2">-{resultat.cotisationCNSS.toFixed(2)} D</td>
                     </tr>
-                    <tr className="border-b border-gray-100 text-gray-400 text-xs">
-                      <td className="py-2">Cotisation CNSS patronale (charge employeur, informative)</td>
-                      <td className="text-right py-2">{resultat.cotisationPatronale.toFixed(2)} D</td>
-                    </tr>
+                    {champsAffiches.cotisationPatronale && (
+                      <tr className="border-b border-gray-100 text-gray-400 text-xs">
+                        <td className="py-2">Cotisation CNSS patronale (charge employeur, informative)</td>
+                        <td className="text-right py-2">{resultat.cotisationPatronale.toFixed(2)} D</td>
+                      </tr>
+                    )}
                     <tr className="border-b border-gray-100 text-red-600">
                       <td className="py-2">IRPP</td>
                       <td className="text-right py-2">-{resultat.irppMensuel.toFixed(2)} D</td>
@@ -731,11 +775,13 @@ export default function GenerateurFichePaie() {
                   <span className="text-2xl font-bold">{resultat.netAPayer.toFixed(2)} D</span>
                 </div>
 
-                <div className="mt-4 text-sm text-gray-600">
-                  <strong>Paiement :</strong> {salarie.modePaiement === "virement" ? "Virement bancaire" : "Espèce"}
-                  {salarie.modePaiement === "virement" && salarie.banque && ` — ${salarie.banque}`}
-                  {salarie.modePaiement === "virement" && salarie.rib && ` — RIB : ${salarie.rib}`}
-                </div>
+                {champsAffiches.modePaiement && (
+                  <div className="mt-4 text-sm text-gray-600">
+                    <strong>Paiement :</strong> {salarie.modePaiement === "virement" ? "Virement bancaire" : "Espèce"}
+                    {salarie.modePaiement === "virement" && salarie.banque && ` — ${salarie.banque}`}
+                    {salarie.modePaiement === "virement" && salarie.rib && ` — RIB : ${salarie.rib}`}
+                  </div>
+                )}
 
                 <p className="text-xs text-gray-400 mt-6">
                   Document généré par Le Fiduciaire le {new Date().toLocaleDateString("fr-TN")}.
