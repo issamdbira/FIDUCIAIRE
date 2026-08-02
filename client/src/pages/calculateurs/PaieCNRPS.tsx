@@ -290,8 +290,9 @@ export default function PaieCNRPS() {
 
               <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                 <p className="text-sm text-gray-600">
-                  <strong>Note :</strong> Ce calculateur est basé sur la réglementation CNRPS 2025. 
-                  La CSS a été supprimée à partir de janvier 2026. 
+                  <strong>Note :</strong> Ce calculateur est basé sur la réglementation CNRPS 2025.
+                  La CSS (0.5%) reste applicable en 2026 (loi de finances 2026, mesure prolongée),
+                  non intégrée dans ce calculateur CNRPS pour l'instant.
                   Consultez votre employeur pour les détails exacts de votre paie.
                 </p>
               </div>

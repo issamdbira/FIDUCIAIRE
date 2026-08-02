@@ -288,6 +288,30 @@ peut décocher ce qu'il ne veut pas voir apparaître sur le document final. Les 
 obligatoires (identité employeur/salarié, période, rémunération, CNSS salariale, IRPP, net à payer)
 restent toujours affichées, non désactivables.
 
+## Mise à jour du 19/07/2026 (suite) — CORRECTION MAJEURE : la CSS n'était PAS supprimée en 2026
+
+**Erreur significative trouvée et corrigée.** L'utilisateur a comparé notre "Calculer un salaire"
+contre paie-tunisie.com (2550D brut, chef de famille, 1 enfant) : CNSS et IRPP identiques, mais notre
+net (1901.38) différait de 10.52D par rapport au leur (1890.863) — exactement le montant de la CSS.
+
+Vérification : notre code affirmait "CSS supprimée à partir de janvier 2026" (sourcé sur une page
+secu.tn). **C'était faux.** Confirmé par de multiples sources datées et convergentes (WebManagerCenter,
+La Presse, Business News, Deloitte, Finco, Compta.tn) + la note commune officielle DGELF N°01-2026 :
+la loi de finances 2026 (loi n°2025-17 du 12/12/2025, article 87) **prolonge** la mesure exceptionnelle
+de CSS à 0,5% pour toute l'année 2026 (le projet initial prévoyait une prolongation jusqu'en 2027,
+réduite à la seule année 2026 après réexamen parlementaire — d'où une possible confusion de lecture
+initiale).
+
+**Corrigé :** `getTauxCSS()` applique maintenant 0,5% de 2023 à 2026 inclus (au lieu de 0% dès 2026).
+Libellés UI corrigés dans `PaieCNSS.tsx` et `PaieCNRPS.tsx` (CNRPS hors périmètre actif mais note
+trompeuse corrigée par cohérence). Validé numériquement contre l'exemple fourni par l'utilisateur :
+net 1890.86 D vs 1890.863 D attendu (écart d'arrondi uniquement).
+
+**Portée de l'erreur :** cette CSS étant calculée dans le moteur central (`engine.ts`), l'erreur
+affectait TOUS les calculs de paie 2026 de l'application (Calculer un salaire, Générer une fiche de
+paie, PaieCNSS.tsx) depuis la correction initiale du 19/07/2026 qui avait (à tort) introduit cette
+règle de suppression.
+
 **`pnpm run check` + `pnpm run build` vérifiés avec succès.**
 
 ## Mise à jour du 19/07/2026 (suite) — Validation croisée avec une seconde source indépendante

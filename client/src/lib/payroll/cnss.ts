@@ -30,9 +30,29 @@ export function calculerCotisationCNSS(salaireBrut: number, annee: number): numb
  * indépendante (calculateur tiers : "CSS calculée sur la même base annuelle
  * que l'IRPP, si cette base dépasse le seuil d'exonération de 5000 D/an").
  */
+/**
+ * CSS (Contribution Sociale de Solidarité) : 0.5% pour les personnes
+ * physiques soumises au barème IRPP, de 2023 à 2026 inclus (taux normal 1%
+ * hors mesure exceptionnelle). Exonération totale si le revenu net annuel
+ * imposable (après déductions) ne dépasse pas 5000 D/an.
+ *
+ * CORRIGÉ le 19/07/2026 (deuxième correction) : la CSS N'A PAS été supprimée
+ * en 2026 — l'affirmation précédente ("supprimée à partir de janvier 2026",
+ * sourcée sur une page secu.tn) était fausse ou mal interprétée. La loi de
+ * finances 2026 (loi n°2025-17 du 12/12/2025, article 87, commentée par la
+ * note commune DGELF N°01-2026) **prolonge** la mesure exceptionnelle de
+ * réduction à 0,5% pour toute l'année 2026. Confirmé par de multiples
+ * sources datées et convergentes (presse économique + note commune
+ * officielle de la Direction Générale des Études et de la Législation
+ * Fiscale) le 19/07/2026, suite à un écart constaté avec un outil de calcul
+ * tiers qui appliquait toujours la CSS en 2026.
+ *
+ * SOURCE : https://secu.tn/fr/calculateur-retraite-non-salaries.html (taux),
+ * note commune DGELF N°01-2026 (prolongation 2026), loi n°2025-17 art. 87.
+ */
 export function getTauxCSS(annee: number): number {
-  if (annee >= 2026) return 0;
-  return 0.005;
+  if (annee >= 2023 && annee <= 2026) return 0.005;
+  return 0; // avant 2023 et après 2026 : à revérifier si l'année change (mesure non pérenne, votée annuellement)
 }
 
 const SEUIL_EXONERATION_CSS_ANNUEL = 5000;

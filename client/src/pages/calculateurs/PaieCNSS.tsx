@@ -121,7 +121,7 @@ export default function PaieCNSS() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="2025">2025 (CSS 0.5% applicable)</SelectItem>
-                    <SelectItem value="2026">2026 (CSS supprimée)</SelectItem>
+                    <SelectItem value="2026">2026 (CSS 0.5% maintenue, LF2026)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -266,9 +266,10 @@ export default function PaieCNSS() {
 
               <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                 <p className="text-sm text-gray-600">
-                  <strong>Note :</strong> La CSS (0.5%) s'applique en 2023-2025 et a été supprimée à partir de
-                  janvier 2026 (loi de finances 2026). Ce calculateur applique automatiquement la bonne règle
-                  selon l'année choisie ci-dessus. Source : secu.tn.
+                  <strong>Note :</strong> La CSS (0.5%) s'applique de 2023 à 2026 inclus (loi de
+                  finances 2026, article 87 — mesure exceptionnelle prolongée), avec exonération
+                  totale si le revenu net imposable annuel ne dépasse pas 5000 D. Ce calculateur
+                  applique automatiquement la bonne règle selon l'année choisie ci-dessus.
                 </p>
               </div>
             </Card>
