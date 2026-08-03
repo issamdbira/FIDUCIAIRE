@@ -183,9 +183,9 @@ export default function ActualisationSalaire() {
               <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                 <p className="text-sm text-gray-600">
                   <strong>Source :</strong> coefficients publiés par le ministère des affaires
-                  sociales le 19/07/2024 (secu.tn/fr/calculateur-actualisation-salaire-cnss.html).
-                  Répétez ce calcul pour les 10 dernières années puis faites la moyenne pour obtenir
-                  le salaire de référence utilisé dans le calculateur de retraite CNSS.
+                  sociales le 19/07/2024. Répétez ce calcul pour les 10 dernières années puis faites
+                  la moyenne pour obtenir le salaire de référence utilisé dans le calculateur de
+                  retraite CNSS.
                 </p>
               </div>
             </Card>

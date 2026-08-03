@@ -9,12 +9,12 @@ import About from "./pages/About";
 import PaieCNSS from "./pages/calculateurs/PaieCNSS";
 import RetraiteCNSS from "./pages/calculateurs/RetraiteCNSS";
 import IRPP from "./pages/calculateurs/IRPP";
-import PaieCNRPS from "./pages/calculateurs/PaieCNRPS";
 import ActualisationSalaire from "./pages/calculateurs/ActualisationSalaire";
 import GenerateurFichePaie from "./pages/calculateurs/GenerateurFichePaie";
 import DeclarationsCNSS from "./pages/calculateurs/DeclarationsCNSS";
 import TesteurTXT from "./pages/calculateurs/TesteurTXT";
 import CalculerSalaire from "./pages/calculateurs/CalculerSalaire";
+import Admin from "./pages/Admin";
 
 
 function Router() {
@@ -22,11 +22,11 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/about" component={About} />
+      <Route path="/admin" component={Admin} />
       <Route path="/calculateurs/calculer-salaire" component={CalculerSalaire} />
       <Route path="/calculateurs/paie-cnss" component={PaieCNSS} />
       <Route path="/calculateurs/retraite-cnss" component={RetraiteCNSS} />
       <Route path="/calculateurs/irpp" component={IRPP} />
-      <Route path="/calculateurs/paie-cnrps" component={PaieCNRPS} />
       <Route path="/calculateurs/actualisation-salaire" component={ActualisationSalaire} />
       <Route path="/calculateurs/declarations-cnss" component={DeclarationsCNSS} />
       <Route path="/calculateurs/testeur-txt-cnss" component={TesteurTXT} />

@@ -57,7 +57,7 @@ export default function PaieCNSS() {
 
     // CSS : même assiette annuelle que l'IRPP (après abattements), exonérée sous 5000D/an
     const assietteFiscaleAnnuelle = Math.max(salaireImposable * 12 - deductions - fraisPro, 0);
-    const css = calculerCSSAnnuelle(assietteFiscaleAnnuelle, annee) / 12;
+    const css = calculerCSSAnnuelle(assietteFiscaleAnnuelle) / 12;
     const salaireNet = salaireBrut - cotisationsCNSS - irpp - css;
 
     setResult({

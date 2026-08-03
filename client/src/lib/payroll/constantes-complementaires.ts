@@ -21,23 +21,9 @@ export const SMIG_48H_2026 = SMIG_48H_PAR_ANNEE[2026];
 export const PRIME_TRANSPORT_DEFAUT = 36.112;
 export const PRIME_PRESENCE_DEFAUT = 2.080;
 
-export type SecteurCotisation = "non_agricole" | "agricole";
-
-export interface TauxCotisationSecteur {
-  salarial: number; // taux CNSS salarié
-  patronal: number; // taux CNSS employeur
-}
-
-// SOURCE : https://secu.tn/fr/calculateur-paie-cnss.html (vérifié le 19/07/2026)
-// Non-agricole : 9.68%/17.07% depuis janvier 2025 (9.18%/16.57% avant).
-// Agricole : régime spécial, total 19.47% (6.99% salarié + 12.48% patronal)
-// - CORRIGÉ : les valeurs 9.18%/16.57% précédemment utilisées ici (source
-// CNSS-DS) étaient en réalité les anciens taux NON-agricoles (avant 2025),
-// pas les taux agricoles réels. Confirmé par citation directe de secu.tn.
-export const TAUX_CNSS_PAR_SECTEUR: Record<SecteurCotisation, TauxCotisationSecteur> = {
-  non_agricole: { salarial: 0.0968, patronal: 0.1707 },
-  agricole: { salarial: 0.0699, patronal: 0.1248 },
-};
+// Les taux CNSS par secteur (agricole/non-agricole) sont désormais pilotés
+// uniquement depuis lib/payroll/config.ts (panneau /admin) — ne pas les
+// redéfinir ici pour éviter une double source de vérité.
 
 // Taux horaire par défaut selon le régime (40h ou 48h/semaine)
 export const TAUX_HORAIRE_PAR_REGIME: Record<40 | 48, number> = {

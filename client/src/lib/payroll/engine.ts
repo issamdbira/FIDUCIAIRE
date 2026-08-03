@@ -13,7 +13,7 @@
 
 import { calculerCotisationCNSS, calculerCSSAnnuelle } from "./cnss";
 import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "./irpp";
-import { TAUX_CNSS_PAR_SECTEUR } from "./constantes-complementaires";
+import { getPayrollConfig } from "./config";
 import type { PayrollInput, PayrollItem, PayrollResult } from "./types";
 
 function estCalculable(item: PayrollItem): boolean {
@@ -68,14 +68,14 @@ export function runPayrollEngine(input: PayrollInput): PayrollResult {
   const totalRemunerationBrute = elementsCalculables.reduce((sum, e) => sum + e.montant, 0);
 
   const baseCNSS = elementsCalculables.reduce((sum, e) => sum + partSoumiseCNSS(e), 0);
-  // Secteur agricole : taux spécifique (source CNSS-DS). Non-agricole (défaut) :
-  // taux standard, dépendant de l'année (cf. cnss.ts).
+  const config = getPayrollConfig();
+  // Secteur agricole : taux spécifique piloté par /admin. Non-agricole (défaut) :
+  // taux standard, dépendant de l'année (cf. cnss.ts) sauf override admin.
   const cotisationCNSS =
     employeur.secteur === "agricole"
-      ? baseCNSS * TAUX_CNSS_PAR_SECTEUR.agricole.salarial
+      ? baseCNSS * config.cnssSalarialAgricole
       : calculerCotisationCNSS(baseCNSS, periode.annee);
-  const tauxPatronal =
-    employeur.secteur === "agricole" ? TAUX_CNSS_PAR_SECTEUR.agricole.patronal : TAUX_CNSS_PAR_SECTEUR.non_agricole.patronal;
+  const tauxPatronal = employeur.secteur === "agricole" ? config.cnssPatronalAgricole : config.cnssPatronalNonAgricole;
   const cotisationPatronale = baseCNSS * tauxPatronal;
 
   // Base fiscale mensuelle = rémunération brute - cotisation CNSS (les éléments
@@ -97,7 +97,7 @@ export function runPayrollEngine(input: PayrollInput): PayrollResult {
   const assietteFiscaleAnnuelle = Math.max(netAnnuelAvantImpot - deductionsAnnuelles, 0);
   const irppMensuel = calculerIRPPAnnuel(netAnnuelAvantImpot, deductionsAnnuelles) / 12;
 
-  const css = calculerCSSAnnuelle(assietteFiscaleAnnuelle, periode.annee) / 12;
+  const css = calculerCSSAnnuelle(assietteFiscaleAnnuelle) / 12;
 
   // "Autres retenues" = éléments de type retenue/absence déjà inclus (montant négatif)
   // dans totalRemunerationBrute ; on les isole ici pour l'affichage détaillé.

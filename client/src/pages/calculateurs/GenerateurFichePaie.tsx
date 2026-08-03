@@ -503,8 +503,8 @@ export default function GenerateurFichePaie() {
                   </div>
                   <p className="text-xs text-gray-500 flex-1">
                     Régime {regime}h — {regime === 48
-                      ? "majoration 75% (secu.tn)"
-                      : "8 premières heures à 25%, au-delà à 50% (secu.tn)"}
+                      ? "majoration 75%"
+                      : "8 premières heures à 25%, au-delà à 50%"}
                     {" "}→ {calculerMontantHeuresSupplementaires(heuresSup, regime).toFixed(2)} D
                   </p>
                   <Button
@@ -573,7 +573,7 @@ export default function GenerateurFichePaie() {
                       ["categorieProfessionnelle", "Catégorie professionnelle"],
                       ["dateEmbauche", "Date d'embauche"],
                       ["modePaiement", "Mode de paiement"],
-                      ["cotisationPatronale", "Cotisation patronale (informative)"],
+                      ["cotisationPatronale", "Cotisation patronale"],
                     ] as const).map(([champ, label]) => (
                       <div key={champ} className="flex items-center gap-2">
                         <Checkbox
@@ -753,7 +753,7 @@ export default function GenerateurFichePaie() {
                     </tr>
                     {champsAffiches.cotisationPatronale && (
                       <tr className="border-b border-gray-100 text-gray-400 text-xs">
-                        <td className="py-2">Cotisation CNSS patronale (charge employeur, informative)</td>
+                        <td className="py-2">Cotisation CNSS patronale</td>
                         <td className="text-right py-2">{resultat.cotisationPatronale.toFixed(2)} D</td>
                       </tr>
                     )}

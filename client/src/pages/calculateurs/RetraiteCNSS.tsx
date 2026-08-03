@@ -150,8 +150,8 @@ export default function RetraiteCNSS() {
             <p className="text-sm text-gray-700">
               <strong>Simplification actuelle :</strong> ce calculateur suppose un salaire mensuel
               constant sur les 10 dernières années. Pour un calcul précis, il faudrait saisir le
-              salaire réel de chacune des 10 dernières années (voir le tableau détaillé sur secu.tn).
-              Un mode "10 salaires réels" est prévu en Phase 1 bis du plan de migration.
+              salaire réel de chacune des 10 dernières années. Un mode "10 salaires réels" est
+              prévu comme amélioration future.
             </p>
           </div>
 
@@ -256,8 +256,8 @@ export default function RetraiteCNSS() {
 
               <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                 <p className="text-sm text-gray-600">
-                  <strong>Source :</strong> formules et coefficients d'actualisation issus de secu.tn
-                  (coefficients publiés le 19/07/2024, page retraite CNSS mise à jour le 30/03/2025).
+                  <strong>Source :</strong> formules et coefficients d'actualisation officiels
+                  (coefficients publiés le 19/07/2024, barème retraite mis à jour le 30/03/2025).
                   Cette estimation ne remplace pas un calcul officiel de la CNSS.
                 </p>
               </div>

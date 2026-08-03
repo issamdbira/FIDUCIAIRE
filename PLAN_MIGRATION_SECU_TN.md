@@ -324,7 +324,37 @@ précédemment (barème IRPP, frais professionnels plafonnés à 2000D/an, dédu
 plafonnée à 4). Aucune correction supplémentaire nécessaire suite à cette validation — elle confirme
 que l'état actuel du moteur est correct.
 
-## Mise à jour du 19/07/2026 (suite) — Vérification finale (étapes 8-12 de la mission de finalisation)
+## Mise à jour du 19/07/2026 (suite) — Panneau d'administration (paramétrage centralisé)
+
+**Nouveau : moteur de calcul unifié piloté par un panneau d'administration** (`/admin`), en réponse
+à une demande explicite de l'utilisateur incluant une nouvelle exigence contradictoire sur la CSS
+2026. Plutôt que trancher unilatéralement, la CSS (et tous les autres taux/barèmes/déductions)
+deviennent des paramètres configurables depuis `/admin`, stockés dans `lib/payroll/config.ts`
+(persistance locale).
+
+- [x] `lib/payroll/config.ts` : `PayrollConfig` centralisant CNSS (salarial/patronal, agricole/non-agricole), CSS (actif/taux/seuil), barème IRPP (tranches éditables), frais professionnels (actifs plafonnés, retraités progressifs), déductions familiales, parents à charge (nouveau, désactivé par défaut car applicable uniquement en déclaration annuelle)
+- [x] `cnss.ts` et `irpp.ts` réécrits pour lire exclusivement `getPayrollConfig()` — plus aucune constante en dur pour les valeurs courantes (historique pré-2025 et SMIG restent figés, non éditables : référentiel légal daté)
+- [x] `engine.ts` mis à jour pour utiliser la config au lieu de `constantes-complementaires.ts` (constante `TAUX_CNSS_PAR_SECTEUR` retirée, redondante)
+- [x] Page `/admin` créée : formulaires pour chaque catégorie de paramètres, boutons Enregistrer/Réinitialiser
+- [x] CNRPS retiré définitivement (fichier supprimé, route et carte accueil retirées) — demande explicite
+- [x] Références à des sites externes retirées des textes affichés à l'utilisateur (restent uniquement dans les commentaires de code, non visibles) : ActualisationSalaire, GenerateurFichePaie, RetraiteCNSS
+- [x] Libellé "cotisation patronale (informative)" simplifié sur la fiche de paie
+
+**⚠️ Incident technique** : le bac à sable de développement a été réinitialisé en cours de session
+(système de fichiers non persistant entre les tâches). Tout le travail de ce lot avait été fait une
+première fois puis perdu avant d'être poussé — refait intégralement à l'identique après reclonage du
+dépôt. Aucune perte de travail côté GitHub (rien n'avait encore été commité).
+
+**Validé numériquement** : le moteur reproduit toujours exactement le résultat de référence
+(2550D brut, chef de famille, 1 enfant → net 1890.86D) après le refactor vers la config centralisée.
+
+**Reste à faire (portée trop large pour ce lot) :**
+- Restructuration complète du template de fiche de paie selon le modèle Excel fourni (colonnes Base/Taux/Gain/Retenue séparées salarial/patronal, congés, avance)
+- Simulateur de retraite simplifié (cas de base salarié régime général)
+- Extension de la table de coefficients d'actualisation (1976-2029, image fournie) et intégration directe dans le simulateur de retraite
+- Ajout de "parents à charge" dans les calculateurs eux-mêmes (la config existe, l'UI de saisie reste à ajouter)
+
+**`pnpm run check` + `pnpm run build` vérifiés avec succès.**
 
 Tests exécutés sur le vrai code (bundlé via esbuild, pas des simulations manuelles) :
 

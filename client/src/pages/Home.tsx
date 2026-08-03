@@ -42,14 +42,6 @@ export default function Home() {
       icon: TrendingUp,
       href: "/calculateurs/actualisation-salaire",
       color: "from-blue-500 to-blue-600"
-    },
-    {
-      id: "paie-cnrps",
-      title: "Calculer une paie du secteur public",
-      description: "Paie des fonctionnaires affiliés à la CNRPS",
-      icon: Calculator,
-      href: "/calculateurs/paie-cnrps",
-      color: "from-blue-600 to-blue-700"
     }
   ];
 
