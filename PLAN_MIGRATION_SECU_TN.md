@@ -374,3 +374,14 @@ Tests exécutés sur le vrai code (bundlé via esbuild, pas des simulations manu
 - ⚠️ Déductions "chef de famille" (300D), "étudiants" (1000D), "infirmes" (2000D) : présentes dans l'ancien code mais absentes de la référence CNSS-DS — montants non confirmés.
 - ⚠️ Taux patronal CNSS : 17,07% chez nous vs un taux global de 25,75% mentionné par Jornata (suggérant peut-être 16,07% patronal) — à vérifier.
 - ⚠️ Avantages en nature (décret 1098-2003) : toujours aucune règle, registre `BENEFIT_RULES` vide.
+
+## Mise à jour du 19/07/2026 (suite) — Référentiel des avantages exclus de cotisations (Décret 2003-1098)
+
+- [x] Nouvelle page `ReferentielAvantages.tsx` (route `/referentiel-avantages-exclus`), section "Référentiel légal" ajoutée sur l'accueil
+- [x] Contenu construit à partir d'une note de l'administration (juillet 2024) détaillant 9 points du décret (rentrée scolaire, crèche, réussite scolaire, médaille du travail, aides exceptionnelles mariage/pèlerinage, aides naissance/circoncision/fêtes religieuses, restauration, transport agents itinérants, collaborateurs de presse occasionnels) avec plafonds historiques 2020-2025 en multiples du SMIG
+- [x] Réutilise exclusivement des composants déjà présents (Accordion, Table, Badge, Input, Card) — aucun nouveau composant créé
+- [x] Recherche/filtre par mot-clé ou numéro de point
+- [x] Points du décret non documentés par la source (3, 6, 9-12, 15-19) explicitement listés comme "à compléter", aucune donnée inventée
+- Vidéo fournie non exploitée : pas de capacité de traitement vidéo disponible — page construite sur les conventions déjà établies du site
+
+**`pnpm run check` + `pnpm run build` vérifiés avec succès.**

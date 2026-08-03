@@ -67,6 +67,17 @@ export default function Home() {
     }
   ];
 
+  const categorieReference = [
+    {
+      id: "referentiel-avantages-exclus",
+      title: "Référentiel des avantages exclus de cotisations",
+      description: "Consultez les plafonds des avantages exclus de l'assiette CNSS (Décret n° 2003-1098)",
+      icon: FileText,
+      href: "/referentiel-avantages-exclus",
+      color: "from-blue-600 to-blue-700"
+    }
+  ];
+
   const handleAbout = () => {
     window.location.href = '/about';
   };
@@ -247,6 +258,40 @@ export default function Home() {
               Déjà un fichier TXT généré ailleurs ? Testez sa conformité →
             </Link>
           </p>
+        </div>
+      </section>
+
+      {/* Section : Référentiel légal */}
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <h3 className="text-3xl font-bold text-blue-900 mb-2 text-center" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            Référentiel légal
+          </h3>
+          <p className="text-center text-gray-600 mb-10 max-w-2xl mx-auto">
+            Consultez les textes et barèmes de référence utilisés par les calculateurs.
+          </p>
+          <div className="grid grid-cols-1 max-w-xl mx-auto gap-6">
+            {categorieReference.map((calc) => {
+              const Icon = calc.icon;
+              return (
+                <Link key={calc.id} href={calc.href}>
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer border-0 bg-white">
+                    <div className="p-8 flex items-start gap-4">
+                      <div className={`w-14 h-14 flex-shrink-0 rounded-lg bg-gradient-to-br ${calc.color} flex items-center justify-center`}>
+                        <Icon className="w-7 h-7 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-semibold text-blue-900 mb-1" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                          {calc.title}
+                        </h4>
+                        <p className="text-gray-600 text-sm">{calc.description}</p>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </section>
       <section className="py-20 bg-white">

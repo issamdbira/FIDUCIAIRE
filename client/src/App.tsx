@@ -15,6 +15,7 @@ import DeclarationsCNSS from "./pages/calculateurs/DeclarationsCNSS";
 import TesteurTXT from "./pages/calculateurs/TesteurTXT";
 import CalculerSalaire from "./pages/calculateurs/CalculerSalaire";
 import Admin from "./pages/Admin";
+import ReferentielAvantages from "./pages/calculateurs/ReferentielAvantages";
 
 
 function Router() {
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/admin" component={Admin} />
       <Route path="/calculateurs/calculer-salaire" component={CalculerSalaire} />
+      <Route path="/referentiel-avantages-exclus" component={ReferentielAvantages} />
       <Route path="/calculateurs/paie-cnss" component={PaieCNSS} />
       <Route path="/calculateurs/retraite-cnss" component={RetraiteCNSS} />
       <Route path="/calculateurs/irpp" component={IRPP} />
