@@ -385,3 +385,29 @@ Tests exécutés sur le vrai code (bundlé via esbuild, pas des simulations manu
 - Vidéo fournie non exploitée : pas de capacité de traitement vidéo disponible — page construite sur les conventions déjà établies du site
 
 **`pnpm run check` + `pnpm run build` vérifiés avec succès.**
+
+## Mise à jour du 19/07/2026 (suite) — Référentiel des avantages complété : 24 points (texte officiel du décret)
+
+Le texte intégral du décret n°2003-1098 a été retrouvé (JORT n°41 du 23/05/2003) — il contient en
+réalité **24 points**, pas seulement les 9 initialement documentés par la note administrative.
+Tous les points restants (3, 6, 9-12, 15-19, 21-24) sont désormais complétés avec le libellé légal
+exact.
+
+**Important, pas une simplification :** la majorité des points additionnels n'ont PAS de plafond en
+multiple du SMIG — ils ont des natures de limite différentes :
+- Catégoriel/en nature sans plafond monétaire (vêtements, lait/savon, transport sectoriel)
+- Conditionné à justificatif (frais de mission sur ordre de mission)
+- Relatif à un montant de référence variable (3 mensualités du salaire de l'agent pour le point 6,
+  pas du SMIG ; excédent du salaire habituel pour le point 17 ; excédent de l'indemnité légale pour
+  le point 23)
+- Limite horaire, pas monétaire (10h/3h par semaine pour le point 19)
+- Sans plafond chiffré du tout dans le texte (points 9, 15, 16, 18, 21, 24)
+
+Chacun de ces points affiche sa condition légale exacte plutôt qu'un montant SMIG inventé qui serait
+faux.
+
+**Ajout de la règle globale (Art. 3)** : plafond de 5% de la masse salariale sur l'ensemble des
+avantages exclus, à l'exception des points 16, 17, 18, 19, 23 et 24 — affichée en encadré en haut de
+page et avec un badge "Hors plafond 5%" sur les points concernés.
+
+**`pnpm run check` + `pnpm run build` vérifiés avec succès.**
