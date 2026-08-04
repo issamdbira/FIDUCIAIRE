@@ -6,62 +6,19 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
+import { getSmigPourAnnee } from "@/lib/payroll/cnss";
+import { COEFFICIENTS_ACTUALISATION, getCoefficientActualisation } from "@/lib/payroll/coefficients-actualisation";
 
 /**
  * Design: Minimaliste & Professionnel
  * Calculateur d'actualisation des salaires CNSS
  *
- * SOURCE UNIQUE ET OFFICIELLE : https://secu.tn/fr/calculateur-actualisation-salaire-cnss.html
- * Coefficients publiés par le ministère des affaires sociales le 19/07/2024,
- * applicables aux salariés mis à la retraite en 2024 et années suivantes
- * (en attente de la publication des coefficients 2025+).
+ * Coefficients et table SMIG centralisés dans lib/payroll/ (mêmes modules
+ * que RetraiteCNSS.tsx — les deux outils sont désormais liés via une source
+ * unique, table de coefficients complète 1961-2029, aucune duplication).
  *
  * Formule : Salaire actualisé = Min(Salaire brut, 6 x SMIG de l'année du salaire) x Coefficient de l'année du salaire
  */
-
-// Mêmes coefficients que RetraiteCNSS.tsx - à garder synchronisés (même source)
-const COEFFICIENTS_ACTUALISATION_2024: Record<number, number> = {
-  2004: 2.64701,
-  2005: 2.59417,
-  2006: 2.49096,
-  2007: 2.40817,
-  2008: 2.29539,
-  2009: 2.21712,
-  2010: 2.1235,
-  2011: 2.05087,
-  2012: 1.94286,
-  2013: 1.83102,
-  2014: 1.73582,
-  2015: 1.65758,
-  2016: 1.59801,
-  2017: 1.51728,
-  2018: 1.41202,
-  2019: 1.32216,
-  2020: 1.25163,
-  2021: 1.18406,
-  2022: 1.09323,
-  2023: 1.0,
-};
-
-// SMIG par année - à compléter (2016-2019 manquants, cf. PLAN_MIGRATION_SECU_TN.md)
-const SMIG_PAR_ANNEE: Record<number, number> = {
-  2015: 325.0,
-  2020: 372.0,
-  2021: 385.0,
-  2022: 406.0,
-  2023: 441.6,
-  2024: 472.6,
-  2025: 508.0,
-};
-
-function getSmigPourAnnee(annee: number): number {
-  const annees = Object.keys(SMIG_PAR_ANNEE).map(Number).sort((a, b) => a - b);
-  let smig = SMIG_PAR_ANNEE[annees[0]];
-  for (const a of annees) {
-    if (a <= annee) smig = SMIG_PAR_ANNEE[a];
-  }
-  return smig;
-}
 
 interface LigneResultat {
   annee: number;
@@ -72,13 +29,13 @@ interface LigneResultat {
 }
 
 export default function ActualisationSalaire() {
-  const anneesDisponibles = Object.keys(COEFFICIENTS_ACTUALISATION_2024).map(Number).sort((a, b) => b - a);
+  const anneesDisponibles = Object.keys(COEFFICIENTS_ACTUALISATION).map(Number).sort((a, b) => b - a);
   const [annee, setAnnee] = useState<number>(2023);
   const [salaireBrut, setSalaireBrut] = useState<number>(1500);
   const [resultat, setResultat] = useState<LigneResultat | null>(null);
 
   const handleCalculer = () => {
-    const coefficient = COEFFICIENTS_ACTUALISATION_2024[annee] ?? 1;
+    const coefficient = getCoefficientActualisation(annee);
     const plafond = getSmigPourAnnee(annee) * 6;
     const salairePlafonne = Math.min(salaireBrut, plafond);
     const salaireActualise = salairePlafonne * coefficient;

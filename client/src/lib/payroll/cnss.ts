@@ -55,7 +55,9 @@ export const SMIG_48H_PAR_ANNEE: Record<number, number> = {
   2022: 459.264,
   2024: 491.504,
   2025: 528.320,
-  2026: 554.793,
+  2026: 554.736, // corrigé (était 554.793, non sourcé) — valeur exacte via note administrative datée (barème avantages exclus 2022-2028)
+  2027: 582.400,
+  2028: 611.520,
 };
 
 export const SMIG_40H_PAR_ANNEE: Record<number, number> = {

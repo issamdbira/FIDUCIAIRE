@@ -2,11 +2,13 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Calculator, Search } from "lucide-react";
 import { Link } from "wouter";
+import { getPointAvantageSMIG, simulerAvantage } from "@/lib/payroll/avantages-exclus";
 
 /**
  * Référentiel des avantages exclus de l'assiette des cotisations sociales
@@ -47,14 +49,20 @@ const PLAFONDS_30PCT_SMIG: Plafond[] = [
   { periode: "01/10/2020 – 30/09/2022", montant: 128.794 },
   { periode: "01/10/2022 – 30/04/2024", montant: 137.779 },
   { periode: "01/05/2024 – 31/12/2024", montant: 147.451 },
-  { periode: "À partir du 01/01/2025", montant: 158.496, actuel: true },
+  { periode: "01/01/2025 – 31/12/2025", montant: 158.496 },
+  { periode: "01/01/2026 – 31/12/2026", montant: 166.421, actuel: true },
+  { periode: "01/01/2027 – 31/12/2027", montant: 174.720 },
+  { periode: "À partir du 01/01/2028", montant: 183.456 },
 ];
 
 const PLAFONDS_2X_SMIG: Plafond[] = [
   { periode: "01/10/2020 – 30/09/2022", montant: 858.624 },
   { periode: "01/10/2022 – 30/04/2024", montant: 918.528 },
   { periode: "01/05/2024 – 31/12/2024", montant: 983.008 },
-  { periode: "À partir du 01/01/2025", montant: 1056.640, actuel: true },
+  { periode: "01/01/2025 – 31/12/2025", montant: 1056.640 },
+  { periode: "01/01/2026 – 31/12/2026", montant: 1109.472, actuel: true },
+  { periode: "01/01/2027 – 31/12/2027", montant: 1164.800 },
+  { periode: "À partir du 01/01/2028", montant: 1223.040 },
 ];
 
 const AVANTAGES: AvantageExclu[] = [
@@ -74,7 +82,10 @@ const AVANTAGES: AvantageExclu[] = [
       { periode: "01/10/2020 – 30/09/2022", montant: 85.862 },
       { periode: "01/10/2022 – 30/04/2024", montant: 91.852 },
       { periode: "01/05/2024 – 31/12/2024", montant: 98.301 },
-      { periode: "À partir du 01/01/2025", montant: 105.664, actuel: true },
+      { periode: "01/01/2025 – 31/12/2025", montant: 105.664 },
+      { periode: "01/01/2026 – 31/12/2026", montant: 110.947, actuel: true },
+      { periode: "01/01/2027 – 31/12/2027", montant: 116.480 },
+      { periode: "À partir du 01/01/2028", montant: 122.304 },
     ],
   },
   {
@@ -119,7 +130,10 @@ const AVANTAGES: AvantageExclu[] = [
       { periode: "01/10/2020 – 30/09/2022", montant: 429.312 },
       { periode: "01/10/2022 – 30/04/2024", montant: 459.264 },
       { periode: "01/05/2024 – 31/12/2024", montant: 491.504 },
-      { periode: "À partir du 01/01/2025", montant: 528.320, actuel: true },
+      { periode: "01/01/2025 – 31/12/2025", montant: 528.320 },
+      { periode: "01/01/2026 – 31/12/2026", montant: 554.736, actuel: true },
+      { periode: "01/01/2027 – 31/12/2027", montant: 582.400 },
+      { periode: "À partir du 01/01/2028", montant: 611.520 },
     ],
   },
   {
@@ -155,7 +169,10 @@ const AVANTAGES: AvantageExclu[] = [
       { periode: "01/10/2020 – 30/09/2022", montant: 6.192 },
       { periode: "01/10/2022 – 30/04/2024", montant: 6.624 },
       { periode: "01/05/2024 – 31/12/2024", montant: 7.089 },
-      { periode: "À partir du 01/01/2025", montant: 7.620, actuel: true },
+      { periode: "01/01/2025 – 31/12/2025", montant: 7.620 },
+      { periode: "01/01/2026 – 31/12/2026", montant: 8.001, actuel: true },
+      { periode: "01/01/2027 – 31/12/2027", montant: 8.400 },
+      { periode: "À partir du 01/01/2028", montant: 8.820 },
     ],
   },
   {
@@ -167,7 +184,10 @@ const AVANTAGES: AvantageExclu[] = [
       { periode: "01/10/2020 – 30/09/2022", montant: 0.310 },
       { periode: "01/10/2022 – 30/04/2024", montant: 0.331 },
       { periode: "01/05/2024 – 31/12/2024", montant: 0.354 },
-      { periode: "À partir du 01/01/2025", montant: 0.381, actuel: true },
+      { periode: "01/01/2025 – 31/12/2025", montant: 0.381 },
+      { periode: "01/01/2026 – 31/12/2026", montant: 0.400, actuel: true },
+      { periode: "01/01/2027 – 31/12/2027", montant: 0.420 },
+      { periode: "À partir du 01/01/2028", montant: 0.441 },
     ],
   },
   {
@@ -238,6 +258,82 @@ const AVANTAGES: AvantageExclu[] = [
     horsPlafond5pct: true,
   },
 ];
+
+/**
+ * Simulateur point par point — reproduit la logique du formulaire officiel
+ * de déclaration (nombre x montant unitaire, plafond, exonéré, soumis,
+ * écart de déclaration).
+ */
+function SimulateurPoint({ numero }: { numero: number }) {
+  const point = getPointAvantageSMIG(numero);
+  const [nombre, setNombre] = useState(1);
+  const [montantUnitaire, setMontantUnitaire] = useState(0);
+  const [dateVersement, setDateVersement] = useState(new Date().toISOString().slice(0, 10));
+  const [montantDeclare, setMontantDeclare] = useState(0);
+
+  if (!point) return null;
+
+  const resultat = simulerAvantage(point, new Date(dateVersement), nombre, montantUnitaire, montantDeclare);
+
+  return (
+    <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+      <p className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+        <Calculator className="w-4 h-4" /> Simulateur — {point.uniteNombre}
+      </p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div>
+          <Label className="text-xs mb-1 block">Nombre ({point.uniteNombre})</Label>
+          <Input type="number" min="0" value={nombre} onChange={(e) => setNombre(parseFloat(e.target.value) || 0)} />
+        </div>
+        <div>
+          <Label className="text-xs mb-1 block">Montant unitaire (D)</Label>
+          <Input type="number" min="0" step="0.001" value={montantUnitaire} onChange={(e) => setMontantUnitaire(parseFloat(e.target.value) || 0)} />
+        </div>
+        <div>
+          <Label className="text-xs mb-1 block">Date de versement</Label>
+          <Input type="date" value={dateVersement} onChange={(e) => setDateVersement(e.target.value)} />
+        </div>
+        <div>
+          <Label className="text-xs mb-1 block">Montant déclaré (D)</Label>
+          <Input type="number" min="0" step="0.01" value={montantDeclare} onChange={(e) => setMontantDeclare(parseFloat(e.target.value) || 0)} />
+        </div>
+      </div>
+
+      <Table>
+        <TableBody>
+          <TableRow>
+            <TableCell className="text-gray-600">Montant total (nombre × montant unitaire)</TableCell>
+            <TableCell className="text-right font-mono">{resultat.montantTotal.toFixed(2)} D</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="text-gray-600">Plafond unitaire applicable à cette date</TableCell>
+            <TableCell className="text-right font-mono">{resultat.plafondUnitaire.toFixed(3)} D</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="text-gray-600">Plafond total (nombre × plafond unitaire)</TableCell>
+            <TableCell className="text-right font-mono">{resultat.plafondTotal.toFixed(2)} D</TableCell>
+          </TableRow>
+          <TableRow className="bg-green-50">
+            <TableCell className="text-green-700 font-medium">Montant exonéré</TableCell>
+            <TableCell className="text-right font-mono text-green-700 font-medium">{resultat.montantExonere.toFixed(2)} D</TableCell>
+          </TableRow>
+          <TableRow className="bg-red-50">
+            <TableCell className="text-red-700 font-medium">Montant soumis (CNSS + IRPP)</TableCell>
+            <TableCell className="text-right font-mono text-red-700 font-medium">{resultat.montantSoumis.toFixed(2)} D</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className={resultat.ecartDeclaration !== 0 ? "text-amber-700 font-medium" : "text-gray-600"}>
+              Écart de déclaration (soumis − déclaré)
+            </TableCell>
+            <TableCell className={`text-right font-mono ${resultat.ecartDeclaration !== 0 ? "text-amber-700 font-medium" : ""}`}>
+              {resultat.ecartDeclaration.toFixed(2)} D
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
 
 export default function ReferentielAvantages() {
   const [recherche, setRecherche] = useState("");
@@ -320,25 +416,28 @@ export default function ReferentielAvantages() {
                       <strong>Base de calcul / condition :</strong> {a.base}
                     </p>
                     {a.type === "smig" && a.plafonds && (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Période</TableHead>
-                            <TableHead className="text-right">Montant maximal (D)</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {a.plafonds.map((p) => (
-                            <TableRow key={p.periode}>
-                              <TableCell className="flex items-center gap-2">
-                                {p.periode}
-                                {p.actuel && <Badge className="bg-green-100 text-green-700">Actuel</Badge>}
-                              </TableCell>
-                              <TableCell className="text-right font-mono">{p.montant.toFixed(3)}</TableCell>
+                      <>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Période</TableHead>
+                              <TableHead className="text-right">Montant maximal (D)</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {a.plafonds.map((p) => (
+                              <TableRow key={p.periode}>
+                                <TableCell className="flex items-center gap-2">
+                                  {p.periode}
+                                  {p.actuel && <Badge className="bg-green-100 text-green-700">Actuel</Badge>}
+                                </TableCell>
+                                <TableCell className="text-right font-mono">{p.montant.toFixed(3)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                        <SimulateurPoint numero={a.numero} />
+                      </>
                     )}
                   </AccordionContent>
                 </Card>
@@ -354,9 +453,9 @@ export default function ReferentielAvantages() {
             <p className="text-sm text-gray-600">
               <strong>Note :</strong> ce référentiel est fourni à titre informatif et ne remplace pas
               une vérification auprès des textes réglementaires officiels ou d'un expert en la matière.
-              Aucun de ces avantages n'est encore intégré au calcul automatique des fiches de paie —
-              ils restent à saisir manuellement en attendant la validation des règles de valorisation
-              fiscale/CNSS associées.
+              Les 9 points ci-dessus dotés d'un plafond SMIG sont intégrés au calcul automatique du
+              générateur de fiche de paie (répartition exonéré/soumis). Les autres points du décret
+              restent à saisir manuellement, leur nature de limite n'étant pas un montant fixe.
             </p>
           </div>
         </div>

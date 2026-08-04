@@ -411,3 +411,34 @@ avantages exclus, à l'exception des points 16, 17, 18, 19, 23 et 24 — affich�
 page et avec un badge "Hors plafond 5%" sur les points concernés.
 
 **`pnpm run check` + `pnpm run build` vérifiés avec succès.**
+
+## Mise à jour du 19/07/2026 (suite) — Simulateur point par point + intégration réelle dans la fiche de paie
+
+**Nouveau PDF fourni (projections jusqu'en 2028)** : tableaux des 9 points SMIG étendus avec les
+périodes 2026/2027/2028. SMIG 2026 (régime 48h) corrigé à 554.736 D (était 554.793, non sourcé) et
+étendu à 2027 (582.400) et 2028 (611.520).
+
+- [x] `lib/payroll/avantages-exclus.ts` : moteur de calcul point par point (nombre × montant unitaire,
+  plafond, exonéré, soumis, écart de déclaration) — reproduit exactement la logique du formulaire
+  officiel de déclaration (captures fournies). Validé numériquement contre toutes les valeurs connues.
+- [x] Simulateur interactif intégré directement dans chaque point calculable de la page référentiel
+  (composant `SimulateurPoint`, réutilise Card/Table/Input déjà existants)
+- [x] `benefits.ts` : les 9 points sont désormais enregistrés comme règles validées (sourcées)
+
+**Intégration réelle dans le générateur de fiche de paie (demande explicite) :**
+- [x] **Bug trouvé et corrigé** : un élément "avantage" ajouté manuellement n'était en réalité JAMAIS
+  exclu du calcul malgré le message d'avertissement — il était taxé silencieusement comme un élément
+  standard. Corrigé : `lancerCalcul()` force `en_attente_de_regle` pour tout avantage non traité par
+  le simulateur de points.
+- [x] Nouveau formulaire "Avantage exclu de cotisations" à l'étape Éléments : sélection du point,
+  nombre, montant unitaire → calcul automatique et ajout de deux lignes (part exonérée / part soumise)
+  avec le bon traitement CNSS/IRPP
+- [x] Validé numériquement : la part exonérée est bien exclue de la base CNSS, la part soumise reste
+  taxée normalement
+
+**Panneau admin** : les formules/plafonds du décret 1098-2003 ne sont volontairement PAS rendus
+éditables depuis `/admin` (contrairement aux taux CNSS/IRPP) — ce sont des données légales fixes,
+comme la table SMIG historique. Seul le SMIG de l'année courante (déjà piloté ailleurs) fait varier
+ces plafonds automatiquement.
+
+**`pnpm run check` + `pnpm run build` vérifiés avec succès.**

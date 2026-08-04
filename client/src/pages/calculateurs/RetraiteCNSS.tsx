@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { getSmigPourAnnee } from "@/lib/payroll/cnss";
+import { getCoefficientActualisation } from "@/lib/payroll/coefficients-actualisation";
 
 /**
  * Design: Minimaliste & Professionnel
@@ -14,8 +15,9 @@ import { getSmigPourAnnee } from "@/lib/payroll/cnss";
  *
  * SOURCE UNIQUE ET OFFICIELLE : https://secu.tn/fr/calculateur-retraite-cnss.html
  * (dernière mise à jour secu.tn : 30-03-2025)
- * Coefficients d'actualisation : https://secu.tn/fr/calculateur-actualisation-salaire-cnss.html
- * (coefficients publiés le 19-07-2024, applicables aux retraites 2024 et suivantes)
+ * Coefficients d'actualisation : centralisés dans lib/payroll/coefficients-actualisation.ts
+ * (table complète 1961-2029, même source que le calculateur d'actualisation des salaires —
+ * les deux outils sont désormais liés via ce module unique, pas de duplication)
  * Table SMIG : centralisée dans lib/payroll/cnss.ts (corrigée le 19/07/2026
  * avec les vraies valeurs officielles datées, cf. jurisitetunisie.com/tunisie/index/SMIG.htm)
  *
@@ -40,32 +42,6 @@ interface RetraiteResult {
   pensionMinimaleApplicable: number;
   pensionRetenue: boolean;
 }
-
-// Coefficients d'actualisation publiés par le ministère des affaires sociales le 19/07/2024
-// SOURCE: https://secu.tn/fr/calculateur-actualisation-salaire-cnss.html
-// Applicables aux salariés mis à la retraite en 2024 et années suivantes (en attente des coefficients 2025+)
-const COEFFICIENTS_ACTUALISATION_2024: Record<number, number> = {
-  2004: 2.64701,
-  2005: 2.59417,
-  2006: 2.49096,
-  2007: 2.40817,
-  2008: 2.29539,
-  2009: 2.21712,
-  2010: 2.1235,
-  2011: 2.05087,
-  2012: 1.94286,
-  2013: 1.83102,
-  2014: 1.73582,
-  2015: 1.65758,
-  2016: 1.59801,
-  2017: 1.51728,
-  2018: 1.41202,
-  2019: 1.32216,
-  2020: 1.25163,
-  2021: 1.18406,
-  2022: 1.09323,
-  2023: 1.0,
-};
 
 export default function RetraiteCNSS() {
   const [salaireBrutMensuel, setSalaireBrutMensuel] = useState<number>(1000);
@@ -92,7 +68,7 @@ export default function RetraiteCNSS() {
     const smigAnnee = getSmigPourAnnee(anneeReference);
     const plafond = smigAnnee * 6;
     const salairePlafonne = Math.min(salaireBrutMensuel, plafond);
-    const coefficient = COEFFICIENTS_ACTUALISATION_2024[anneeReference] ?? 1;
+    const coefficient = getCoefficientActualisation(anneeReference);
     return salairePlafonne * coefficient;
   };
 

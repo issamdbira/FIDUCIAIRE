@@ -13,6 +13,7 @@ import {
   PRIME_TRANSPORT_DEFAUT,
   calculerMontantHeuresSupplementaires,
 } from "@/lib/payroll/constantes-complementaires";
+import { POINTS_AVANTAGES_SMIG, simulerAvantage } from "@/lib/payroll/avantages-exclus";
 import type { Employeur, PayrollItem, PayrollItemType, PayrollResult, Salarie } from "@/lib/payroll/types";
 
 /**
@@ -58,6 +59,10 @@ export default function GenerateurFichePaie() {
 
   const [regime, setRegime] = useState<40 | 48>(40);
   const [heuresSup, setHeuresSup] = useState(0);
+
+  const [pointAvantage, setPointAvantage] = useState<number>(POINTS_AVANTAGES_SMIG[0].numero);
+  const [nombreAvantage, setNombreAvantage] = useState(1);
+  const [montantUnitaireAvantage, setMontantUnitaireAvantage] = useState(0);
 
   const [salarie, setSalarie] = useState<Salarie>({
     nom: "",
@@ -123,11 +128,20 @@ export default function GenerateurFichePaie() {
       employeur,
       salarie,
       periode: { mois, annee },
-      elements: elements.map((e) => ({
-        ...e,
-        // les absences/retenues sont saisies en montant positif mais réduisent le brut
-        montant: e.type === "absence" || e.type === "retenue" ? -Math.abs(e.montant) : e.montant,
-      })),
+      elements: elements.map((e) => {
+        // BUG CORRIGÉ : un élément de type "avantage" ajouté sans passer par le
+        // simulateur de points validés (décret 1098-2003) n'a pas de règle de
+        // calcul fiable — il doit être exclu, pas taxé silencieusement comme
+        // un élément standard.
+        if (e.type === "avantage" && e.traitement === "standard") {
+          return { ...e, traitement: "en_attente_de_regle" as const, noteReglementaire: e.noteReglementaire || "Règle de valorisation non validée pour cet avantage — utilisez le simulateur de points du référentiel des avantages exclus." };
+        }
+        return {
+          ...e,
+          // les absences/retenues sont saisies en montant positif mais réduisent le brut
+          montant: e.type === "absence" || e.type === "retenue" ? -Math.abs(e.montant) : e.montant,
+        };
+      }),
     });
     setResultat(res);
     setEtape(5);
@@ -457,12 +471,70 @@ export default function GenerateurFichePaie() {
 
               {elements.some((e) => e.type === "avantage") && (
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-gray-700">
-                  <strong>Avantages en nature :</strong> les règles de valorisation (décret n° 1098-2003)
-                  ne sont pas encore intégrées dans ce calculateur — elles doivent être validées contre
-                  une source officielle avant implémentation. Le montant saisi ici sera exclu du calcul
-                  et signalé séparément dans le résultat.
+                  <strong>Avantages en nature :</strong> pour les 9 points du décret n° 1098-2003
+                  dont le plafond est validé (voir liste ci-dessous), le montant exonéré/soumis est
+                  calculé automatiquement. Pour tout autre avantage, le montant saisi est exclu du
+                  calcul (règle non validée) et signalé séparément dans le résultat.
                 </div>
               )}
+
+              <div className="p-4 bg-blue-50 rounded-lg space-y-3">
+                <p className="text-xs font-semibold text-blue-700 uppercase">Avantage exclu de cotisations (décret 1098-2003)</p>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                  <div className="md:col-span-2">
+                    <Label className="text-xs mb-1 block">Point du décret</Label>
+                    <Select value={pointAvantage.toString()} onValueChange={(v) => setPointAvantage(parseInt(v))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {POINTS_AVANTAGES_SMIG.map((p) => (
+                          <SelectItem key={p.numero} value={p.numero.toString()}>Point {p.numero} — {p.titre}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs mb-1 block">Nombre</Label>
+                    <Input type="number" min="0" value={nombreAvantage} onChange={(e) => setNombreAvantage(parseFloat(e.target.value) || 0)} />
+                  </div>
+                  <div>
+                    <Label className="text-xs mb-1 block">Montant unitaire (D)</Label>
+                    <Input type="number" min="0" step="0.01" value={montantUnitaireAvantage} onChange={(e) => setMontantUnitaireAvantage(parseFloat(e.target.value) || 0)} />
+                  </div>
+                </div>
+                {(() => {
+                  const point = POINTS_AVANTAGES_SMIG.find((p) => p.numero === pointAvantage);
+                  if (!point) return null;
+                  const dateReference = new Date(annee, mois - 1, 1);
+                  const sim = simulerAvantage(point, dateReference, nombreAvantage, montantUnitaireAvantage, 0);
+                  return (
+                    <p className="text-xs text-gray-600">
+                      Sur {sim.montantTotal.toFixed(2)} D : <strong className="text-green-700">{sim.montantExonere.toFixed(2)} D exonéré</strong>
+                      {" "}et <strong className="text-red-700">{sim.montantSoumis.toFixed(2)} D soumis</strong> (plafond {sim.plafondUnitaire.toFixed(3)} D/{point.uniteNombre.split(" ")[0]}, période {mois}/{annee}).
+                      {" "}<Link href="/referentiel-avantages-exclus" className="underline">Détail du point {point.numero} →</Link>
+                    </p>
+                  );
+                })()}
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const point = POINTS_AVANTAGES_SMIG.find((p) => p.numero === pointAvantage);
+                    if (!point || nombreAvantage <= 0 || montantUnitaireAvantage <= 0) return;
+                    const dateReference = new Date(annee, mois - 1, 1);
+                    const sim = simulerAvantage(point, dateReference, nombreAvantage, montantUnitaireAvantage, 0);
+                    const nouveaux: PayrollItem[] = [];
+                    if (sim.montantExonere > 0) {
+                      nouveaux.push({ id: nextId(), type: "avantage", label: `${point.titre} — part exonérée`, montant: sim.montantExonere, traitement: "exonere_total" });
+                    }
+                    if (sim.montantSoumis > 0) {
+                      nouveaux.push({ id: nextId(), type: "prime", label: `${point.titre} — part soumise`, montant: sim.montantSoumis, traitement: "standard" });
+                    }
+                    setElements([...elements, ...nouveaux]);
+                    setMontantUnitaireAvantage(0);
+                  }}
+                >
+                  Ajouter (calcul automatique exonéré/soumis)
+                </Button>
+              </div>
 
               <div className="p-4 bg-gray-50 rounded-lg space-y-3">
                 <p className="text-xs font-semibold text-gray-500 uppercase">Ajouts rapides</p>
