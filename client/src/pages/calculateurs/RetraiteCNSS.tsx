@@ -8,6 +8,7 @@ import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { getSmigPourAnnee } from "@/lib/payroll/cnss";
 import { getCoefficientActualisation } from "@/lib/payroll/coefficients-actualisation";
+import { formatMontantDT } from "@/lib/utils";
 
 /**
  * Design: Minimaliste & Professionnel
@@ -204,7 +205,7 @@ export default function RetraiteCNSS() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">Salaire de Référence Actualisé</span>
-                  <span className="font-semibold text-lg text-blue-900">{result.salaireActualiseMoyen.toFixed(2)} D</span>
+                  <span className="font-semibold text-lg text-blue-900">{formatMontantDT(result.salaireActualiseMoyen)}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
@@ -219,13 +220,13 @@ export default function RetraiteCNSS() {
 
                 <div className="flex justify-between items-center py-4 bg-gradient-to-r from-blue-50 to-blue-100 px-4 rounded-lg">
                   <span className="text-lg font-bold text-blue-900">Pension Brute Mensuelle</span>
-                  <span className="text-2xl font-bold text-blue-700">{result.pensionBrute.toFixed(2)} D</span>
+                  <span className="text-2xl font-bold text-blue-700">{formatMontantDT(result.pensionBrute)}</span>
                 </div>
 
                 {result.pensionRetenue && (
                   <p className="text-sm text-gray-600">
                     Le montant calculé étant inférieur au minimum garanti, la pension minimale de{" "}
-                    {result.pensionMinimaleApplicable.toFixed(2)} D a été appliquée.
+                    {formatMontantDT(result.pensionMinimaleApplicable)} a été appliquée.
                   </p>
                 )}
               </div>

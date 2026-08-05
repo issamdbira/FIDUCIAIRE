@@ -10,6 +10,7 @@ import { Link } from "wouter";
 import { runPayrollEngine } from "@/lib/payroll/engine";
 import { trouverBrutPourNet } from "@/lib/payroll/netToBrut";
 import type { PayrollResult } from "@/lib/payroll/types";
+import { formatMontantDT } from "@/lib/utils";
 
 /**
  * Calculer un salaire — Brut → Net ou Net → Brut.
@@ -146,36 +147,36 @@ export default function CalculerSalaire() {
                 {mode === "net-vers-brut" && brutTrouve !== null && (
                   <div className="flex justify-between items-center py-3 bg-blue-50 px-4 rounded-lg mb-2">
                     <span className="font-semibold text-blue-900">Salaire Brut Nécessaire</span>
-                    <span className="text-xl font-bold text-blue-700">{brutTrouve.toFixed(2)} D</span>
+                    <span className="text-xl font-bold text-blue-700">{formatMontantDT(brutTrouve)}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">Rémunération brute</span>
-                  <span className="font-semibold text-blue-900">{resultat.totalRemunerationBrute.toFixed(2)} D</span>
+                  <span className="font-semibold text-blue-900">{formatMontantDT(resultat.totalRemunerationBrute)}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">Cotisation CNSS</span>
-                  <span className="font-semibold text-red-600">-{resultat.cotisationCNSS.toFixed(2)} D</span>
+                  <span className="font-semibold text-red-600">{formatMontantDT(-resultat.cotisationCNSS)}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">Base fiscale</span>
-                  <span className="font-semibold text-blue-900">{resultat.baseFiscaleMensuelle.toFixed(2)} D</span>
+                  <span className="font-semibold text-blue-900">{formatMontantDT(resultat.baseFiscaleMensuelle)}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">IRPP</span>
-                  <span className="font-semibold text-red-600">-{resultat.irppMensuel.toFixed(2)} D</span>
+                  <span className="font-semibold text-red-600">{formatMontantDT(-resultat.irppMensuel)}</span>
                 </div>
                 {resultat.css > 0 && (
                   <div className="flex justify-between items-center py-3 border-b border-gray-200">
                     <span className="text-gray-700">CSS</span>
-                    <span className="font-semibold text-red-600">-{resultat.css.toFixed(2)} D</span>
+                    <span className="font-semibold text-red-600">{formatMontantDT(-resultat.css)}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between items-center py-4 bg-gradient-to-r from-blue-50 to-blue-100 px-4 rounded-lg">
                   <span className="text-lg font-bold text-blue-900">Salaire Net</span>
-                  <span className="text-2xl font-bold text-blue-700">{resultat.netAPayer.toFixed(2)} D</span>
+                  <span className="text-2xl font-bold text-blue-700">{formatMontantDT(resultat.netAPayer)}</span>
                 </div>
               </div>
             </Card>

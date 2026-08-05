@@ -15,6 +15,7 @@ import {
 } from "@/lib/payroll/constantes-complementaires";
 import { POINTS_AVANTAGES_SMIG, simulerAvantage } from "@/lib/payroll/avantages-exclus";
 import type { Employeur, PayrollItem, PayrollItemType, PayrollResult, Salarie } from "@/lib/payroll/types";
+import { formatMontantDT } from "@/lib/utils";
 
 /**
  * Générateur de fiche de paie — MVP (couches 2 et 3).
@@ -508,8 +509,8 @@ export default function GenerateurFichePaie() {
                   const sim = simulerAvantage(point, dateReference, nombreAvantage, montantUnitaireAvantage, 0);
                   return (
                     <p className="text-xs text-gray-600">
-                      Sur {sim.montantTotal.toFixed(2)} D : <strong className="text-green-700">{sim.montantExonere.toFixed(2)} D exonéré</strong>
-                      {" "}et <strong className="text-red-700">{sim.montantSoumis.toFixed(2)} D soumis</strong> (plafond {sim.plafondUnitaire.toFixed(3)} D/{point.uniteNombre.split(" ")[0]}, période {mois}/{annee}).
+                      Sur {formatMontantDT(sim.montantTotal)} : <strong className="text-green-700">{formatMontantDT(sim.montantExonere)} exonéré</strong>
+                      {" "}et <strong className="text-red-700">{formatMontantDT(sim.montantSoumis)} soumis</strong> (plafond {formatMontantDT(sim.plafondUnitaire)}/{point.uniteNombre.split(" ")[0]}, période {mois}/{annee}).
                       {" "}<Link href="/referentiel-avantages-exclus" className="underline">Détail du point {point.numero} →</Link>
                     </p>
                   );
@@ -546,7 +547,7 @@ export default function GenerateurFichePaie() {
                       setElements([...elements, { id: nextId(), type: "prime", label: "Prime de transport", montant: PRIME_TRANSPORT_DEFAUT, traitement: "standard" }])
                     }
                   >
-                    + Transport ({PRIME_TRANSPORT_DEFAUT} D)
+                    + Transport ({formatMontantDT(PRIME_TRANSPORT_DEFAUT)})
                   </Button>
                   <Button
                     variant="outline"
@@ -555,7 +556,7 @@ export default function GenerateurFichePaie() {
                       setElements([...elements, { id: nextId(), type: "prime", label: "Prime de présence", montant: PRIME_PRESENCE_DEFAUT, traitement: "standard" }])
                     }
                   >
-                    + Présence ({PRIME_PRESENCE_DEFAUT} D)
+                    + Présence ({formatMontantDT(PRIME_PRESENCE_DEFAUT)})
                   </Button>
                   <Button
                     variant="outline"
@@ -577,7 +578,7 @@ export default function GenerateurFichePaie() {
                     Régime {regime}h — {regime === 48
                       ? "majoration 75%"
                       : "8 premières heures à 25%, au-delà à 50%"}
-                    {" "}→ {calculerMontantHeuresSupplementaires(heuresSup, regime).toFixed(2)} D
+                    {" "}→ {formatMontantDT(calculerMontantHeuresSupplementaires(heuresSup, regime))}
                   </p>
                   <Button
                     size="sm"
@@ -691,7 +692,7 @@ export default function GenerateurFichePaie() {
                     {resultat.elements.map((e) => (
                       <tr key={e.id} className="border-b border-gray-100">
                         <td className="py-2 pr-2">{e.label}</td>
-                        <td className="py-2 pr-2">{e.montant.toFixed(2)} D</td>
+                        <td className="py-2 pr-2">{formatMontantDT(e.montant)}</td>
                         <td className="py-2 pr-2">{e.inclusDansBrut ? "Oui" : "Non"}</td>
                         <td className="py-2 pr-2">{e.inclusBaseCNSS ? "Oui" : "Non"}</td>
                         <td className="py-2 pr-2">{e.inclusBaseFiscale ? "Oui" : "Non"}</td>
@@ -705,32 +706,32 @@ export default function GenerateurFichePaie() {
               <div className="border-t border-gray-200 pt-3 space-y-2 text-sm">
                 <div className="flex justify-between font-semibold">
                   <span>Rémunération brute</span>
-                  <span>{resultat.totalRemunerationBrute.toFixed(2)} D</span>
+                  <span>{formatMontantDT(resultat.totalRemunerationBrute)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Base CNSS</span>
-                  <span>{resultat.baseCNSS.toFixed(2)} D</span>
+                  <span>{formatMontantDT(resultat.baseCNSS)}</span>
                 </div>
                 <div className="flex justify-between text-red-600">
                   <span>Cotisation CNSS (salarié)</span>
-                  <span>-{resultat.cotisationCNSS.toFixed(2)} D</span>
+                  <span>{formatMontantDT(-resultat.cotisationCNSS)}</span>
                 </div>
                 <div className="flex justify-between text-gray-400 text-xs">
                   <span>Cotisation patronale (à la charge de l'employeur, n'affecte pas le net)</span>
-                  <span>{resultat.cotisationPatronale.toFixed(2)} D</span>
+                  <span>{formatMontantDT(resultat.cotisationPatronale)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Base fiscale</span>
-                  <span>{resultat.baseFiscaleMensuelle.toFixed(2)} D</span>
+                  <span>{formatMontantDT(resultat.baseFiscaleMensuelle)}</span>
                 </div>
                 <div className="flex justify-between text-red-600">
                   <span>IRPP</span>
-                  <span>-{resultat.irppMensuel.toFixed(2)} D</span>
+                  <span>{formatMontantDT(-resultat.irppMensuel)}</span>
                 </div>
                 {resultat.css > 0 && (
                   <div className="flex justify-between text-red-600">
                     <span>CSS</span>
-                    <span>-{resultat.css.toFixed(2)} D</span>
+                    <span>{formatMontantDT(-resultat.css)}</span>
                   </div>
                 )}
               </div>
@@ -741,7 +742,7 @@ export default function GenerateurFichePaie() {
                   <ul className="list-disc list-inside mt-1">
                     {resultat.elementsEnAttente.map((e) => (
                       <li key={e.id}>
-                        {e.label} — {e.montant.toFixed(2)} D — {e.noteReglementaire || "règle non sourcée"}
+                        {e.label} — {formatMontantDT(e.montant)} — {e.noteReglementaire || "règle non sourcée"}
                         <br />
                         <span className="text-xs text-gray-500">Calcul automatique : non — {e.regleAppliquee}</span>
                       </li>
@@ -752,7 +753,7 @@ export default function GenerateurFichePaie() {
 
               <div className="flex justify-between items-center py-4 bg-gradient-to-r from-blue-50 to-blue-100 px-4 rounded-lg">
                 <span className="text-lg font-bold text-blue-900">Net à Payer</span>
-                <span className="text-2xl font-bold text-blue-700">{resultat.netAPayer.toFixed(2)} D</span>
+                <span className="text-2xl font-bold text-blue-700">{formatMontantDT(resultat.netAPayer)}</span>
               </div>
 
               <div className="flex justify-between pt-2">
@@ -812,31 +813,31 @@ export default function GenerateurFichePaie() {
                     {resultat.elements.map((e) => (
                       <tr key={e.id} className="border-b border-gray-100">
                         <td className="py-2">{e.label}</td>
-                        <td className="text-right py-2">{e.montant.toFixed(2)} D</td>
+                        <td className="text-right py-2">{formatMontantDT(e.montant)}</td>
                       </tr>
                     ))}
                     <tr className="border-b border-gray-100 font-semibold">
                       <td className="py-2">Rémunération brute</td>
-                      <td className="text-right py-2">{resultat.totalRemunerationBrute.toFixed(2)} D</td>
+                      <td className="text-right py-2">{formatMontantDT(resultat.totalRemunerationBrute)}</td>
                     </tr>
                     <tr className="border-b border-gray-100 text-red-600">
                       <td className="py-2">Cotisation CNSS (salariale, {resultat.cotisationCNSS > 0 ? ((resultat.cotisationCNSS / resultat.baseCNSS) * 100).toFixed(2) : "0"}%)</td>
-                      <td className="text-right py-2">-{resultat.cotisationCNSS.toFixed(2)} D</td>
+                      <td className="text-right py-2">{formatMontantDT(-resultat.cotisationCNSS)}</td>
                     </tr>
                     {champsAffiches.cotisationPatronale && (
                       <tr className="border-b border-gray-100 text-gray-400 text-xs">
                         <td className="py-2">Cotisation CNSS patronale</td>
-                        <td className="text-right py-2">{resultat.cotisationPatronale.toFixed(2)} D</td>
+                        <td className="text-right py-2">{formatMontantDT(resultat.cotisationPatronale)}</td>
                       </tr>
                     )}
                     <tr className="border-b border-gray-100 text-red-600">
                       <td className="py-2">IRPP</td>
-                      <td className="text-right py-2">-{resultat.irppMensuel.toFixed(2)} D</td>
+                      <td className="text-right py-2">{formatMontantDT(-resultat.irppMensuel)}</td>
                     </tr>
                     {resultat.css > 0 && (
                       <tr className="border-b border-gray-100 text-red-600">
                         <td className="py-2">CSS</td>
-                        <td className="text-right py-2">-{resultat.css.toFixed(2)} D</td>
+                        <td className="text-right py-2">{formatMontantDT(-resultat.css)}</td>
                       </tr>
                     )}
                   </tbody>
@@ -844,7 +845,7 @@ export default function GenerateurFichePaie() {
 
                 <div className="flex justify-between items-center py-4 bg-blue-900 text-white px-6 rounded-lg">
                   <span className="text-lg font-bold">Net à Payer</span>
-                  <span className="text-2xl font-bold">{resultat.netAPayer.toFixed(2)} D</span>
+                  <span className="text-2xl font-bold">{formatMontantDT(resultat.netAPayer)}</span>
                 </div>
 
                 {champsAffiches.modePaiement && (

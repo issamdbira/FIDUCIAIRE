@@ -9,6 +9,7 @@ import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { calculerCotisationCNSS } from "@/lib/payroll/cnss";
 import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "@/lib/payroll/irpp";
+import { formatMontantDT } from "@/lib/utils";
 
 /**
  * Design: Minimaliste & Professionnel
@@ -156,7 +157,7 @@ export default function IRPP() {
                       <SelectContent>
                         {[0, 1, 2, 3, 4, 5].map((n) => (
                           <SelectItem key={n} value={n.toString()}>
-                            {n} enfant{n !== 1 ? "s" : ""} ({n * 100} D/an)
+                            {n} enfant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 100)})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -174,7 +175,7 @@ export default function IRPP() {
                       <SelectContent>
                         {[0, 1, 2, 3, 4].map((n) => (
                           <SelectItem key={n} value={n.toString()}>
-                            {n} étudiant{n !== 1 ? "s" : ""} ({n * 1000} D/an)
+                            {n} étudiant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 1000)})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -192,7 +193,7 @@ export default function IRPP() {
                       <SelectContent>
                         {[0, 1, 2, 3, 4].map((n) => (
                           <SelectItem key={n} value={n.toString()}>
-                            {n} enfant{n !== 1 ? "s" : ""} ({n * 2000} D/an)
+                            {n} enfant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 2000)})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -257,37 +258,37 @@ export default function IRPP() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">Revenu Annuel Brut</span>
-                  <span className="font-semibold text-lg text-blue-900">{result.revenuAnnuel.toFixed(2)} D</span>
+                  <span className="font-semibold text-lg text-blue-900">{formatMontantDT(result.revenuAnnuel)}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">Cotisations CNSS (9.68%)</span>
-                  <span className="font-semibold text-red-600">-{result.cotisationsCNSS.toFixed(2)} D</span>
+                  <span className="font-semibold text-red-600">{formatMontantDT(-result.cotisationsCNSS)}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">Revenu Imposable</span>
-                  <span className="font-semibold text-blue-900">{result.revenuImposable.toFixed(2)} D</span>
+                  <span className="font-semibold text-blue-900">{formatMontantDT(result.revenuImposable)}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                  <span className="text-gray-700">Frais Professionnels (10%)</span>
-                  <span className="font-semibold text-green-600">-{result.fraisProfessionnels.toFixed(2)} D</span>
+                  <span className="text-gray-700">Abattement frais professionnels (10 %, plafond 2 000 DT/an)</span>
+                  <span className="font-semibold text-green-600">{formatMontantDT(-result.fraisProfessionnels)}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">Déductions Fiscales</span>
-                  <span className="font-semibold text-green-600">-{result.deductions.toFixed(2)} D</span>
+                  <span className="font-semibold text-green-600">{formatMontantDT(-result.deductions)}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                  <span className="text-gray-700">Assiette Fiscale</span>
-                  <span className="font-semibold text-blue-900">{result.assietteFiscale.toFixed(2)} D</span>
+                  <span className="text-gray-700">Assiette imposable nette</span>
+                  <span className="font-semibold text-blue-900">{formatMontantDT(result.assietteFiscale)}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-4 bg-gradient-to-r from-blue-50 to-blue-100 px-4 rounded-lg">
                   <span className="text-lg font-bold text-blue-900">IRPP Annuel</span>
-                  <span className="text-2xl font-bold text-blue-700">{result.irpp.toFixed(2)} D</span>
+                  <span className="text-2xl font-bold text-blue-700">{formatMontantDT(result.irpp)}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-3 bg-gray-100 px-4 rounded">
@@ -297,7 +298,7 @@ export default function IRPP() {
 
                 <div className="flex justify-between items-center py-3 bg-gray-100 px-4 rounded">
                   <span className="text-gray-700">IRPP Mensuel</span>
-                  <span className="font-semibold text-blue-900">{(result.irpp / 12).toFixed(2)} D</span>
+                  <span className="font-semibold text-blue-900">{formatMontantDT(result.irpp / 12)}</span>
                 </div>
               </div>
 

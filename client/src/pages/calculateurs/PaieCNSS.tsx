@@ -9,6 +9,7 @@ import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { calculerCotisationCNSS, calculerCSSAnnuelle } from "@/lib/payroll/cnss";
 import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "@/lib/payroll/irpp";
+import { formatMontantDT } from "@/lib/utils";
 
 /**
  * Design: Minimaliste & Professionnel
@@ -155,7 +156,7 @@ export default function PaieCNSS() {
                       <SelectContent>
                         {[0, 1, 2, 3, 4].map((n) => (
                           <SelectItem key={n} value={n.toString()}>
-                            {n} enfant{n !== 1 ? "s" : ""} ({n * 100} D)
+                            {n} enfant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 100)})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -173,7 +174,7 @@ export default function PaieCNSS() {
                       <SelectContent>
                         {[0, 1, 2, 3, 4].map((n) => (
                           <SelectItem key={n} value={n.toString()}>
-                            {n} étudiant{n !== 1 ? "s" : ""} ({n * 1000} D)
+                            {n} étudiant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 1000)})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -191,7 +192,7 @@ export default function PaieCNSS() {
                       <SelectContent>
                         {[0, 1, 2, 3, 4].map((n) => (
                           <SelectItem key={n} value={n.toString()}>
-                            {n} enfant{n !== 1 ? "s" : ""} ({n * 2000} D)
+                            {n} enfant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 2000)})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -233,34 +234,34 @@ export default function PaieCNSS() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">Salaire Brut</span>
-                  <span className="font-semibold text-lg text-blue-900">{result.salaireBrut.toFixed(2)} D</span>
+                  <span className="font-semibold text-lg text-blue-900">{formatMontantDT(result.salaireBrut)}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">Cotisations CNSS (9.68%)</span>
-                  <span className="font-semibold text-red-600">-{result.cotisationsCNSS.toFixed(2)} D</span>
+                  <span className="font-semibold text-red-600">{formatMontantDT(-result.cotisationsCNSS)}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">Salaire Imposable</span>
-                  <span className="font-semibold text-blue-900">{result.salaireImposable.toFixed(2)} D</span>
+                  <span className="font-semibold text-blue-900">{formatMontantDT(result.salaireImposable)}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">IRPP</span>
-                  <span className="font-semibold text-red-600">-{result.irpp.toFixed(2)} D</span>
+                  <span className="font-semibold text-red-600">{formatMontantDT(-result.irpp)}</span>
                 </div>
 
                 {result.css > 0 && (
                   <div className="flex justify-between items-center py-3 border-b border-gray-200">
                     <span className="text-gray-700">CSS (0.5%)</span>
-                    <span className="font-semibold text-red-600">-{result.css.toFixed(2)} D</span>
+                    <span className="font-semibold text-red-600">{formatMontantDT(-result.css)}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between items-center py-4 bg-gradient-to-r from-blue-50 to-blue-100 px-4 rounded-lg">
                   <span className="text-lg font-bold text-blue-900">Salaire Net</span>
-                  <span className="text-2xl font-bold text-blue-700">{result.salaireNet.toFixed(2)} D</span>
+                  <span className="text-2xl font-bold text-blue-700">{formatMontantDT(result.salaireNet)}</span>
                 </div>
               </div>
 

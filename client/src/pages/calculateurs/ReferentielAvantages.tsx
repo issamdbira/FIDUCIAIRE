@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Calculator, Search } from "lucide-react";
 import { Link } from "wouter";
 import { getPointAvantageSMIG, simulerAvantage } from "@/lib/payroll/avantages-exclus";
+import { formatMontantDT } from "@/lib/utils";
 
 /**
  * Référentiel des avantages exclus de l'assiette des cotisations sociales
@@ -303,30 +304,30 @@ function SimulateurPoint({ numero }: { numero: number }) {
         <TableBody>
           <TableRow>
             <TableCell className="text-gray-600">Montant total (nombre × montant unitaire)</TableCell>
-            <TableCell className="text-right font-mono">{resultat.montantTotal.toFixed(2)} D</TableCell>
+            <TableCell className="text-right font-mono">{formatMontantDT(resultat.montantTotal)}</TableCell>
           </TableRow>
           <TableRow>
             <TableCell className="text-gray-600">Plafond unitaire applicable à cette date</TableCell>
-            <TableCell className="text-right font-mono">{resultat.plafondUnitaire.toFixed(3)} D</TableCell>
+            <TableCell className="text-right font-mono">{formatMontantDT(resultat.plafondUnitaire)}</TableCell>
           </TableRow>
           <TableRow>
             <TableCell className="text-gray-600">Plafond total (nombre × plafond unitaire)</TableCell>
-            <TableCell className="text-right font-mono">{resultat.plafondTotal.toFixed(2)} D</TableCell>
+            <TableCell className="text-right font-mono">{formatMontantDT(resultat.plafondTotal)}</TableCell>
           </TableRow>
           <TableRow className="bg-green-50">
             <TableCell className="text-green-700 font-medium">Montant exonéré</TableCell>
-            <TableCell className="text-right font-mono text-green-700 font-medium">{resultat.montantExonere.toFixed(2)} D</TableCell>
+            <TableCell className="text-right font-mono text-green-700 font-medium">{formatMontantDT(resultat.montantExonere)}</TableCell>
           </TableRow>
           <TableRow className="bg-red-50">
             <TableCell className="text-red-700 font-medium">Montant soumis (CNSS + IRPP)</TableCell>
-            <TableCell className="text-right font-mono text-red-700 font-medium">{resultat.montantSoumis.toFixed(2)} D</TableCell>
+            <TableCell className="text-right font-mono text-red-700 font-medium">{formatMontantDT(resultat.montantSoumis)}</TableCell>
           </TableRow>
           <TableRow>
             <TableCell className={resultat.ecartDeclaration !== 0 ? "text-amber-700 font-medium" : "text-gray-600"}>
               Écart de déclaration (soumis − déclaré)
             </TableCell>
             <TableCell className={`text-right font-mono ${resultat.ecartDeclaration !== 0 ? "text-amber-700 font-medium" : ""}`}>
-              {resultat.ecartDeclaration.toFixed(2)} D
+              {formatMontantDT(resultat.ecartDeclaration)}
             </TableCell>
           </TableRow>
         </TableBody>
@@ -421,7 +422,7 @@ export default function ReferentielAvantages() {
                           <TableHeader>
                             <TableRow>
                               <TableHead>Période</TableHead>
-                              <TableHead className="text-right">Montant maximal (D)</TableHead>
+                              <TableHead className="text-right">Montant maximal</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -431,7 +432,7 @@ export default function ReferentielAvantages() {
                                   {p.periode}
                                   {p.actuel && <Badge className="bg-green-100 text-green-700">Actuel</Badge>}
                                 </TableCell>
-                                <TableCell className="text-right font-mono">{p.montant.toFixed(3)}</TableCell>
+                                <TableCell className="text-right font-mono">{formatMontantDT(p.montant)}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>

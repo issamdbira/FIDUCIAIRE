@@ -5,6 +5,7 @@ import { ArrowLeft, Upload } from "lucide-react";
 import { Link } from "wouter";
 import { testerFichierTXT } from "@/lib/cnss-declarations/tester";
 import type { TesteurResult } from "@/lib/cnss-declarations/types";
+import { formatMontantDT } from "@/lib/utils";
 
 /**
  * Testeur de fichiers TXT CNSS (validation du format 122 caractères/ligne).
@@ -90,7 +91,7 @@ export default function TesteurTXT() {
                   {r.valid ? (
                     <>
                       <p className="text-sm text-green-700 mt-1">
-                        ✅ Valide — 👥 {r.totalSalaries} salarié(s) — 💰 {r.totalSalaireDT.toFixed(3)} DT
+                        ✅ Valide — 👥 {r.totalSalaries} salarié(s) — 💰 {formatMontantDT(r.totalSalaireDT)}
                       </p>
                       {r.errors.length > 0 && (
                         <div className="text-sm text-red-600 mt-2">
@@ -121,7 +122,7 @@ export default function TesteurTXT() {
                                   <td className="py-1 pr-2 font-mono">{e.matricule}/{e.cle}</td>
                                   <td className="py-1 pr-2">{e.nom}</td>
                                   <td className="py-1 pr-2 font-mono">{e.cin}</td>
-                                  <td className="py-1 pr-2 font-mono">{e.salaireDT.toFixed(3)}</td>
+                                  <td className="py-1 pr-2 font-mono">{formatMontantDT(e.salaireDT)}</td>
                                   <td className={`py-1 pr-2 font-mono ${e.zoneOk ? "text-green-600" : "text-red-600"}`}>{e.zoneVierge}</td>
                                 </tr>
                               ))}
@@ -140,7 +141,7 @@ export default function TesteurTXT() {
                 <strong>Récapitulatif global</strong>
                 <br />📁 Fichiers testés : {resultats.length}
                 <br />👥 Total salariés : {totalSalaries}
-                <br />💰 Total salaires déclarés : {totalSalaireDT.toFixed(3)} DT
+                <br />💰 Total salaires déclarés : {formatMontantDT(totalSalaireDT)}
               </div>
             </div>
           )}

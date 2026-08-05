@@ -8,6 +8,7 @@ import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { getSmigPourAnnee } from "@/lib/payroll/cnss";
 import { COEFFICIENTS_ACTUALISATION, getCoefficientActualisation } from "@/lib/payroll/coefficients-actualisation";
+import { formatMontantDT } from "@/lib/utils";
 
 /**
  * Design: Minimaliste & Professionnel
@@ -122,11 +123,11 @@ export default function ActualisationSalaire() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">Salaire Brut Saisi ({resultat.annee})</span>
-                  <span className="font-semibold text-blue-900">{resultat.salaireBrut.toFixed(2)} D</span>
+                  <span className="font-semibold text-blue-900">{formatMontantDT(resultat.salaireBrut)}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">Salaire Plafonné (6x SMIG {resultat.annee})</span>
-                  <span className="font-semibold text-blue-900">{resultat.salairePlafonne.toFixed(2)} D</span>
+                  <span className="font-semibold text-blue-900">{formatMontantDT(resultat.salairePlafonne)}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">Coefficient d'Actualisation</span>
@@ -134,7 +135,7 @@ export default function ActualisationSalaire() {
                 </div>
                 <div className="flex justify-between items-center py-4 bg-gradient-to-r from-blue-50 to-blue-100 px-4 rounded-lg">
                   <span className="text-lg font-bold text-blue-900">Salaire Actualisé</span>
-                  <span className="text-2xl font-bold text-blue-700">{resultat.salaireActualise.toFixed(2)} D</span>
+                  <span className="text-2xl font-bold text-blue-700">{formatMontantDT(resultat.salaireActualise)}</span>
                 </div>
               </div>
               <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
