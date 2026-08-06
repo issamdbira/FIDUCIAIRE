@@ -9,6 +9,7 @@ import { Link } from "wouter";
 import { getSmigPourAnnee } from "@/lib/payroll/cnss";
 import { getCoefficientActualisation } from "@/lib/payroll/coefficients-actualisation";
 import { formatMontantDT } from "@/lib/utils";
+import { validerMontantSalaire } from "@/lib/validation-salaire";
 
 /**
  * Design: Minimaliste & Professionnel
@@ -49,6 +50,8 @@ export default function RetraiteCNSS() {
   const [dureeeCotisation, setDureeCotisation] = useState<number>(25);
   const [anneeDepart, setAnneeDepart] = useState<number>(2025);
   const [result, setResult] = useState<RetraiteResult | null>(null);
+
+  const erreurSalaire = validerMontantSalaire(salaireBrutMensuel);
 
   // Taux de pension: 40% (10 premières années) + 2%/an au-delà, plafonné à 80%
   // SOURCE: secu.tn/fr/calculateur-retraite-cnss.html, section "Quel est la taux de la pension de retraite"
@@ -146,6 +149,7 @@ export default function RetraiteCNSS() {
                   className="text-lg p-3"
                   min="0"
                 />
+                {erreurSalaire && <p className="text-sm text-red-600 mt-2">{erreurSalaire}</p>}
               </div>
 
               {/* Durée de Cotisation */}
@@ -188,7 +192,8 @@ export default function RetraiteCNSS() {
 
               <Button
                 onClick={handleCalculer}
-                className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 text-lg"
+                disabled={!!erreurSalaire}
+                className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Calculer ma Pension
               </Button>
@@ -196,7 +201,7 @@ export default function RetraiteCNSS() {
           </Card>
 
           {/* Résultats */}
-          {result && (
+          {result && !erreurSalaire && (
             <Card className="p-8 border-0 shadow-sm">
               <h2 className="text-2xl font-bold text-blue-900 mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Estimation de Pension

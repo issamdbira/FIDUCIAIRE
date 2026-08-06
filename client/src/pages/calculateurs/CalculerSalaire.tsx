@@ -11,6 +11,7 @@ import { runPayrollEngine } from "@/lib/payroll/engine";
 import { trouverBrutPourNet } from "@/lib/payroll/netToBrut";
 import type { PayrollResult } from "@/lib/payroll/types";
 import { formatMontantDT } from "@/lib/utils";
+import { validerMontantSalaire } from "@/lib/validation-salaire";
 
 /**
  * Calculer un salaire — Brut → Net ou Net → Brut.
@@ -31,6 +32,8 @@ export default function CalculerSalaire() {
 
   const [resultat, setResultat] = useState<PayrollResult | null>(null);
   const [brutTrouve, setBrutTrouve] = useState<number | null>(null);
+
+  const erreurMontant = validerMontantSalaire(montant);
 
   const situationCommune = {
     employeur: { nom: "" },
@@ -97,6 +100,7 @@ export default function CalculerSalaire() {
                 {mode === "brut-vers-net" ? "Salaire Brut Mensuel (D)" : "Salaire Net Souhaité (D)"}
               </Label>
               <Input type="number" value={montant} onChange={(e) => setMontant(parseFloat(e.target.value) || 0)} className="text-lg p-3" min="0" />
+              {erreurMontant && <p className="text-sm text-red-600 mt-2">{erreurMontant}</p>}
             </div>
 
             <div>
@@ -132,12 +136,12 @@ export default function CalculerSalaire() {
               </div>
             </div>
 
-            <Button onClick={calculer} className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 text-lg">
+            <Button onClick={calculer} disabled={!!erreurMontant} className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed">
               Calculer
             </Button>
           </Card>
 
-          {resultat && (
+          {resultat && !erreurMontant && (
             <Card className="p-8 border-0 shadow-sm">
               <h2 className="text-2xl font-bold text-blue-900 mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Détail du calcul

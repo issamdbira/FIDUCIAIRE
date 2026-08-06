@@ -10,6 +10,7 @@ import { Link } from "wouter";
 import { calculerCotisationCNSS } from "@/lib/payroll/cnss";
 import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "@/lib/payroll/irpp";
 import { formatMontantDT } from "@/lib/utils";
+import { validerMontantSalaire } from "@/lib/validation-salaire";
 
 /**
  * Design: Minimaliste & Professionnel
@@ -49,6 +50,8 @@ export default function IRPP() {
   const [interetsCredit, setInteretsCredit] = useState(0);
   const [cotisationsSyndicales, setCotisationsSyndicales] = useState(0);
   const [result, setResult] = useState<IRPPResult | null>(null);
+
+  const erreurRevenu = validerMontantSalaire(revenuAnnuel);
 
   const calculerAutresDeductions = (): number => {
     let deductions = 0;
@@ -126,6 +129,7 @@ export default function IRPP() {
                   className="text-lg p-3"
                   min="0"
                 />
+                {erreurRevenu && <p className="text-sm text-red-600 mt-2">{erreurRevenu}</p>}
               </div>
 
               {/* Situation Familiale */}
@@ -241,7 +245,8 @@ export default function IRPP() {
               {/* Bouton Calculer */}
               <Button
                 onClick={handleCalculer}
-                className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 text-lg"
+                disabled={!!erreurRevenu}
+                className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Calculer mon IRPP
               </Button>
@@ -249,7 +254,7 @@ export default function IRPP() {
           </Card>
 
           {/* Résultats */}
-          {result && (
+          {result && !erreurRevenu && (
             <Card className="p-8 border-0 shadow-sm">
               <h2 className="text-2xl font-bold text-blue-900 mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Détail de l'Impôt

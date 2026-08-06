@@ -10,6 +10,7 @@ import { Link } from "wouter";
 import { calculerCotisationCNSS, calculerCSSAnnuelle } from "@/lib/payroll/cnss";
 import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "@/lib/payroll/irpp";
 import { formatMontantDT } from "@/lib/utils";
+import { validerMontantSalaire } from "@/lib/validation-salaire";
 
 /**
  * Design: Minimaliste & Professionnel
@@ -41,6 +42,8 @@ export default function PaieCNSS() {
   const [infirmes, setInfirmes] = useState(0);
   const [autresDeductions, setAutresDeductions] = useState(0);
   const [result, setResult] = useState<PayeResult | null>(null);
+
+  const erreurSalaire = validerMontantSalaire(salaireBrut);
 
   const handleCalculer = () => {
     const cotisationsCNSS = calculerCotisationCNSS(salaireBrut, annee);
@@ -109,6 +112,7 @@ export default function PaieCNSS() {
                   className="text-lg p-3"
                   min="0"
                 />
+                {erreurSalaire && <p className="text-sm text-red-600 mt-2">{erreurSalaire}</p>}
               </div>
 
               {/* Année */}
@@ -217,7 +221,8 @@ export default function PaieCNSS() {
               {/* Bouton Calculer */}
               <Button
                 onClick={handleCalculer}
-                className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 text-lg"
+                disabled={!!erreurSalaire}
+                className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Calculer
               </Button>
@@ -225,7 +230,7 @@ export default function PaieCNSS() {
           </Card>
 
           {/* Résultats */}
-          {result && (
+          {result && !erreurSalaire && (
             <Card className="p-8 border-0 shadow-sm">
               <h2 className="text-2xl font-bold text-blue-900 mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Bulletin de Paie

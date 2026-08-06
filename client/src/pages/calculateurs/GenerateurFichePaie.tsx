@@ -16,6 +16,7 @@ import {
 import { POINTS_AVANTAGES_SMIG, simulerAvantage } from "@/lib/payroll/avantages-exclus";
 import type { Employeur, PayrollItem, PayrollItemType, PayrollResult, Salarie } from "@/lib/payroll/types";
 import { formatMontantDT } from "@/lib/utils";
+import { validerMontantSalaire } from "@/lib/validation-salaire";
 
 /**
  * Générateur de fiche de paie — MVP (couches 2 et 3).
@@ -170,7 +171,10 @@ export default function GenerateurFichePaie() {
 
   const canAdvanceFromEmployeur = employeur.nom.trim() !== "";
   const canAdvanceFromSalarie = salarie.nom.trim() !== "" && salarie.prenom.trim() !== "";
-  const canAdvanceFromElements = elements.length > 0 && elements.every((e) => e.label.trim() !== "");
+  const canAdvanceFromElements =
+    elements.length > 0 &&
+    elements.every((e) => e.label.trim() !== "") &&
+    elements.filter((e) => e.type === "salaire_base").every((e) => !validerMontantSalaire(e.montant));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -462,6 +466,9 @@ export default function GenerateurFichePaie() {
                     <div className="w-32">
                       <Label className="text-xs mb-1 block">Montant (D)</Label>
                       <Input type="number" value={el.montant} onChange={(e) => modifierElement(el.id, { montant: parseFloat(e.target.value) || 0 })} />
+                      {el.type === "salaire_base" && validerMontantSalaire(el.montant) && (
+                        <p className="text-xs text-red-600 mt-1">{validerMontantSalaire(el.montant)}</p>
+                      )}
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => supprimerElement(el.id)} className="text-red-500 hover:text-red-700 mb-1">
                       <Trash2 className="w-4 h-4" />
