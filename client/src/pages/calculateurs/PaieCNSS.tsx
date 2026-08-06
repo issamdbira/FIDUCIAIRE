@@ -25,6 +25,9 @@ interface PayeResult {
   salaireBrut: number;
   cotisationsCNSS: number;
   salaireImposable: number;
+  fraisProfessionnels: number;
+  deductionsFamiliales: number;
+  assietteImposableNette: number;
   irpp: number;
   css: number;
   salaireNet: number;
@@ -68,6 +71,9 @@ export default function PaieCNSS() {
       salaireBrut: Math.round(salaireBrut * 100) / 100,
       cotisationsCNSS: Math.round(cotisationsCNSS * 100) / 100,
       salaireImposable: Math.round(salaireImposable * 100) / 100,
+      fraisProfessionnels: Math.round((fraisPro / 12) * 100) / 100,
+      deductionsFamiliales: Math.round((deductions / 12) * 100) / 100,
+      assietteImposableNette: Math.round((assietteFiscaleAnnuelle / 12) * 100) / 100,
       irpp: Math.round(irpp * 100) / 100,
       css: Math.round(css * 100) / 100,
       salaireNet: Math.round(salaireNet * 100) / 100
@@ -250,6 +256,23 @@ export default function PaieCNSS() {
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">Salaire Imposable</span>
                   <span className="font-semibold text-blue-900">{formatMontantDT(result.salaireImposable)}</span>
+                </div>
+
+                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                  <span className="text-gray-700">Abattement frais professionnels (10 %, plafond 2 000 DT/an)</span>
+                  <span className="font-semibold text-green-600">{formatMontantDT(-result.fraisProfessionnels)}</span>
+                </div>
+
+                {result.deductionsFamiliales > 0 && (
+                  <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                    <span className="text-gray-700">Déductions familiales</span>
+                    <span className="font-semibold text-green-600">{formatMontantDT(-result.deductionsFamiliales)}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                  <span className="text-gray-700">Assiette imposable nette</span>
+                  <span className="font-semibold text-blue-900">{formatMontantDT(result.assietteImposableNette)}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">

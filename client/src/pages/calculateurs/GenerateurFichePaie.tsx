@@ -728,8 +728,18 @@ export default function GenerateurFichePaie() {
                   <span>{formatMontantDT(resultat.cotisationPatronale)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
-                  <span>Base fiscale</span>
-                  <span>{formatMontantDT(resultat.baseFiscaleMensuelle)}</span>
+                  <span>Abattement frais professionnels (10 %, plafond 2 000 DT/an)</span>
+                  <span className="text-green-600">{formatMontantDT(-resultat.fraisProfessionnelsMensuel)}</span>
+                </div>
+                {resultat.deductionsFamilialesMensuelles > 0 && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>Déductions familiales</span>
+                    <span className="text-green-600">{formatMontantDT(-resultat.deductionsFamilialesMensuelles)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-gray-600">
+                  <span>Assiette imposable nette</span>
+                  <span>{formatMontantDT(resultat.assietteImposableNetteMensuelle)}</span>
                 </div>
                 <div className="flex justify-between text-red-600">
                   <span>IRPP</span>

@@ -88,6 +88,11 @@ export interface PayrollResult {
   cotisationCNSS: number;
   cotisationPatronale: number; // informative, à la charge de l'employeur (n'affecte pas le net)
   baseFiscaleMensuelle: number;
+  // Sprint 1, Tâche 3 — transparence de la cascade IRPP (valeurs déjà
+  // calculées en interne, désormais exposées pour l'affichage) :
+  fraisProfessionnelsMensuel: number; // abattement 10% (plafond 2000 DT/an), déjà appliqué dans irppMensuel
+  deductionsFamilialesMensuelles: number; // chef de famille, enfants, étudiants, infirmes...
+  assietteImposableNetteMensuelle: number; // baseFiscaleMensuelle - fraisPro - déductions familiales = base réelle du barème IRPP
   irppMensuel: number;
   css: number;
   totalAutresRetenues: number;

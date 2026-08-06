@@ -164,8 +164,18 @@ export default function CalculerSalaire() {
                   <span className="font-semibold text-red-600">{formatMontantDT(-resultat.cotisationCNSS)}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                  <span className="text-gray-700">Base fiscale</span>
-                  <span className="font-semibold text-blue-900">{formatMontantDT(resultat.baseFiscaleMensuelle)}</span>
+                  <span className="text-gray-700">Abattement frais professionnels (10 %, plafond 2 000 DT/an)</span>
+                  <span className="font-semibold text-green-600">{formatMontantDT(-resultat.fraisProfessionnelsMensuel)}</span>
+                </div>
+                {resultat.deductionsFamilialesMensuelles > 0 && (
+                  <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                    <span className="text-gray-700">Déductions familiales</span>
+                    <span className="font-semibold text-green-600">{formatMontantDT(-resultat.deductionsFamilialesMensuelles)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                  <span className="text-gray-700">Assiette imposable nette</span>
+                  <span className="font-semibold text-blue-900">{formatMontantDT(resultat.assietteImposableNetteMensuelle)}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-gray-200">
                   <span className="text-gray-700">IRPP</span>
