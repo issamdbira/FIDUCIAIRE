@@ -16,7 +16,7 @@ import TesteurTXT from "./pages/calculateurs/TesteurTXT";
 import CalculerSalaire from "./pages/calculateurs/CalculerSalaire";
 import Admin from "./pages/Admin";
 import ReferentielAvantages from "./pages/calculateurs/ReferentielAvantages";
-
+import DeclarationsNeant from "./pages/DeclarationsNeant";
 
 function Router() {
   return (
@@ -31,6 +31,7 @@ function Router() {
       <Route path="/calculateurs/irpp" component={IRPP} />
       <Route path="/calculateurs/actualisation-salaire" component={ActualisationSalaire} />
       <Route path="/calculateurs/declarations-cnss" component={DeclarationsCNSS} />
+      <Route path="/calculateurs/declarations-neant" component={DeclarationsNeant} />
       <Route path="/calculateurs/testeur-txt-cnss" component={TesteurTXT} />
       <Route path="/fiche-de-paie" component={GenerateurFichePaie} />
       <Route path="/404" component={NotFound} />
