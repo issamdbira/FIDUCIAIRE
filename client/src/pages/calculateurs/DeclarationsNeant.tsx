@@ -41,12 +41,12 @@ const neantItemSchema = z.object({
 
 type NeantItem = z.infer<typeof neantItemSchema>;
 
-// ── Trimestres libellés ──
+// ── Trimestres libell\u00e9s ──
 const TRIMESTRE_LIBELLE: Record<number, string> = {
   1: "1er Trimestre",
-  2: "2ème Trimestre",
-  3: "3ème Trimestre",
-  4: "4ème Trimestre",
+  2: "2\u00e8me Trimestre",
+  3: "3\u00e8me Trimestre",
+  4: "4\u00e8me Trimestre",
 };
 
 // ── Helper: draw text safely (clamp within page) ──
@@ -68,7 +68,7 @@ function safeDrawText(
 async function generateI16Page(
   item: NeantItem,
   fontRegular: Awaited<ReturnType<PDFDocument["embedFont"]>>,
-  fontBold: Awaited<ReturnType<PDFDocument["embedFont"]>>
+  fontBold: Awaited<ReturnType<PDFDocument["embedFont"]>>,
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   const page = doc.addPage([595.28, 841.89]); // A4
@@ -83,7 +83,7 @@ async function generateI16Page(
   page.drawRectangle({ x: 0, y: 770, width, height: 71.89, color: DARK_BLUE });
   safeDrawText(page, "R\u00c9PUBLIQUE TUNISIENNE", 40, 818, { font: fontBold, size: 11, color: rgb(1, 1, 1) });
   safeDrawText(page, "Caisse Nationale de S\u00e9curit\u00e9 Sociale", 40, 800, { font: fontBold, size: 13, color: rgb(1, 1, 1) });
-  safeDrawText(page, "BORDEREAAU DE D\u00c9CLARATION (I16)", width - 290, 785, { font: fontBold, size: 12, color: rgb(1, 1, 1) });
+  safeDrawText(page, "BORDEREAU DE D\u00c9CLARATION (I16)", width - 290, 785, { font: fontBold, size: 12, color: rgb(1, 1, 1) });
 
   // ── Underline ──
   page.drawLine({ start: { x: 40, y: 765 }, end: { x: width - 40, y: 765 }, thickness: 1.5, color: DARK_BLUE });
@@ -92,12 +92,10 @@ async function generateI16Page(
   const sectionY = 735;
   safeDrawText(page, "Renseignements employeur", 40, sectionY, { font: fontBold, size: 11, color: DARK_BLUE });
 
-  // Matricule
   safeDrawText(page, "Matricule CNSS :", 40, sectionY - 25, { font: fontRegular, size: 10, color: BLACK });
   page.drawRectangle({ x: 170, y: sectionY - 35, width: 140, height: 18, borderColor: BLACK, borderWidth: 0.5 });
   safeDrawText(page, item.matricule, 178, sectionY - 31, { font: fontRegular, size: 11, color: BLACK });
 
-  // Raison Sociale
   safeDrawText(page, "Raison sociale :", 40, sectionY - 55, { font: fontRegular, size: 10, color: BLACK });
   page.drawRectangle({ x: 170, y: sectionY - 65, width: 340, height: 18, borderColor: BLACK, borderWidth: 0.5 });
   safeDrawText(page, item.raisonSociale, 178, sectionY - 61, { font: fontRegular, size: 11, color: BLACK });
@@ -114,7 +112,7 @@ async function generateI16Page(
   page.drawRectangle({ x: 370, y: periodY - 35, width: 80, height: 18, borderColor: BLACK, borderWidth: 0.5 });
   safeDrawText(page, String(item.annee), 403, periodY - 31, { font: fontRegular, size: 11, color: BLACK });
 
-  // ── NÉANT Declaration box ──
+  // ── N\u00c9ANT Declaration box ──
   const boxY = periodY - 90;
   page.drawRectangle({ x: 40, y: boxY - 60, width: width - 80, height: 70, color: LIGHT_BG, borderColor: DARK_BLUE, borderWidth: 1 });
   safeDrawText(page, "D\u00c9CLARATION N\u00c9ANT", width / 2 - 60, boxY - 20, { font: fontBold, size: 18, color: DARK_BLUE });
@@ -124,7 +122,6 @@ async function generateI16Page(
   const sigY = 120;
   page.drawLine({ start: { x: 40, y: sigY + 30 }, end: { x: 250, y: sigY + 30 }, thickness: 0.5, color: GRAY });
   safeDrawText(page, "Signature et cachet de l'employeur", 70, sigY + 10, { font: fontRegular, size: 9, color: GRAY });
-
   page.drawLine({ start: { x: 350, y: sigY + 30 }, end: { x: 555, y: sigY + 30 }, thickness: 0.5, color: GRAY });
   safeDrawText(page, "Cachet CNSS", 420, sigY + 10, { font: fontRegular, size: 9, color: GRAY });
 
@@ -194,8 +191,7 @@ export default function DeclarationsNeant() {
           const rawAnnee = Number(row[3]);
 
           if (rawTrimestre < 1 || rawTrimestre > 4) continue;
-          if (!rawAnnee || rawAnnee < currentYear - 1 || rawAnnee > currentYear + 1)
-            continue;
+          if (!rawAnnee || rawAnnee < currentYear - 1 || rawAnnee > currentYear + 1) continue;
 
           imported.push({
             matricule: rawMatricule,
@@ -207,13 +203,9 @@ export default function DeclarationsNeant() {
 
         if (imported.length > 0) {
           setItems((prev) => [...prev, ...imported]);
-          toast.success(
-            `${imported.length} d\u00e9claration(s) import\u00e9e(s) depuis Excel`
-          );
+          toast.success(`${imported.length} d\u00e9claration(s) import\u00e9e(s) depuis Excel`);
         } else {
-          toast.error(
-            "Aucune donn\u00e9e valide trouv\u00e9e dans le fichier Excel"
-          );
+          toast.error("Aucune donn\u00e9e valide trouv\u00e9e dans le fichier Excel");
         }
       } catch {
         toast.error("Erreur lors de la lecture du fichier Excel");
@@ -244,7 +236,6 @@ export default function DeclarationsNeant() {
     setIsGenerating(true);
 
     try {
-      // Load I3 template
       const response = await fetch("/I3.pdf");
       if (!response.ok) throw new Error("Mod\u00e8le I3 introuvable");
       const i3TemplateBytes = await response.arrayBuffer();
@@ -258,40 +249,20 @@ export default function DeclarationsNeant() {
         const i3Doc = await PDFDocument.load(i3TemplateBytes);
         const i3Page = i3Doc.getPages()[0];
 
-        // Inject ALL data into I3 at calibrated positions
-        // Matricule at slider position
         safeDrawText(i3Page, item.matricule, offsetX, offsetY, {
-          font: fontRegular,
-          size: 10,
-          color: rgb(0, 0, 0),
+          font: fontRegular, size: 10, color: rgb(0, 0, 0),
         });
-
-        // Raison Sociale below matricule
         safeDrawText(i3Page, item.raisonSociale, offsetX, offsetY - 16, {
-          font: fontBold,
-          size: 10,
-          color: rgb(0, 0, 0),
+          font: fontBold, size: 10, color: rgb(0, 0, 0),
         });
-
-        // Trimestre
         safeDrawText(i3Page, String(item.trimestre), offsetX, offsetY - 34, {
-          font: fontRegular,
-          size: 10,
-          color: rgb(0, 0, 0),
+          font: fontRegular, size: 10, color: rgb(0, 0, 0),
         });
-
-        // Ann\u00e9e
         safeDrawText(i3Page, String(item.annee), offsetX + 30, offsetY - 34, {
-          font: fontRegular,
-          size: 10,
-          color: rgb(0, 0, 0),
+          font: fontRegular, size: 10, color: rgb(0, 0, 0),
         });
-
-        // N\u00c9ANT mention (prominent)
         safeDrawText(i3Page, "N\u00c9ANT", offsetX, offsetY - 56, {
-          font: fontBold,
-          size: 14,
-          color: rgb(0.1, 0.15, 0.35),
+          font: fontBold, size: 14, color: rgb(0.1, 0.15, 0.35),
         });
 
         const i3Copied = await mergedPdf.copyPages(i3Doc, i3Doc.getPageIndices());
@@ -309,13 +280,11 @@ export default function DeclarationsNeant() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "Declarations_Neant_Lot.pdf";
+      a.download = "Declarations_Neant_Lot_Complet.pdf";
       a.click();
       URL.revokeObjectURL(url);
 
-      toast.success(
-        `${items.length} d\u00e9claration(s) g\u00e9n\u00e9r\u00e9e(s) : I3 + I16`
-      );
+      toast.success(`${items.length} d\u00e9claration(s) g\u00e9n\u00e9r\u00e9e(s) : I3 + I16`);
     } catch {
       toast.error("Erreur lors de la g\u00e9n\u00e9ration du PDF");
     } finally {
@@ -324,78 +293,44 @@ export default function DeclarationsNeant() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950">
-      <div className="container mx-auto px-4 py-10 max-w-4xl">
+    <div className="py-10">
+      <div className="container mx-auto max-w-4xl">
         {/* Header */}
         <div className="mb-8">
-          <h1
-            className="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2"
-            style={{ fontFamily: "Montserrat, sans-serif" }}
-          >
+          <h1 className="text-3xl font-bold text-foreground mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
             D\u00e9clarations N\u00e9ant
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            G\u00e9n\u00e9rez par lot vos d\u00e9clarations n\u00e9ant (\u00c9tat
-            R\u00e9capitulatif I3 + Bordereau I16) en injectant les donn\u00e9es
-            employeur et la mention \u00ab N\u00c9ANT \u00bb.
+          <p className="text-muted-foreground">
+            G\u00e9n\u00e9rez par lot vos d\u00e9clarations n\u00e9ant (\u00c9tat R\u00e9capitulatif I3 + Bordereau I16) en injectant les donn\u00e9es employeur et la mention \u00ab N\u00c9ANT \u00bb.
           </p>
         </div>
 
         {/* A. Formulaire de saisie */}
-        <Card className="mb-6 dark:bg-gray-900 dark:border-gray-800">
+        <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-blue-900 dark:text-blue-100">Saisie manuelle</CardTitle>
-            <CardDescription className="dark:text-gray-400">
-              Ajoutez une d\u00e9claration \u00e0 la liste avant g\u00e9n\u00e9ration.
-            </CardDescription>
+            <CardTitle className="text-foreground">Saisie manuelle</CardTitle>
+            <CardDescription>Ajoutez une d\u00e9claration \u00e0 la liste avant g\u00e9n\u00e9ration.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="matricule" className="dark:text-gray-300">
-                    Matricule CNSS
-                  </Label>
-                  <Input
-                    id="matricule"
-                    placeholder="12345678-99"
-                    className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                    {...register("matricule")}
-                  />
-                  {errors.matricule && (
-                    <p className="text-sm text-red-500">{errors.matricule.message}</p>
-                  )}
+                  <Label htmlFor="matricule">Matricule CNSS</Label>
+                  <Input id="matricule" placeholder="12345678-99" {...register("matricule")} />
+                  {errors.matricule && <p className="text-sm text-destructive">{errors.matricule.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="raisonSociale" className="dark:text-gray-300">
-                    Raison sociale
-                  </Label>
-                  <Input
-                    id="raisonSociale"
-                    placeholder="Nom de l'entreprise"
-                    className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                    {...register("raisonSociale")}
-                  />
-                  {errors.raisonSociale && (
-                    <p className="text-sm text-red-500">
-                      {errors.raisonSociale.message}
-                    </p>
-                  )}
+                  <Label htmlFor="raisonSociale">Raison sociale</Label>
+                  <Input id="raisonSociale" placeholder="Nom de l'entreprise" {...register("raisonSociale")} />
+                  {errors.raisonSociale && <p className="text-sm text-destructive">{errors.raisonSociale.message}</p>}
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="dark:text-gray-300">Trimestre</Label>
-                  <Select
-                    defaultValue="1"
-                    onValueChange={(val) =>
-                      register("trimestre").onChange({ target: { value: val } })
-                    }
-                  >
-                    <SelectTrigger className="dark:bg-gray-800 dark:border-gray-700 dark:text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="dark:bg-gray-900 dark:border-gray-700">
+                  <Label>Trimestre</Label>
+                  <Select defaultValue="1" onValueChange={(val) => register("trimestre").onChange({ target: { value: val } })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
                       <SelectItem value="1">1</SelectItem>
                       <SelectItem value="2">2</SelectItem>
                       <SelectItem value="3">3</SelectItem>
@@ -404,118 +339,70 @@ export default function DeclarationsNeant() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="annee" className="dark:text-gray-300">
-                    Ann\u00e9e
-                  </Label>
-                  <Input
-                    id="annee"
-                    type="number"
-                    min={currentYear - 1}
-                    max={currentYear + 1}
-                    className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                    {...register("annee", { valueAsNumber: true })}
-                  />
-                  {errors.annee && (
-                    <p className="text-sm text-red-500">{errors.annee.message}</p>
-                  )}
+                  <Label htmlFor="annee">Ann\u00e9e</Label>
+                  <Input id="annee" type="number" min={currentYear - 1} max={currentYear + 1} {...register("annee", { valueAsNumber: true })} />
+                  {errors.annee && <p className="text-sm text-destructive">{errors.annee.message}</p>}
                 </div>
               </div>
-              <Button
-                type="submit"
-                className="bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700"
-              >
-                Ajouter \u00e0 la liste
-              </Button>
+              <Button type="submit">Ajouter \u00e0 la liste</Button>
             </form>
           </CardContent>
         </Card>
 
         {/* B. Import Excel */}
-        <Card className="mb-6 dark:bg-gray-900 dark:border-gray-800">
+        <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-blue-900 dark:text-blue-100">
-              Import Excel
-            </CardTitle>
-            <CardDescription className="dark:text-gray-400">
-              Glissez un fichier .xlsx ou cliquez pour s\u00e9lectionner.
-              Colonne A = Matricule, B = Raison Sociale, C = Trimestre, D =
-              Ann\u00e9e.
-            </CardDescription>
+            <CardTitle className="text-foreground">Import Excel</CardTitle>
+            <CardDescription>Glissez un fichier .xlsx ou cliquez pour s\u00e9lectionner. Colonne A = Matricule, B = Raison Sociale, C = Trimestre, D = Ann\u00e9e.</CardDescription>
           </CardHeader>
           <CardContent>
             <div
-              className={`border-2 border-dashed rounded-lg p-10 text-center transition-colors cursor-pointer ${
-                dragOver
-                  ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
-                  : "border-gray-300 hover:border-gray-400 dark:border-gray-700 dark:hover:border-gray-600"
+              className={`border-2 border-dashed rounded-md p-10 text-center transition-colors cursor-pointer ${
+                dragOver ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground"
               }`}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragOver(true);
-              }}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
               onDrop={onDrop}
-              onClick={() =>
-                document.getElementById("excel-input-neant")?.click()
-              }
+              onClick={() => document.getElementById("excel-input-neant")?.click()}
             >
-              <Upload className="mx-auto h-10 w-10 text-gray-400 mb-3" />
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {dragOver
-                  ? "D\u00e9posez le fichier ici"
-                  : "Glissez un fichier .xlsx ici ou cliquez pour s\u00e9lectionner"}
+              <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
+              <p className="text-sm text-muted-foreground">
+                {dragOver ? "D\u00e9posez le fichier ici" : "Glissez un fichier .xlsx ici ou cliquez pour s\u00e9lectionner"}
               </p>
-              <input
-                id="excel-input-neant"
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                onChange={onFileSelect}
-              />
+              <input id="excel-input-neant" type="file" accept=".xlsx,.xls" className="hidden" onChange={onFileSelect} />
             </div>
           </CardContent>
         </Card>
 
         {/* List + Calibrage + Generation */}
-        <Card className="dark:bg-gray-900 dark:border-gray-800">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-blue-900 dark:text-blue-100">
-              Liste des d\u00e9clarations ({items.length})
-            </CardTitle>
+            <CardTitle className="text-foreground">Liste des d\u00e9clarations ({items.length})</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Table */}
             {items.length > 0 && (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b text-left dark:border-gray-700">
-                      <th className="pb-2 pr-4 font-semibold text-blue-900 dark:text-blue-100">#</th>
-                      <th className="pb-2 pr-4 font-semibold text-blue-900 dark:text-blue-100">Matricule</th>
-                      <th className="pb-2 pr-4 font-semibold text-blue-900 dark:text-blue-100">Raison sociale</th>
-                      <th className="pb-2 pr-4 font-semibold text-blue-900 dark:text-blue-100">Trim.</th>
-                      <th className="pb-2 pr-4 font-semibold text-blue-900 dark:text-blue-100">Ann\u00e9e</th>
-                      <th className="pb-2 font-semibold text-blue-900 dark:text-blue-100"></th>
+                    <tr className="border-b text-left">
+                      <th className="pb-2 pr-4 font-semibold text-foreground">#</th>
+                      <th className="pb-2 pr-4 font-semibold text-foreground">Matricule</th>
+                      <th className="pb-2 pr-4 font-semibold text-foreground">Raison sociale</th>
+                      <th className="pb-2 pr-4 font-semibold text-foreground">Trim.</th>
+                      <th className="pb-2 pr-4 font-semibold text-foreground">Ann\u00e9e</th>
+                      <th className="pb-2 font-semibold text-foreground" />
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((item, i) => (
-                      <tr
-                        key={i}
-                        className="border-b last:border-0 dark:border-gray-800"
-                      >
-                        <td className="py-2 pr-4 text-gray-500 dark:text-gray-400">{i + 1}</td>
-                        <td className="py-2 pr-4 font-mono dark:text-gray-300">{item.matricule}</td>
-                        <td className="py-2 pr-4 dark:text-gray-300">{item.raisonSociale}</td>
-                        <td className="py-2 pr-4 dark:text-gray-300">{item.trimestre}</td>
-                        <td className="py-2 pr-4 dark:text-gray-300">{item.annee}</td>
+                      <tr key={i} className="border-b last:border-0">
+                        <td className="py-2 pr-4 text-muted-foreground">{i + 1}</td>
+                        <td className="py-2 pr-4 font-mono text-foreground">{item.matricule}</td>
+                        <td className="py-2 pr-4 text-foreground">{item.raisonSociale}</td>
+                        <td className="py-2 pr-4 text-foreground">{item.trimestre}</td>
+                        <td className="py-2 pr-4 text-foreground">{item.annee}</td>
                         <td className="py-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
-                            onClick={() => removeItem(i)}
-                          >
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/80" onClick={() => removeItem(i)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </td>
@@ -527,51 +414,28 @@ export default function DeclarationsNeant() {
             )}
 
             {items.length === 0 && (
-              <p className="text-sm text-gray-400 text-center py-6">
+              <p className="text-sm text-muted-foreground text-center py-6">
                 <FileSpreadsheet className="mx-auto h-8 w-8 mb-2" />
-                Aucune d\u00e9claration dans la liste. Utilisez le formulaire ou
-                importez un Excel.
+                Aucune d\u00e9claration dans la liste. Utilisez le formulaire ou importez un Excel.
               </p>
             )}
 
             {/* Calibrage I3 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t dark:border-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
               <div className="space-y-2">
-                <Label className="dark:text-gray-300">
-                  D\u00e9calage Horizontal I3 (X) : {offsetX} pt
-                </Label>
-                <Slider
-                  min={0}
-                  max={500}
-                  step={1}
-                  value={[offsetX]}
-                  onValueChange={([v]) => setOffsetX(v)}
-                />
+                <Label>D\u00e9calage Horizontal I3 (X) : {offsetX} pt</Label>
+                <Slider min={0} max={500} step={1} value={[offsetX]} onValueChange={([v]) => setOffsetX(v)} />
               </div>
               <div className="space-y-2">
-                <Label className="dark:text-gray-300">
-                  D\u00e9calage Vertical I3 (Y) : {offsetY} pt
-                </Label>
-                <Slider
-                  min={0}
-                  max={800}
-                  step={1}
-                  value={[offsetY]}
-                  onValueChange={([v]) => setOffsetY(v)}
-                />
+                <Label>D\u00e9calage Vertical I3 (Y) : {offsetY} pt</Label>
+                <Slider min={0} max={800} step={1} value={[offsetY]} onValueChange={([v]) => setOffsetY(v)} />
               </div>
             </div>
 
             {/* Generate Button */}
-            <Button
-              className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-5 dark:bg-blue-600 dark:hover:bg-blue-700"
-              disabled={items.length === 0 || isGenerating}
-              onClick={generatePDF}
-            >
+            <Button className="w-full py-5" size="lg" disabled={items.length === 0 || isGenerating} onClick={generatePDF}>
               <FileDown className="mr-2 h-5 w-5" />
-              {isGenerating
-                ? "G\u00e9n\u00e9ration..."
-                : "G\u00e9n\u00e9rer I3 + I16"}
+              {isGenerating ? "G\u00e9n\u00e9ration..." : "G\u00e9n\u00e9rer les d\u00e9clarations N\u00e9ant"}
             </Button>
           </CardContent>
         </Card>

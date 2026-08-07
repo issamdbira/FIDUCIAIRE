@@ -1,190 +1,129 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
-import { Calculator, TrendingUp, FileText, DollarSign, ClipboardCheck, FileX } from "lucide-react";
-
-/**
- * Design: Minimaliste & Professionnel
- * Palette: Bleu marine + Blanc + Or
- * Typographie: Montserrat (titres) + Inter (corps)
- */
+import { TrendingUp, FileText, DollarSign, ClipboardCheck, FileX } from "lucide-react";
 
 export default function Home() {
   const categorieCalculer = [
     {
       id: "calculer-salaire",
       title: "Calculer un salaire",
-      description: "Brut → Net ou Net → Brut, pour les salariés du secteur privé (CNSS)",
+      description: "Brut \u2192 Net ou Net \u2192 Brut, pour les salari\u00e9s du secteur priv\u00e9 (CNSS)",
       icon: DollarSign,
       href: "/calculateurs/calculer-salaire",
-      color: "from-blue-600 to-blue-700"
+      color: "from-blue-600 to-blue-700",
     },
     {
       id: "irpp",
-      title: "Calculer son impôt sur le revenu",
+      title: "Calculer son imp\u00f4t sur le revenu",
       description: "Estimez votre IRPP annuel selon votre situation familiale",
       icon: FileText,
       href: "/calculateurs/irpp",
-      color: "from-blue-700 to-blue-800"
+      color: "from-blue-700 to-blue-800",
     },
     {
       id: "retraite-cnss",
       title: "Estimer sa retraite",
-      description: "Estimez votre pension de retraite selon votre ancienneté et salaire",
+      description: "Estimez votre pension de retraite selon votre anciennet\u00e9 et salaire",
       icon: TrendingUp,
       href: "/calculateurs/retraite-cnss",
-      color: "from-blue-500 to-blue-600"
+      color: "from-blue-500 to-blue-600",
     },
     {
       id: "actualisation-salaire",
       title: "Actualiser un ancien salaire",
-      description: "Actualisez un salaire par le coefficient CNSS de son année (pour le calcul de retraite)",
+      description: "Actualisez un salaire par le coefficient CNSS de son ann\u00e9e (pour le calcul de retraite)",
       icon: TrendingUp,
       href: "/calculateurs/actualisation-salaire",
-      color: "from-blue-500 to-blue-600"
-    }
+      color: "from-blue-500 to-blue-600",
+    },
   ];
 
   const categorieTraiter = [
     {
       id: "fiche-de-paie",
-      title: "Générer une fiche de paie",
-      description: "Employeur, logo, salarié, éléments de rémunération, détail du calcul et export PDF",
+      title: "G\u00e9n\u00e9rer une fiche de paie",
+      description: "Employeur, logo, salari\u00e9, \u00e9l\u00e9ments de r\u00e9mun\u00e9ration, d\u00e9tail du calcul et export PDF",
       icon: FileText,
       href: "/fiche-de-paie",
-      color: "from-blue-700 to-blue-900"
-    }
+      color: "from-blue-700 to-blue-900",
+    },
   ];
 
   const categorieDeclarer = [
     {
       id: "declarations-cnss",
-      title: "Préparer une déclaration CNSS",
-      description: "Saisie ou import CSV/Excel, contrôle des données, génération et test du fichier TXT",
+      title: "Pr\u00e9parer une d\u00e9claration CNSS",
+      description: "Saisie ou import CSV/Excel, contr\u00f4le des donn\u00e9es, g\u00e9n\u00e9ration et test du fichier TXT",
       icon: ClipboardCheck,
       href: "/calculateurs/declarations-cnss",
-      color: "from-blue-700 to-blue-800"
+      color: "from-blue-700 to-blue-800",
     },
     {
       id: "declarations-neant",
       title: "D\u00e9clarations N\u00e9ant",
-      description: "G\u00e9n\u00e9rez par lot vos d\u00e9clarations n\u00e9ant (\u00c9tat R\u00e9capitulatif I3) avec calibrage PDF",
+      description: "G\u00e9n\u00e9rez par lot vos d\u00e9clarations n\u00e9ant (\u00c9tat I3 + Bordereau I16) avec calibrage PDF",
       icon: FileX,
       href: "/calculateurs/declarations-neant",
-      color: "from-blue-600 to-blue-700"
-    }
+      color: "from-blue-600 to-blue-700",
+    },
   ];
 
   const categorieReference = [
     {
       id: "referentiel-avantages-exclus",
-      title: "Référentiel des avantages exclus de cotisations",
-      description: "Consultez les plafonds des avantages exclus de l'assiette CNSS (Décret n° 2003-1098)",
+      title: "R\u00e9f\u00e9rentiel des avantages exclus de cotisations",
+      description: "Consultez les plafonds des avantages exclus de l'assiette CNSS (D\u00e9cret n\u00b0 2003-1098)",
       icon: FileText,
       href: "/referentiel-avantages-exclus",
-      color: "from-blue-600 to-blue-700"
-    }
+      color: "from-blue-600 to-blue-700",
+    },
   ];
 
-  const handleAbout = () => {
-    window.location.href = '/about';
-  };
-
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="border-b border-gray-200">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-700 to-blue-900 rounded-lg flex items-center justify-center">
-                <Calculator className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-2xl font-bold text-blue-900" style={{ fontFamily: "Montserrat, sans-serif" }}>
-                LE FIDUCIAIRE
-              </h1>
-            </div>
-            <nav className="hidden md:flex gap-8">
-              <a href="/" className="text-gray-700 hover:text-blue-700 transition-colors font-medium">
-                Accueil
-              </a>
-              <a href="#calculateurs" className="text-gray-700 hover:text-blue-700 transition-colors font-medium">
-                Calculateurs
-              </a>
-              <a href="/about" className="text-gray-700 hover:text-blue-700 transition-colors font-medium">
-                À propos
-              </a>
-            </nav>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-900 to-blue-800 text-white py-20">
-        <div className="container mx-auto px-4">
-          <div className="max-w-2xl">
-            <h2 className="text-5xl font-bold mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
-              Vos Calculs Sociaux Simplifiés
-            </h2>
-            <p className="text-xl text-blue-100 mb-8">
-              LE FIDUCIAIRE vous aide à calculer votre paie, votre retraite et vos impôts en Tunisie. 
-              Gratuit, transparent et facile d'utilisation.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/fiche-de-paie">
-                <Button
-                  size="lg"
-                  className="bg-yellow-500 hover:bg-yellow-600 text-blue-900 font-semibold"
-                >
-                  Générer une fiche de paie
-                </Button>
-              </Link>
-              <Link href="/calculateurs/calculer-salaire">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-white text-white hover:bg-white/10"
-                >
-                  Calculer un salaire
-                </Button>
-              </Link>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-white text-white hover:bg-white/10"
-                onClick={() => document.getElementById("calculateurs")?.scrollIntoView({ behavior: "smooth" })}
-              >
-                Voir tous les outils
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section : Traiter une paie (mise en avant en premier, cœur professionnel) */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h3 className="text-3xl font-bold text-blue-900 mb-2 text-center" style={{ fontFamily: "Montserrat, sans-serif" }}>
-            Traiter une paie
-          </h3>
-          <p className="text-center text-gray-600 mb-10 max-w-2xl mx-auto">
-            Le traitement complet d'un salarié : employeur, éléments de rémunération, calcul détaillé et fiche exportable.
+    <div className="py-10">
+      <div className="container mx-auto max-w-5xl">
+        {/* Page title */}
+        <div className="mb-10">
+          <h1
+            className="text-3xl font-bold text-foreground mb-2"
+            style={{ fontFamily: "Montserrat, sans-serif" }}
+          >
+            Vos Calculs Sociaux Simplifi\u00e9s
+          </h1>
+          <p className="text-muted-foreground">
+            LE FIDUCIAIRE vous aide \u00e0 calculer votre paie, votre retraite et vos imp\u00f4ts en Tunisie.
           </p>
-          <div className="grid grid-cols-1 max-w-xl mx-auto gap-6">
+        </div>
+
+        {/* Section : Traiter une paie */}
+        <section className="mb-12">
+          <h2
+            className="text-xl font-semibold text-foreground mb-1"
+            style={{ fontFamily: "Montserrat, sans-serif" }}
+          >
+            Traiter une paie
+          </h2>
+          <p className="text-muted-foreground text-sm mb-6">
+            Le traitement complet d'un salari\u00e9 : employeur, \u00e9l\u00e9ments de r\u00e9mun\u00e9ration, calcul d\u00e9taill\u00e9 et fiche exportable.
+          </p>
+          <div className="grid grid-cols-1 max-w-xl gap-4">
             {categorieTraiter.map((calc) => {
               const Icon = calc.icon;
               return (
                 <Link key={calc.id} href={calc.href}>
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 border-yellow-400 bg-white">
-                    <div className="p-8 flex items-start gap-4">
-                      <div className={`w-14 h-14 flex-shrink-0 rounded-lg bg-gradient-to-br ${calc.color} flex items-center justify-center`}>
-                        <Icon className="w-7 h-7 text-white" />
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer border-2 border-accent">
+                    <div className="p-6 flex items-start gap-4">
+                      <div
+                        className={`w-12 h-12 flex-shrink-0 rounded-md bg-gradient-to-br ${calc.color} flex items-center justify-center`}
+                      >
+                        <Icon className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h4 className="text-xl font-semibold text-blue-900 mb-1" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                        <h3 className="text-lg font-semibold text-foreground mb-1" style={{ fontFamily: "Montserrat, sans-serif" }}>
                           {calc.title}
-                        </h4>
-                        <p className="text-gray-600 text-sm">{calc.description}</p>
+                        </h3>
+                        <p className="text-muted-foreground text-sm">{calc.description}</p>
                       </div>
                     </div>
                   </Card>
@@ -192,68 +131,71 @@ export default function Home() {
               );
             })}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Section : Calculer (réponses rapides) */}
-      <section id="calculateurs" className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <h3 className="text-3xl font-bold text-blue-900 mb-2 text-center" style={{ fontFamily: "Montserrat, sans-serif" }}>
+        {/* Section : Calculer */}
+        <section className="mb-12">
+          <h2
+            className="text-xl font-semibold text-foreground mb-1"
+            style={{ fontFamily: "Montserrat, sans-serif" }}
+          >
             Calculer
-          </h3>
-          <p className="text-center text-gray-600 mb-10 max-w-2xl mx-auto">
-            Une réponse rapide à une question précise, sans dossier complet à monter.
+          </h2>
+          <p className="text-muted-foreground text-sm mb-6">
+            Une r\u00e9ponse rapide \u00e0 une question pr\u00e9cise, sans dossier complet \u00e0 monter.
           </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {categorieCalculer.map((calc) => {
               const Icon = calc.icon;
               return (
                 <Link key={calc.id} href={calc.href}>
-                  <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer border-0 bg-white">
+                  <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
                     <div className="p-6">
-                      <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${calc.color} flex items-center justify-center mb-4`}>
-                        <Icon className="w-6 h-6 text-white" />
+                      <div
+                        className={`w-10 h-10 rounded-md bg-gradient-to-br ${calc.color} flex items-center justify-center mb-3`}
+                      >
+                        <Icon className="w-5 h-5 text-white" />
                       </div>
-                      <h4 className="text-lg font-semibold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                      <h3 className="text-base font-semibold text-foreground mb-1" style={{ fontFamily: "Montserrat, sans-serif" }}>
                         {calc.title}
-                      </h4>
-                      <p className="text-gray-600 text-sm">
-                        {calc.description}
-                      </p>
+                      </h3>
+                      <p className="text-muted-foreground text-sm">{calc.description}</p>
                     </div>
                   </Card>
                 </Link>
               );
             })}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Section : Préparer une déclaration */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h3 className="text-3xl font-bold text-blue-900 mb-2 text-center" style={{ fontFamily: "Montserrat, sans-serif" }}>
-            Préparer une déclaration
-          </h3>
-          <p className="text-center text-gray-600 mb-10 max-w-2xl mx-auto">
-            Saisissez ou importez vos données, contrôlez-les, puis générez et testez votre fichier de déclaration CNSS.
+        {/* Section : Pr\u00e9parer une d\u00e9claration */}
+        <section className="mb-12">
+          <h2
+            className="text-xl font-semibold text-foreground mb-1"
+            style={{ fontFamily: "Montserrat, sans-serif" }}
+          >
+            Pr\u00e9parer une d\u00e9claration
+          </h2>
+          <p className="text-muted-foreground text-sm mb-6">
+            Saisissez ou importez vos donn\u00e9es, contr\u00f4lez-les, puis g\u00e9n\u00e9rez et testez votre fichier de d\u00e9claration CNSS.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 max-w-3xl gap-4">
             {categorieDeclarer.map((calc) => {
               const Icon = calc.icon;
               return (
                 <Link key={calc.id} href={calc.href}>
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer border-0 bg-white">
-                    <div className="p-8 flex items-start gap-4">
-                      <div className={`w-14 h-14 flex-shrink-0 rounded-lg bg-gradient-to-br ${calc.color} flex items-center justify-center`}>
-                        <Icon className="w-7 h-7 text-white" />
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <div className="p-6 flex items-start gap-4">
+                      <div
+                        className={`w-12 h-12 flex-shrink-0 rounded-md bg-gradient-to-br ${calc.color} flex items-center justify-center`}
+                      >
+                        <Icon className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h4 className="text-xl font-semibold text-blue-900 mb-1" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                        <h3 className="text-lg font-semibold text-foreground mb-1" style={{ fontFamily: "Montserrat, sans-serif" }}>
                           {calc.title}
-                        </h4>
-                        <p className="text-gray-600 text-sm">{calc.description}</p>
+                        </h3>
+                        <p className="text-muted-foreground text-sm">{calc.description}</p>
                       </div>
                     </div>
                   </Card>
@@ -261,38 +203,41 @@ export default function Home() {
               );
             })}
           </div>
-          <p className="text-center mt-4">
-            <Link href="/calculateurs/testeur-txt-cnss" className="text-blue-700 hover:underline text-sm">
-              Déjà un fichier TXT généré ailleurs ? Testez sa conformité →
+          <p className="mt-3">
+            <Link href="/calculateurs/testeur-txt-cnss" className="text-primary hover:underline text-sm">
+              D\u00e9j\u00e0 un fichier TXT g\u00e9n\u00e9r\u00e9 ailleurs ? Testez sa conformit\u00e9 \u2192
             </Link>
           </p>
-        </div>
-      </section>
+        </section>
 
-      {/* Section : Référentiel légal */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <h3 className="text-3xl font-bold text-blue-900 mb-2 text-center" style={{ fontFamily: "Montserrat, sans-serif" }}>
-            Référentiel légal
-          </h3>
-          <p className="text-center text-gray-600 mb-10 max-w-2xl mx-auto">
-            Consultez les textes et barèmes de référence utilisés par les calculateurs.
+        {/* Section : R\u00e9f\u00e9rentiel l\u00e9gal */}
+        <section>
+          <h2
+            className="text-xl font-semibold text-foreground mb-1"
+            style={{ fontFamily: "Montserrat, sans-serif" }}
+          >
+            R\u00e9f\u00e9rentiel l\u00e9gal
+          </h2>
+          <p className="text-muted-foreground text-sm mb-6">
+            Consultez les textes et bar\u00e8mes de r\u00e9f\u00e9rence utilis\u00e9s par les calculateurs.
           </p>
-          <div className="grid grid-cols-1 max-w-xl mx-auto gap-6">
+          <div className="grid grid-cols-1 max-w-xl gap-4">
             {categorieReference.map((calc) => {
               const Icon = calc.icon;
               return (
                 <Link key={calc.id} href={calc.href}>
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer border-0 bg-white">
-                    <div className="p-8 flex items-start gap-4">
-                      <div className={`w-14 h-14 flex-shrink-0 rounded-lg bg-gradient-to-br ${calc.color} flex items-center justify-center`}>
-                        <Icon className="w-7 h-7 text-white" />
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <div className="p-6 flex items-start gap-4">
+                      <div
+                        className={`w-12 h-12 flex-shrink-0 rounded-md bg-gradient-to-br ${calc.color} flex items-center justify-center`}
+                      >
+                        <Icon className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h4 className="text-xl font-semibold text-blue-900 mb-1" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                        <h3 className="text-lg font-semibold text-foreground mb-1" style={{ fontFamily: "Montserrat, sans-serif" }}>
                           {calc.title}
-                        </h4>
-                        <p className="text-gray-600 text-sm">{calc.description}</p>
+                        </h3>
+                        <p className="text-muted-foreground text-sm">{calc.description}</p>
                       </div>
                     </div>
                   </Card>
@@ -300,75 +245,8 @@ export default function Home() {
               );
             })}
           </div>
-        </div>
-      </section>
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <h3 className="text-4xl font-bold text-blue-900 mb-12 text-center" style={{ fontFamily: "Montserrat, sans-serif" }}>
-            Pourquoi LE FIDUCIAIRE ?
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl">🔒</span>
-              </div>
-              <h4 className="text-xl font-semibold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
-                Sécurisé
-              </h4>
-              <p className="text-gray-600">
-                Vos données ne sont jamais stockées. Tous les calculs se font localement sur votre appareil.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl">⚡</span>
-              </div>
-              <h4 className="text-xl font-semibold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
-                Rapide
-              </h4>
-              <p className="text-gray-600">
-                Obtenez vos résultats instantanément sans attendre. Interface optimisée et réactive.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl">💰</span>
-              </div>
-              <h4 className="text-xl font-semibold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
-                Gratuit
-              </h4>
-              <p className="text-gray-600">
-                Aucun frais caché. Utilisez tous nos calculateurs gratuitement, à tout moment.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-blue-900 text-white py-8">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-blue-100">
-              © 2026 LE FIDUCIAIRE. Tous droits réservés.
-            </p>
-            <div className="flex gap-6 mt-4 md:mt-0">
-              <a href="#" className="text-blue-100 hover:text-white transition-colors">
-                Mentions légales
-              </a>
-              <a href="#" className="text-blue-100 hover:text-white transition-colors">
-                Confidentialité
-              </a>
-              <a href="#" className="text-blue-100 hover:text-white transition-colors">
-                Contact
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
+        </section>
+      </div>
     </div>
   );
 }
