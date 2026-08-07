@@ -16,6 +16,7 @@ import TesteurTXT from "./pages/calculateurs/TesteurTXT";
 import CalculerSalaire from "./pages/calculateurs/CalculerSalaire";
 import Admin from "./pages/Admin";
 import ReferentielAvantages from "./pages/calculateurs/ReferentielAvantages";
+import DeclarationsNeant from "./pages/calculateurs/DeclarationsNeant";
 
 
 function Router() {
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/calculateurs/actualisation-salaire" component={ActualisationSalaire} />
       <Route path="/calculateurs/declarations-cnss" component={DeclarationsCNSS} />
       <Route path="/calculateurs/testeur-txt-cnss" component={TesteurTXT} />
+      <Route path="/calculateurs/declarations-neant" component={DeclarationsNeant} />
       <Route path="/fiche-de-paie" component={GenerateurFichePaie} />
       <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
@@ -50,7 +52,7 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider
         defaultTheme="light"
-        // switchable
+        switchable
       >
         <TooltipProvider>
           <Toaster />

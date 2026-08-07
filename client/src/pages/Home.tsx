@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
-import { Calculator, TrendingUp, FileText, DollarSign, ClipboardCheck } from "lucide-react";
+import { Calculator, TrendingUp, FileText, DollarSign, ClipboardCheck, FileX } from "lucide-react";
 
 /**
  * Design: Minimaliste & Professionnel
@@ -64,6 +64,14 @@ export default function Home() {
       icon: ClipboardCheck,
       href: "/calculateurs/declarations-cnss",
       color: "from-blue-700 to-blue-800"
+    },
+    {
+      id: "declarations-neant",
+      title: "D\u00e9clarations N\u00e9ant",
+      description: "G\u00e9n\u00e9rez par lot vos d\u00e9clarations n\u00e9ant (\u00c9tat R\u00e9capitulatif I3) avec calibrage PDF",
+      icon: FileX,
+      href: "/calculateurs/declarations-neant",
+      color: "from-blue-600 to-blue-700"
     }
   ];
 
@@ -231,7 +239,7 @@ export default function Home() {
           <p className="text-center text-gray-600 mb-10 max-w-2xl mx-auto">
             Saisissez ou importez vos données, contrôlez-les, puis générez et testez votre fichier de déclaration CNSS.
           </p>
-          <div className="grid grid-cols-1 max-w-xl mx-auto gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto gap-6">
             {categorieDeclarer.map((calc) => {
               const Icon = calc.icon;
               return (
