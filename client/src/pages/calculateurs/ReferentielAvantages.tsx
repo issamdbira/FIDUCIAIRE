@@ -277,7 +277,7 @@ function SimulateurPoint({ numero }: { numero: number }) {
   const resultat = simulerAvantage(point, new Date(dateVersement), nombre, montantUnitaire, montantDeclare);
 
   return (
-    <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+    <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-blue-100">
       <p className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
         <Calculator className="w-4 h-4" /> Simulateur — {point.uniteNombre}
       </p>
@@ -303,15 +303,15 @@ function SimulateurPoint({ numero }: { numero: number }) {
       <Table>
         <TableBody>
           <TableRow>
-            <TableCell className="text-gray-600">Montant total (nombre × montant unitaire)</TableCell>
+            <TableCell className="text-muted-foreground">Montant total (nombre × montant unitaire)</TableCell>
             <TableCell className="text-right font-mono">{formatMontantDT(resultat.montantTotal)}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell className="text-gray-600">Plafond unitaire applicable à cette date</TableCell>
+            <TableCell className="text-muted-foreground">Plafond unitaire applicable à cette date</TableCell>
             <TableCell className="text-right font-mono">{formatMontantDT(resultat.plafondUnitaire)}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell className="text-gray-600">Plafond total (nombre × plafond unitaire)</TableCell>
+            <TableCell className="text-muted-foreground">Plafond total (nombre × plafond unitaire)</TableCell>
             <TableCell className="text-right font-mono">{formatMontantDT(resultat.plafondTotal)}</TableCell>
           </TableRow>
           <TableRow className="bg-green-50">
@@ -323,7 +323,7 @@ function SimulateurPoint({ numero }: { numero: number }) {
             <TableCell className="text-right font-mono text-red-700 font-medium">{formatMontantDT(resultat.montantSoumis)}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell className={resultat.ecartDeclaration !== 0 ? "text-amber-700 font-medium" : "text-gray-600"}>
+            <TableCell className={resultat.ecartDeclaration !== 0 ? "text-amber-700 font-medium" : "text-muted-foreground"}>
               Écart de déclaration (soumis − déclaré)
             </TableCell>
             <TableCell className={`text-right font-mono ${resultat.ecartDeclaration !== 0 ? "text-amber-700 font-medium" : ""}`}>
@@ -348,35 +348,25 @@ export default function ReferentielAvantages() {
   }, [recherche]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4">
-          <Link href="/">
-            <Button variant="ghost" className="gap-2 text-blue-700 hover:text-blue-900">
-              <ArrowLeft className="w-4 h-4" />
-              Retour
-            </Button>
-          </Link>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="text-4xl font-bold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
+    <div className="max-w-3xl mx-auto py-8 px-4">
+          <h2
+            className="text-2xl font-bold text-foreground mb-1"
+            style={{ fontFamily: "Montserrat, sans-serif" }}
+          >
             Référentiel des avantages exclus de l'assiette des cotisations sociales
-          </h1>
-          <p className="text-gray-600 mb-2">
+          </h2>
+          <p className="text-muted-foreground text-sm mb-2">
             Décret n° 2003-1098 du 19 mai 2003 (JORT n°41 du 23/05/2003), fixant la liste des 24
             avantages exclus de l'assiette de calcul des cotisations au titre des régimes légaux de
             sécurité sociale en Tunisie.
           </p>
-          <p className="text-sm text-gray-400 mb-8">
+          <p className="text-xs text-muted-foreground mb-6">
             Les montants exprimés en multiples/pourcentages du SMIG incluent l'historique 2020-2025.
             Les points sans formule SMIG affichent la condition légale exacte, sans montant inventé.
           </p>
 
-          <Card className="mb-8 p-4 border-0 shadow-sm bg-blue-50">
-            <p className="text-sm text-gray-700">
+          <Card className="mb-8 p-4 rounded-lg shadow-sm border border-border bg-card bg-primary/5">
+            <p className="text-sm text-muted-foreground">
               <strong>Règle générale (Art. 3 du décret) :</strong> le montant global des avantages
               exclus ne peut dépasser <strong>5% de l'ensemble des salaires</strong> versés par
               l'entreprise — à l'exception des points 16, 17, 18, 19, 23 et 24, qui ne sont pas
@@ -386,7 +376,7 @@ export default function ReferentielAvantages() {
 
           {/* Recherche */}
           <div className="relative mb-8">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               value={recherche}
               onChange={(e) => setRecherche(e.target.value)}
@@ -398,10 +388,10 @@ export default function ReferentielAvantages() {
           <Accordion type="single" collapsible className="space-y-3">
             {avantagesFiltres.map((a) => (
               <AccordionItem key={a.numero} value={`item-${a.numero}`} className="border-0">
-                <Card className="border-0 shadow-sm overflow-hidden">
+                <Card className="rounded-lg shadow-sm border border-border bg-card overflow-hidden">
                   <AccordionTrigger className="px-6 py-4 hover:no-underline">
                     <div className="flex items-center gap-3 text-left flex-wrap">
-                      <Badge variant="secondary" className="bg-blue-100 text-blue-700 shrink-0">
+                      <Badge variant="secondary" className="bg-blue-100 text-primary shrink-0">
                         Point {a.numero}
                       </Badge>
                       {a.horsPlafond5pct && (
@@ -413,7 +403,7 @@ export default function ReferentielAvantages() {
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="px-6 pb-6">
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="text-sm text-muted-foreground mb-4">
                       <strong>Base de calcul / condition :</strong> {a.base}
                     </p>
                     {a.type === "smig" && a.plafonds && (
@@ -447,11 +437,11 @@ export default function ReferentielAvantages() {
           </Accordion>
 
           {avantagesFiltres.length === 0 && (
-            <p className="text-center text-gray-400 py-8">Aucun avantage ne correspond à cette recherche.</p>
+            <p className="text-center text-muted-foreground py-8">Aucun avantage ne correspond à cette recherche.</p>
           )}
 
           <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               <strong>Note :</strong> ce référentiel est fourni à titre informatif et ne remplace pas
               une vérification auprès des textes réglementaires officiels ou d'un expert en la matière.
               Les 9 points ci-dessus dotés d'un plafond SMIG sont intégrés au calcul automatique du
@@ -459,8 +449,6 @@ export default function ReferentielAvantages() {
               restent à saisir manuellement, leur nature de limite n'étant pas un montant fixe.
             </p>
           </div>
-        </div>
-      </div>
     </div>
   );
 }

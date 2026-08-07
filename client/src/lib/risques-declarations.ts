@@ -11,35 +11,35 @@ export const RISQUES_DECLARATIONS_GENERALES: RisqueDeclaration[] = [
     libelle: "Matricule employeur invalide",
     gravite: "critique",
     description:
-      "Le matricule de l'employeur ne respecte pas le format attendu (8 chiffres + 2 chiffres de cl\u00e9).",
+      "Le matricule de l'employeur ne respecte pas le format attendu (8 chiffres + 2 chiffres de clé).",
   },
   {
     code: "ERR-002",
-    libelle: "Total des salaires d\u00e9clar\u00e9 \u00e0 z\u00e9ro",
+    libelle: "Total des salaires déclaré à zéro",
     gravite: "moyenne",
     description:
-      "Le total trimestriel des salaires d\u00e9clar\u00e9s est nul. Si l'entreprise a des salari\u00e9s actifs, cela peut indiquer une omission.",
+      "Le total trimestriel des salaires déclarés est nul. Si l'entreprise a des salariés actifs, cela peut indiquer une omission.",
   },
   {
     code: "ERR-003",
-    libelle: "\u00c9cart significatif entre trimestres",
+    libelle: "Écart significatif entre trimestres",
     gravite: "moyenne",
     description:
-      "Le nombre de salari\u00e9s d\u00e9clar\u00e9s ou la masse salariale varie de plus de 50% par rapport au trimestre pr\u00e9c\u00e9dent.",
+      "Le nombre de salariés déclarés ou la masse salariale varie de plus de 50% par rapport au trimestre précédent.",
   },
   {
     code: "ERR-004",
     libelle: "Code d'exploitation manquant",
     gravite: "faible",
     description:
-      "Le code d'exploitation de l'\u00e9tablissement n'est pas renseign\u00e9 sur la d\u00e9claration trimestrielle.",
+      "Le code d'exploitation de l'établissement n'est pas renseigné sur la déclaration trimestrielle.",
   },
   {
     code: "ERR-005",
-    libelle: "Nombre de pages incoh\u00e9rent",
+    libelle: "Nombre de pages incohérent",
     gravite: "faible",
     description:
-      "Le num\u00e9ro de page final ne correspond pas au nombre de pages attendu pour le volume de salari\u00e9s d\u00e9clar\u00e9s.",
+      "Le numéro de page final ne correspond pas au nombre de pages attendu pour le volume de salariés déclarés.",
   },
 ];
 

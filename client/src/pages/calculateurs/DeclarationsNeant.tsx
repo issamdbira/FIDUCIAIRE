@@ -31,7 +31,7 @@ const neantItemSchema = z.object({
     .string()
     .min(1, "Le matricule est obligatoire")
     .regex(/^\d{8}-\d{2}$/, "Format invalide (ex: 12345678-99)"),
-  raisonSociale: z.string().min(2, "Minimum 2 caract\u00e8res"),
+  raisonSociale: z.string().min(2, "Minimum 2 caractères"),
   trimestre: z.number().min(1).max(4),
   annee: z
     .number()
@@ -41,12 +41,12 @@ const neantItemSchema = z.object({
 
 type NeantItem = z.infer<typeof neantItemSchema>;
 
-// ── Trimestres libell\u00e9s ──
+// ── Trimestres libellés ──
 const TRIMESTRE_LIBELLE: Record<number, string> = {
   1: "1er Trimestre",
-  2: "2\u00e8me Trimestre",
-  3: "3\u00e8me Trimestre",
-  4: "4\u00e8me Trimestre",
+  2: "2ème Trimestre",
+  3: "3ème Trimestre",
+  4: "4ème Trimestre",
 };
 
 // ── Helper: draw text safely (clamp within page) ──
@@ -81,9 +81,9 @@ async function generateI16Page(
 
   // ── Header band ──
   page.drawRectangle({ x: 0, y: 770, width, height: 71.89, color: DARK_BLUE });
-  safeDrawText(page, "R\u00c9PUBLIQUE TUNISIENNE", 40, 818, { font: fontBold, size: 11, color: rgb(1, 1, 1) });
-  safeDrawText(page, "Caisse Nationale de S\u00e9curit\u00e9 Sociale", 40, 800, { font: fontBold, size: 13, color: rgb(1, 1, 1) });
-  safeDrawText(page, "BORDEREAU DE D\u00c9CLARATION (I16)", width - 290, 785, { font: fontBold, size: 12, color: rgb(1, 1, 1) });
+  safeDrawText(page, "RÉPUBLIQUE TUNISIENNE", 40, 818, { font: fontBold, size: 11, color: rgb(1, 1, 1) });
+  safeDrawText(page, "Caisse Nationale de Sécurité Sociale", 40, 800, { font: fontBold, size: 13, color: rgb(1, 1, 1) });
+  safeDrawText(page, "BORDEREAU DE DÉCLARATION (I16)", width - 290, 785, { font: fontBold, size: 12, color: rgb(1, 1, 1) });
 
   // ── Underline ──
   page.drawLine({ start: { x: 40, y: 765 }, end: { x: width - 40, y: 765 }, thickness: 1.5, color: DARK_BLUE });
@@ -102,21 +102,21 @@ async function generateI16Page(
 
   // ── Period section ──
   const periodY = sectionY - 100;
-  safeDrawText(page, "P\u00e9riode de d\u00e9claration", 40, periodY, { font: fontBold, size: 11, color: DARK_BLUE });
+  safeDrawText(page, "Période de déclaration", 40, periodY, { font: fontBold, size: 11, color: DARK_BLUE });
 
   safeDrawText(page, "Trimestre :", 40, periodY - 25, { font: fontRegular, size: 10, color: BLACK });
   page.drawRectangle({ x: 170, y: periodY - 35, width: 80, height: 18, borderColor: BLACK, borderWidth: 0.5 });
   safeDrawText(page, String(item.trimestre), 208, periodY - 31, { font: fontRegular, size: 11, color: BLACK });
 
-  safeDrawText(page, "Ann\u00e9e :", 280, periodY - 25, { font: fontRegular, size: 10, color: BLACK });
+  safeDrawText(page, "Année :", 280, periodY - 25, { font: fontRegular, size: 10, color: BLACK });
   page.drawRectangle({ x: 370, y: periodY - 35, width: 80, height: 18, borderColor: BLACK, borderWidth: 0.5 });
   safeDrawText(page, String(item.annee), 403, periodY - 31, { font: fontRegular, size: 11, color: BLACK });
 
-  // ── N\u00c9ANT Declaration box ──
+  // ── NÉANT Declaration box ──
   const boxY = periodY - 90;
   page.drawRectangle({ x: 40, y: boxY - 60, width: width - 80, height: 70, color: LIGHT_BG, borderColor: DARK_BLUE, borderWidth: 1 });
-  safeDrawText(page, "D\u00c9CLARATION N\u00c9ANT", width / 2 - 60, boxY - 20, { font: fontBold, size: 18, color: DARK_BLUE });
-  safeDrawText(page, "Aucun salari\u00e9 \u00e0 d\u00e9clarer pour le " + TRIMESTRE_LIBELLE[item.trimestre] + " " + String(item.annee), width / 2 - 180, boxY - 45, { font: fontRegular, size: 10, color: GRAY });
+  safeDrawText(page, "DÉCLARATION NÉANT", width / 2 - 60, boxY - 20, { font: fontBold, size: 18, color: DARK_BLUE });
+  safeDrawText(page, "Aucun salarié à déclarer pour le " + TRIMESTRE_LIBELLE[item.trimestre] + " " + String(item.annee), width / 2 - 180, boxY - 45, { font: fontRegular, size: 10, color: GRAY });
 
   // ── Signature area ──
   const sigY = 120;
@@ -126,8 +126,8 @@ async function generateI16Page(
   safeDrawText(page, "Cachet CNSS", 420, sigY + 10, { font: fontRegular, size: 9, color: GRAY });
 
   // ── Footer ──
-  safeDrawText(page, "Document g\u00e9n\u00e9r\u00e9 automatiquement - LE FIDUCIAIRE", 40, 40, { font: fontRegular, size: 7, color: GRAY });
-  safeDrawText(page, "Mod\u00e8le I16 - Bordereau de d\u00e9claration", width - 220, 40, { font: fontRegular, size: 7, color: GRAY });
+  safeDrawText(page, "Document généré automatiquement - LE FIDUCIAIRE", 40, 40, { font: fontRegular, size: 7, color: GRAY });
+  safeDrawText(page, "Modèle I16 - Bordereau de déclaration", width - 220, 40, { font: fontRegular, size: 7, color: GRAY });
 
   return doc.save();
 }
@@ -160,7 +160,7 @@ export default function DeclarationsNeant() {
   const onFormSubmit = (data: NeantItem) => {
     setItems((prev) => [...prev, data]);
     reset({ matricule: "", raisonSociale: "", trimestre: 1, annee: currentYear });
-    toast.success(`D\u00e9claration ajout\u00e9e : ${data.matricule}`);
+    toast.success(`Déclaration ajoutée : ${data.matricule}`);
   };
 
   const removeItem = (index: number) => {
@@ -203,9 +203,9 @@ export default function DeclarationsNeant() {
 
         if (imported.length > 0) {
           setItems((prev) => [...prev, ...imported]);
-          toast.success(`${imported.length} d\u00e9claration(s) import\u00e9e(s) depuis Excel`);
+          toast.success(`${imported.length} déclaration(s) importée(s) depuis Excel`);
         } else {
-          toast.error("Aucune donn\u00e9e valide trouv\u00e9e dans le fichier Excel");
+          toast.error("Aucune donnée valide trouvée dans le fichier Excel");
         }
       } catch {
         toast.error("Erreur lors de la lecture du fichier Excel");
@@ -237,7 +237,7 @@ export default function DeclarationsNeant() {
 
     try {
       const response = await fetch("/I3.pdf");
-      if (!response.ok) throw new Error("Mod\u00e8le I3 introuvable");
+      if (!response.ok) throw new Error("Modèle I3 introuvable");
       const i3TemplateBytes = await response.arrayBuffer();
 
       const mergedPdf = await PDFDocument.create();
@@ -245,7 +245,7 @@ export default function DeclarationsNeant() {
       const fontBold = await mergedPdf.embedFont(StandardFonts.HelveticaBold);
 
       for (const item of items) {
-        // ─── I3: \u00c9tat R\u00e9capitulatif (template) ───
+        // ─── I3: État Récapitulatif (template) ───
         const i3Doc = await PDFDocument.load(i3TemplateBytes);
         const i3Page = i3Doc.getPages()[0];
 
@@ -261,14 +261,14 @@ export default function DeclarationsNeant() {
         safeDrawText(i3Page, String(item.annee), offsetX + 30, offsetY - 34, {
           font: fontRegular, size: 10, color: rgb(0, 0, 0),
         });
-        safeDrawText(i3Page, "N\u00c9ANT", offsetX, offsetY - 56, {
+        safeDrawText(i3Page, "NÉANT", offsetX, offsetY - 56, {
           font: fontBold, size: 14, color: rgb(0.1, 0.15, 0.35),
         });
 
         const i3Copied = await mergedPdf.copyPages(i3Doc, i3Doc.getPageIndices());
         for (const cp of i3Copied) mergedPdf.addPage(cp);
 
-        // ─── I16: Bordereau de d\u00e9claration (g\u00e9n\u00e9r\u00e9) ───
+        // ─── I16: Bordereau de déclaration (généré) ───
         const i16Bytes = await generateI16Page(item, fontRegular, fontBold);
         const i16Doc = await PDFDocument.load(i16Bytes);
         const i16Copied = await mergedPdf.copyPages(i16Doc, i16Doc.getPageIndices());
@@ -284,24 +284,23 @@ export default function DeclarationsNeant() {
       a.click();
       URL.revokeObjectURL(url);
 
-      toast.success(`${items.length} d\u00e9claration(s) g\u00e9n\u00e9r\u00e9e(s) : I3 + I16`);
+      toast.success(`${items.length} déclaration(s) générée(s) : I3 + I16`);
     } catch {
-      toast.error("Erreur lors de la g\u00e9n\u00e9ration du PDF");
+      toast.error("Erreur lors de la génération du PDF");
     } finally {
       setIsGenerating(false);
     }
   };
 
   return (
-    <div className="py-10">
-      <div className="container mx-auto max-w-4xl">
+    <div className="max-w-3xl mx-auto py-8 px-4">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
-            D\u00e9clarations N\u00e9ant
-          </h1>
-          <p className="text-muted-foreground">
-            G\u00e9n\u00e9rez par lot vos d\u00e9clarations n\u00e9ant (\u00c9tat R\u00e9capitulatif I3 + Bordereau I16) en injectant les donn\u00e9es employeur et la mention \u00ab N\u00c9ANT \u00bb.
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-foreground mb-1" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            Déclarations Néant
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            Générez par lot vos déclarations néant (État Récapitulatif I3 + Bordereau I16) en injectant les données employeur et la mention « NÉANT ».
           </p>
         </div>
 
@@ -309,7 +308,7 @@ export default function DeclarationsNeant() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-foreground">Saisie manuelle</CardTitle>
-            <CardDescription>Ajoutez une d\u00e9claration \u00e0 la liste avant g\u00e9n\u00e9ration.</CardDescription>
+            <CardDescription>Ajoutez une déclaration à la liste avant génération.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
@@ -339,12 +338,12 @@ export default function DeclarationsNeant() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="annee">Ann\u00e9e</Label>
+                  <Label htmlFor="annee">Année</Label>
                   <Input id="annee" type="number" min={currentYear - 1} max={currentYear + 1} {...register("annee", { valueAsNumber: true })} />
                   {errors.annee && <p className="text-sm text-destructive">{errors.annee.message}</p>}
                 </div>
               </div>
-              <Button type="submit">Ajouter \u00e0 la liste</Button>
+              <Button type="submit">Ajouter à la liste</Button>
             </form>
           </CardContent>
         </Card>
@@ -353,7 +352,7 @@ export default function DeclarationsNeant() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-foreground">Import Excel</CardTitle>
-            <CardDescription>Glissez un fichier .xlsx ou cliquez pour s\u00e9lectionner. Colonne A = Matricule, B = Raison Sociale, C = Trimestre, D = Ann\u00e9e.</CardDescription>
+            <CardDescription>Glissez un fichier .xlsx ou cliquez pour sélectionner. Colonne A = Matricule, B = Raison Sociale, C = Trimestre, D = Année.</CardDescription>
           </CardHeader>
           <CardContent>
             <div
@@ -367,7 +366,7 @@ export default function DeclarationsNeant() {
             >
               <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
               <p className="text-sm text-muted-foreground">
-                {dragOver ? "D\u00e9posez le fichier ici" : "Glissez un fichier .xlsx ici ou cliquez pour s\u00e9lectionner"}
+                {dragOver ? "Déposez le fichier ici" : "Glissez un fichier .xlsx ici ou cliquez pour sélectionner"}
               </p>
               <input id="excel-input-neant" type="file" accept=".xlsx,.xls" className="hidden" onChange={onFileSelect} />
             </div>
@@ -377,7 +376,7 @@ export default function DeclarationsNeant() {
         {/* List + Calibrage + Generation */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-foreground">Liste des d\u00e9clarations ({items.length})</CardTitle>
+            <CardTitle className="text-foreground">Liste des déclarations ({items.length})</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {items.length > 0 && (
@@ -389,7 +388,7 @@ export default function DeclarationsNeant() {
                       <th className="pb-2 pr-4 font-semibold text-foreground">Matricule</th>
                       <th className="pb-2 pr-4 font-semibold text-foreground">Raison sociale</th>
                       <th className="pb-2 pr-4 font-semibold text-foreground">Trim.</th>
-                      <th className="pb-2 pr-4 font-semibold text-foreground">Ann\u00e9e</th>
+                      <th className="pb-2 pr-4 font-semibold text-foreground">Année</th>
                       <th className="pb-2 font-semibold text-foreground" />
                     </tr>
                   </thead>
@@ -416,18 +415,18 @@ export default function DeclarationsNeant() {
             {items.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-6">
                 <FileSpreadsheet className="mx-auto h-8 w-8 mb-2" />
-                Aucune d\u00e9claration dans la liste. Utilisez le formulaire ou importez un Excel.
+                Aucune déclaration dans la liste. Utilisez le formulaire ou importez un Excel.
               </p>
             )}
 
             {/* Calibrage I3 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
               <div className="space-y-2">
-                <Label>D\u00e9calage Horizontal I3 (X) : {offsetX} pt</Label>
+                <Label>Décalage Horizontal I3 (X) : {offsetX} pt</Label>
                 <Slider min={0} max={500} step={1} value={[offsetX]} onValueChange={([v]) => setOffsetX(v)} />
               </div>
               <div className="space-y-2">
-                <Label>D\u00e9calage Vertical I3 (Y) : {offsetY} pt</Label>
+                <Label>Décalage Vertical I3 (Y) : {offsetY} pt</Label>
                 <Slider min={0} max={800} step={1} value={[offsetY]} onValueChange={([v]) => setOffsetY(v)} />
               </div>
             </div>
@@ -435,11 +434,10 @@ export default function DeclarationsNeant() {
             {/* Generate Button */}
             <Button className="w-full py-5" size="lg" disabled={items.length === 0 || isGenerating} onClick={generatePDF}>
               <FileDown className="mr-2 h-5 w-5" />
-              {isGenerating ? "G\u00e9n\u00e9ration..." : "G\u00e9n\u00e9rer les d\u00e9clarations N\u00e9ant"}
+              {isGenerating ? "Génération..." : "Générer les déclarations Néant"}
             </Button>
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 }

@@ -7,6 +7,13 @@ import {
   ClipboardList,
   BookOpen,
   Menu,
+  DollarSign,
+  BarChart3,
+  TrendingUp,
+  PenTool,
+  ArrowUpDown,
+  FileSearch,
+  FileX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "./ThemeToggle";
@@ -18,39 +25,47 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-// ── Navigation Items ──
-const NAV_ITEMS = [
+// ── Navigation Groups (exact arborescence) ──
+interface NavChild {
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+interface NavGroup {
+  groupLabel: string;
+  items: NavChild[];
+}
+
+const NAV_GROUPS: NavGroup[] = [
   {
-    label: "Accueil",
-    href: "/",
-    icon: HomeIcon,
-  },
-  {
-    label: "Calculateurs",
-    href: "/calculateurs/calculer-salaire",
-    icon: Calculator,
-    children: [
-      { label: "Calculer un salaire", href: "/calculateurs/calculer-salaire" },
-      { label: "Impôt sur le revenu", href: "/calculateurs/irpp" },
-      { label: "Estimer sa retraite", href: "/calculateurs/retraite-cnss" },
-      { label: "Actualiser un salaire", href: "/calculateurs/actualisation-salaire" },
-      { label: "Fiche de paie", href: "/fiche-de-paie" },
+    groupLabel: "Simulateurs RH",
+    items: [
+      { label: "Calculer un salaire (Brut/Net)", href: "/calculateurs/calculer-salaire", icon: DollarSign },
+      { label: "Impôt sur le revenu (IRPP)", href: "/calculateurs/irpp", icon: BarChart3 },
+      { label: "Estimer sa retraite", href: "/calculateurs/retraite-cnss", icon: TrendingUp },
     ],
   },
   {
-    label: "Déclarations",
-    href: "/calculateurs/declarations-cnss",
-    icon: ClipboardList,
-    children: [
-      { label: "Déclaration CNSS", href: "/calculateurs/declarations-cnss" },
-      { label: "Déclarations Néant", href: "/calculateurs/declarations-neant" },
-      { label: "Testeur TXT", href: "/calculateurs/testeur-txt-cnss" },
+    groupLabel: "Gestion de la Paie",
+    items: [
+      { label: "Générer une fiche de paie", href: "/fiche-de-paie", icon: PenTool },
+      { label: "Actualisation des salaires", href: "/calculateurs/actualisation-salaire", icon: ArrowUpDown },
     ],
   },
   {
-    label: "Référentiel légal",
-    href: "/referentiel-avantages-exclus",
-    icon: BookOpen,
+    groupLabel: "Déclarations Sociales",
+    items: [
+      { label: "Déclaration CNSS (Saisie & Import)", href: "/calculateurs/declarations-cnss", icon: ClipboardList },
+      { label: "Déclarations Néant", href: "/calculateurs/declarations-neant", icon: FileX },
+      { label: "Testeur de fichier TXT", href: "/calculateurs/testeur-txt-cnss", icon: FileSearch },
+    ],
+  },
+  {
+    groupLabel: "Ressources",
+    items: [
+      { label: "Référentiel légal", href: "/referentiel-avantages-exclus", icon: BookOpen },
+    ],
   },
 ];
 
@@ -60,52 +75,46 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <nav className="flex flex-col gap-1 px-3 py-4">
-      {NAV_ITEMS.map((item) => {
-        const Icon = item.icon;
-        const isActive =
-          item.href === "/"
-            ? location === "/"
-            : location.startsWith(item.href) && item.href !== "/";
+      {/* Home link */}
+      <Link
+        href="/"
+        onClick={onNavigate}
+        className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+          location === "/"
+            ? "bg-white/10 text-white"
+            : "text-white/60 hover:bg-white/5 hover:text-white"
+        }`}
+      >
+        <HomeIcon className="size-5 shrink-0" />
+        Accueil
+      </Link>
 
-        return (
-          <div key={item.label}>
-            <Link
-              href={item.href}
-              onClick={onNavigate}
-              className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
-                isActive
-                  ? "bg-white/10 text-white"
-                  : "text-white/60 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              {Icon && <Icon className="size-5 shrink-0" />}
-              {item.label}
-            </Link>
-
-            {item.children && (
-              <div className="ml-8 mt-1 flex flex-col gap-1">
-                {item.children.map((child) => {
-                  const childActive = location === child.href;
-                  return (
-                    <Link
-                      key={child.href}
-                      href={child.href}
-                      onClick={onNavigate}
-                      className={`rounded-md px-3 py-2 text-sm transition-colors ${
-                        childActive
-                          ? "bg-white/10 text-white"
-                          : "text-white/40 hover:text-white/80"
-                      }`}
-                    >
-                      {child.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {NAV_GROUPS.map((group) => (
+        <div key={group.groupLabel} className="mt-3">
+          <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-white/30 mb-1">
+            {group.groupLabel}
+          </p>
+          {group.items.map((item) => {
+            const Icon = item.icon;
+            const isActive = location === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onNavigate}
+                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+                  isActive
+                    ? "bg-white/10 text-white"
+                    : "text-white/50 hover:bg-white/5 hover:text-white/90"
+                }`}
+              >
+                <Icon className="size-4 shrink-0" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      ))}
     </nav>
   );
 }

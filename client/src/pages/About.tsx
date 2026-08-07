@@ -12,10 +12,10 @@ export default function About() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="border-b border-border">
         <div className="container mx-auto px-4 py-4">
           <Link href="/">
-            <Button variant="ghost" className="gap-2 text-blue-700 hover:text-blue-900">
+            <Button variant="ghost" className="gap-2 text-primary">
               <ArrowLeft className="w-4 h-4" />
               Retour à l'accueil
             </Button>
@@ -161,7 +161,7 @@ export default function About() {
                   href="https://www.cnss.tn"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 font-semibold"
+                  className="inline-flex items-center gap-2 text-primary font-semibold"
                 >
                   Visiter le site CNSS <ExternalLink className="w-4 h-4" />
                 </a>
@@ -178,7 +178,7 @@ export default function About() {
                   href="https://www.cnrps.tn"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 font-semibold"
+                  className="inline-flex items-center gap-2 text-primary font-semibold"
                 >
                   Visiter le site CNRPS <ExternalLink className="w-4 h-4" />
                 </a>
@@ -195,7 +195,7 @@ export default function About() {
                   href="https://www.finances.gov.tn"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 font-semibold"
+                  className="inline-flex items-center gap-2 text-primary font-semibold"
                 >
                   Visiter le site des Finances <ExternalLink className="w-4 h-4" />
                 </a>
@@ -225,7 +225,7 @@ export default function About() {
               Pour toute question ou suggestion concernant LE FIDUCIAIRE, n'hésitez pas à nous contacter.
             </p>
             <Link href="/">
-              <Button className="bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 px-8">
+              <Button className=" text-white font-semibold py-3 px-8">
                 Retour aux Calculateurs
               </Button>
             </Link>

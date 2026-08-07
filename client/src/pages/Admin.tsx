@@ -57,11 +57,11 @@ export default function Admin() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
+    <div className="max-w-3xl mx-auto py-8 px-4">
+      <header className="border-b border-border">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/">
-            <Button variant="ghost" className="gap-2 text-blue-700 hover:text-blue-900">
+            <Button variant="ghost" className="gap-2 text-primary">
               <ArrowLeft className="w-4 h-4" />
               Retour
             </Button>
@@ -70,7 +70,7 @@ export default function Admin() {
             <Button variant="outline" onClick={reinitialiser} className="gap-2 text-red-600 border-red-200">
               <RotateCcw className="w-4 h-4" /> Réinitialiser
             </Button>
-            <Button onClick={sauvegarder} className="gap-2 bg-blue-700 hover:bg-blue-800">
+            <Button onClick={sauvegarder} className="gap-2 ">
               <Save className="w-4 h-4" /> {sauvegarde ? "Enregistré ✓" : "Enregistrer"}
             </Button>
           </div>
@@ -155,7 +155,7 @@ export default function Admin() {
                 </div>
               ))}
             </div>
-            <Button variant="outline" onClick={ajouterTranche} className="gap-2 border-blue-300 text-blue-700">
+            <Button variant="outline" onClick={ajouterTranche} className="gap-2 ">
               <Plus className="w-4 h-4" /> Ajouter une tranche
             </Button>
           </Card>
@@ -235,7 +235,7 @@ export default function Admin() {
             <Button variant="outline" onClick={reinitialiser} className="gap-2 text-red-600 border-red-200">
               <RotateCcw className="w-4 h-4" /> Réinitialiser tout
             </Button>
-            <Button onClick={sauvegarder} className="gap-2 bg-blue-700 hover:bg-blue-800">
+            <Button onClick={sauvegarder} className="gap-2 ">
               <Save className="w-4 h-4" /> {sauvegarde ? "Enregistré ✓" : "Enregistrer"}
             </Button>
           </div>

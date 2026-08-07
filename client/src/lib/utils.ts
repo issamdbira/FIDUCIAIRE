@@ -25,8 +25,8 @@ export function formatMontantDT(montant: number | null | undefined): string {
   const [partieEntiere, partieDecimale] = valeurAbsolue.toFixed(3).split(".");
 
   // S√©parateur de milliers : espace ins√©cable
-  const partieEntiereFormatee = partieEntiere.replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0");
+  const partieEntiereFormatee = partieEntiere.replace(/\B(?=(\d{3})+(?!\d))/g, "†");
 
   const signe = negatif ? "-" : "";
-  return `${signe}${partieEntiereFormatee},${partieDecimale}\u00A0DT`;
+  return `${signe}${partieEntiereFormatee},${partieDecimale}†DT`;
 }

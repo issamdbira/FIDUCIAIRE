@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Download, Plus, Trash2, Upload } from "lucide-react";
+import { Download, Plus, Trash2, Upload } from "lucide-react";
 import { Link } from "wouter";
 import { construireNomFichier, telechargerTexte } from "@/lib/cnss-declarations/generator";
 import { importerCSV, importerExcel, regenererApercu } from "@/lib/cnss-declarations/import";
@@ -125,22 +125,25 @@ export default function DeclarationsCNSS() {
   const nomFichierExemple = employeur.num ? construireNomFichier(employeur, "X", "YYYY") : "DS000000000000.XYYYY";
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/">
-            <Button variant="ghost" className="gap-2 text-blue-700 hover:text-blue-900">
-              <ArrowLeft className="w-4 h-4" />
-              Retour
-            </Button>
-          </Link>
-          <Link href="/calculateurs/testeur-txt-cnss">
-            <Button variant="outline" className="text-blue-700 border-blue-300">
-              Tester un fichier TXT existant →
-            </Button>
-          </Link>
+    <div className="max-w-3xl mx-auto py-8 px-4">
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h2
+            className="text-2xl font-bold text-foreground mb-1"
+            style={{ fontFamily: "Montserrat, sans-serif" }}
+          >
+            Déclaration CNSS
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            Générez vos fichiers de déclaration CNSS (format TXT 122 caractères) — saisie manuelle ou import CSV/Excel. Traitement 100% local.
+          </p>
         </div>
-      </header>
+        <Link href="/calculateurs/testeur-txt-cnss">
+          <Button variant="outline" size="sm">
+            Tester un fichier TXT →
+          </Button>
+        </Link>
+      </div>
 
       {notification && (
         <div className={`px-4 py-2 text-sm text-center ${notification.type === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
@@ -148,20 +151,10 @@ export default function DeclarationsCNSS() {
         </div>
       )}
 
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto space-y-8">
-          <div>
-            <h1 className="text-4xl font-bold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
-              Déclarations CNSS Trimestrielles
-            </h1>
-            <p className="text-gray-600">
-              Générez vos fichiers de déclaration CNSS (format TXT 122 caractères) — saisie manuelle ou import CSV/Excel. Traitement 100% local.
-            </p>
-          </div>
-
-          {/* Employeur */}
-          <Card className="p-6 border-0 shadow-sm space-y-4">
-            <h2 className="text-lg font-bold text-blue-900">Configuration Employeur</h2>
+      <div className="space-y-6">
+        {/* Employeur */}
+        <Card className="p-6 rounded-lg shadow-sm border border-border bg-card space-y-4">
+            <h3 className="text-base font-semibold text-foreground">Configuration Employeur</h3>
             <div className="grid grid-cols-4 gap-4">
               <div>
                 <Label className="text-xs mb-1 block">N° Employeur *</Label>
@@ -181,20 +174,20 @@ export default function DeclarationsCNSS() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Button onClick={sauvegarderEmployeur} className="bg-blue-700 hover:bg-blue-800">Sauvegarder</Button>
-              <span className="text-xs bg-gray-100 px-3 py-1.5 rounded font-mono">{nomFichierExemple}</span>
+              <Button onClick={sauvegarderEmployeur}>Sauvegarder</Button>
+              <span className="text-xs bg-muted px-3 py-1.5 rounded font-mono">{nomFichierExemple}</span>
             </div>
           </Card>
 
           {/* Import CSV/Excel */}
-          <Card className="p-6 border-0 shadow-sm space-y-4">
-            <h2 className="text-lg font-bold text-blue-900">Import CSV / Excel</h2>
-            <p className="text-xs text-gray-500">
+          <Card className="p-6 rounded-lg shadow-sm border border-border bg-card space-y-4">
+            <h3 className="text-base font-semibold text-foreground">Import CSV / Excel</h3>
+            <p className="text-xs text-muted-foreground">
               Nom de fichier attendu : <code>nom-TRIMESTRE-ANNEE.csv</code> (ex: paie-1-2026.csv). Colonnes : Matricule, Clé, Nom, CIN, Salaire (millimes).
             </p>
-            <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:border-blue-400 hover:bg-blue-50">
-              <Upload className="w-6 h-6 text-blue-400" />
-              <span className="text-sm text-gray-600">Glissez ou cliquez pour importer un fichier CSV/Excel</span>
+            <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border rounded-lg p-8 cursor-pointer hover:border-primary/50 hover:bg-primary/5">
+              <Upload className="w-6 h-6 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Glissez ou cliquez pour importer un fichier CSV/Excel</span>
               <input
                 type="file"
                 multiple
@@ -209,8 +202,8 @@ export default function DeclarationsCNSS() {
           </Card>
 
           {/* Saisie manuelle */}
-          <Card className="p-6 border-0 shadow-sm space-y-4">
-            <h2 className="text-lg font-bold text-blue-900">Saisie manuelle</h2>
+          <Card className="p-6 rounded-lg shadow-sm border border-border bg-card space-y-4">
+            <h3 className="text-base font-semibold text-foreground">Saisie manuelle</h3>
             <div className="flex gap-4">
               <div>
                 <Label className="text-xs mb-1 block">Trimestre</Label>
@@ -230,7 +223,7 @@ export default function DeclarationsCNSS() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-left text-gray-500">
+                  <tr className="border-b text-left text-muted-foreground">
                     <th className="py-2 pr-2">Matricule</th>
                     <th className="py-2 pr-2">Clé</th>
                     <th className="py-2 pr-2">Nom</th>
@@ -259,19 +252,19 @@ export default function DeclarationsCNSS() {
             </div>
 
             <div className="flex gap-3">
-              <Button variant="outline" onClick={ajouterLigne} className="gap-2 border-blue-300 text-blue-700">
+                            <Button variant="outline" onClick={ajouterLigne} className="gap-2">
                 <Plus className="w-4 h-4" /> Ajouter
               </Button>
-              <Button onClick={genererDeclarationManuelle} className="bg-blue-700 hover:bg-blue-800">
+                            <Button onClick={genererDeclarationManuelle}>
                 Générer la déclaration
               </Button>
             </div>
           </Card>
 
           {/* Liste des déclarations */}
-          <Card className="p-6 border-0 shadow-sm space-y-4">
+          <Card className="p-6 rounded-lg shadow-sm border border-border bg-card space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-bold text-blue-900">Déclarations ({declarations.length})</h2>
+              <h3 className="text-base font-semibold text-foreground">Déclarations ({declarations.length})</h3>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -284,7 +277,7 @@ export default function DeclarationsCNSS() {
               </div>
             </div>
 
-            {declarations.length === 0 && <p className="text-gray-400 text-sm">Aucune déclaration pour l'instant.</p>}
+            {declarations.length === 0 && <p className="text-muted-foreground text-sm">Aucune déclaration pour l'instant.</p>}
 
             {declarations.map((decl, idx) => {
               const valide = decl.errorsList.length === 0;
@@ -292,12 +285,12 @@ export default function DeclarationsCNSS() {
               return (
                 <div key={decl.id} className="border rounded-lg overflow-hidden">
                   <div
-                    className="flex justify-between items-center p-3 bg-gray-50 cursor-pointer"
+                    className="flex justify-between items-center p-3 bg-muted cursor-pointer"
                     onClick={() => setOuvertes({ ...ouvertes, [decl.id]: !estOuverte })}
                   >
                     <div>
                       <p className="font-medium">{decl.fileName}</p>
-                      <p className="text-xs text-gray-500">T{decl.trimester}/{decl.year} — {decl.generatedFilename}</p>
+                      <p className="text-xs text-muted-foreground">T{decl.trimester}/{decl.year} — {decl.generatedFilename}</p>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <span>👥 {decl.employees.length}</span>
@@ -323,7 +316,6 @@ export default function DeclarationsCNSS() {
             })}
           </Card>
         </div>
-      </div>
     </div>
   );
 }

@@ -177,25 +177,15 @@ export default function GenerateurFichePaie() {
     elements.filter((e) => e.type === "salaire_base").every((e) => !validerMontantSalaire(e.montant));
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4">
-          <Link href="/">
-            <Button variant="ghost" className="gap-2 text-blue-700 hover:text-blue-900">
-              <ArrowLeft className="w-4 h-4" />
-              Retour
-            </Button>
-          </Link>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="text-4xl font-bold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
+    <div className="max-w-3xl mx-auto py-8 px-4">
+          <h2
+            className="text-2xl font-bold text-foreground mb-1"
+            style={{ fontFamily: "Montserrat, sans-serif" }}
+          >
             Générer une Fiche de Paie
-          </h1>
-          <p className="text-gray-600 mb-8">
-            Gratuit pour 1 salarié et 1 période. Le calcul détaillé est entièrement transparent.
+          </h2>
+          <p className="text-muted-foreground text-sm mb-6">
+            Parcours guidé en 7 étapes pour générer la fiche de paie d'un salarié avec export PDF.
           </p>
 
           {/* Indicateur d'étapes */}
@@ -205,10 +195,10 @@ export default function GenerateurFichePaie() {
                 key={label}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium ${
                   i === etape
-                    ? "bg-blue-700 text-white"
+                    ? "bg-primary text-primary-foreground"
                     : i < etape
                     ? "bg-blue-100 text-blue-700"
-                    : "bg-gray-100 text-gray-400"
+                    : "bg-muted text-gray-400"
                 }`}
               >
                 {i + 1}. {label}
@@ -218,8 +208,8 @@ export default function GenerateurFichePaie() {
 
           {/* Étape 1 : Employeur */}
           {etape === 0 && (
-            <Card className="p-8 border-0 shadow-sm space-y-5">
-              <h2 className="text-xl font-bold text-blue-900" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            <Card className="p-8 rounded-lg shadow-sm border border-border bg-card space-y-5">
+              <h2 className="text-xl font-bold text-foreground" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Informations de l'employeur
               </h2>
               <div className="grid grid-cols-2 gap-4">
@@ -273,13 +263,13 @@ export default function GenerateurFichePaie() {
                 </div>
               </div>
 
-              <div className="border-t border-gray-200 pt-4">
-                <Label className="mb-2 block font-semibold text-blue-900">Logo de l'entreprise</Label>
+              <div className="border-t border-border pt-4">
+                <Label className="mb-2 block font-semibold text-foreground">Logo de l'entreprise</Label>
                 <div className="flex items-center gap-4">
                   {employeur.logoDataUrl && (
-                    <img src={employeur.logoDataUrl} alt="Logo" className="h-16 w-16 object-contain border border-gray-200 rounded" />
+                    <img src={employeur.logoDataUrl} alt="Logo" className="h-16 w-16 object-contain border border-border rounded" />
                   )}
-                  <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-blue-300 rounded-lg cursor-pointer text-blue-700 hover:bg-blue-50">
+                  <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-blue-300 rounded-lg cursor-pointer text-blue-700 hover:bg-primary/5">
                     <Upload className="w-4 h-4" />
                     {employeur.logoDataUrl ? "Changer le logo" : "Ajouter un logo"}
                     <input
@@ -296,7 +286,7 @@ export default function GenerateurFichePaie() {
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button disabled={!canAdvanceFromEmployeur} onClick={() => setEtape(1)} className="bg-blue-700 hover:bg-blue-800 gap-2">
+                <Button disabled={!canAdvanceFromEmployeur} onClick={() => setEtape(1)} className=" gap-2">
                   Suivant <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -305,8 +295,8 @@ export default function GenerateurFichePaie() {
 
           {/* Étape 2 : Salarié */}
           {etape === 1 && (
-            <Card className="p-8 border-0 shadow-sm space-y-5">
-              <h2 className="text-xl font-bold text-blue-900" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            <Card className="p-8 rounded-lg shadow-sm border border-border bg-card space-y-5">
+              <h2 className="text-xl font-bold text-foreground" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Informations du salarié
               </h2>
               <div className="grid grid-cols-2 gap-4">
@@ -336,8 +326,8 @@ export default function GenerateurFichePaie() {
                 </div>
               </div>
 
-              <div className="border-t border-gray-200 pt-4">
-                <h3 className="font-semibold text-blue-900 mb-3">Situation familiale (pour l'IRPP)</h3>
+              <div className="border-t border-border pt-4">
+                <h3 className="font-semibold text-foreground mb-3">Situation familiale (pour l'IRPP)</h3>
                 <div className="flex items-center gap-3 mb-3">
                   <Checkbox
                     id="chef"
@@ -362,8 +352,8 @@ export default function GenerateurFichePaie() {
                 </div>
               </div>
 
-              <div className="border-t border-gray-200 pt-4">
-                <h3 className="font-semibold text-blue-900 mb-3">Mode de paiement</h3>
+              <div className="border-t border-border pt-4">
+                <h3 className="font-semibold text-foreground mb-3">Mode de paiement</h3>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <Label className="mb-2 block text-sm">Mode</Label>
@@ -392,7 +382,7 @@ export default function GenerateurFichePaie() {
 
               <div className="flex justify-between pt-2">
                 <Button variant="ghost" onClick={() => setEtape(0)}>Retour</Button>
-                <Button disabled={!canAdvanceFromSalarie} onClick={() => setEtape(2)} className="bg-blue-700 hover:bg-blue-800 gap-2">
+                <Button disabled={!canAdvanceFromSalarie} onClick={() => setEtape(2)} className=" gap-2">
                   Suivant <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -401,8 +391,8 @@ export default function GenerateurFichePaie() {
 
           {/* Étape 3 : Période */}
           {etape === 2 && (
-            <Card className="p-8 border-0 shadow-sm space-y-5">
-              <h2 className="text-xl font-bold text-blue-900" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            <Card className="p-8 rounded-lg shadow-sm border border-border bg-card space-y-5">
+              <h2 className="text-xl font-bold text-foreground" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Période de paie
               </h2>
               <div className="grid grid-cols-2 gap-4">
@@ -431,7 +421,7 @@ export default function GenerateurFichePaie() {
               </div>
               <div className="flex justify-between pt-2">
                 <Button variant="ghost" onClick={() => setEtape(1)}>Retour</Button>
-                <Button onClick={() => setEtape(3)} className="bg-blue-700 hover:bg-blue-800 gap-2">
+                <Button onClick={() => setEtape(3)} className=" gap-2">
                   Suivant <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -440,8 +430,8 @@ export default function GenerateurFichePaie() {
 
           {/* Étape 4 : Éléments de rémunération */}
           {etape === 3 && (
-            <Card className="p-8 border-0 shadow-sm space-y-5">
-              <h2 className="text-xl font-bold text-blue-900" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            <Card className="p-8 rounded-lg shadow-sm border border-border bg-card space-y-5">
+              <h2 className="text-xl font-bold text-foreground" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Éléments de rémunération
               </h2>
 
@@ -478,7 +468,7 @@ export default function GenerateurFichePaie() {
               </div>
 
               {elements.some((e) => e.type === "avantage") && (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-gray-700">
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-muted-foreground">
                   <strong>Avantages en nature :</strong> pour les 9 points du décret n° 1098-2003
                   dont le plafond est validé (voir liste ci-dessous), le montant exonéré/soumis est
                   calculé automatiquement. Pour tout autre avantage, le montant saisi est exclu du
@@ -486,7 +476,7 @@ export default function GenerateurFichePaie() {
                 </div>
               )}
 
-              <div className="p-4 bg-blue-50 rounded-lg space-y-3">
+              <div className="p-4 bg-primary/5 rounded-lg space-y-3">
                 <p className="text-xs font-semibold text-blue-700 uppercase">Avantage exclu de cotisations (décret 1098-2003)</p>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                   <div className="md:col-span-2">
@@ -515,7 +505,7 @@ export default function GenerateurFichePaie() {
                   const dateReference = new Date(annee, mois - 1, 1);
                   const sim = simulerAvantage(point, dateReference, nombreAvantage, montantUnitaireAvantage, 0);
                   return (
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-muted-foreground">
                       Sur {formatMontantDT(sim.montantTotal)} : <strong className="text-green-700">{formatMontantDT(sim.montantExonere)} exonéré</strong>
                       {" "}et <strong className="text-red-700">{formatMontantDT(sim.montantSoumis)} soumis</strong> (plafond {formatMontantDT(sim.plafondUnitaire)}/{point.uniteNombre.split(" ")[0]}, période {mois}/{annee}).
                       {" "}<Link href="/referentiel-avantages-exclus" className="underline">Détail du point {point.numero} →</Link>
@@ -545,7 +535,7 @@ export default function GenerateurFichePaie() {
               </div>
 
               <div className="p-4 bg-gray-50 rounded-lg space-y-3">
-                <p className="text-xs font-semibold text-gray-500 uppercase">Ajouts rapides</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase">Ajouts rapides</p>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     variant="outline"
@@ -576,12 +566,12 @@ export default function GenerateurFichePaie() {
                   </Button>
                 </div>
 
-                <div className="flex items-end gap-2 pt-2 border-t border-gray-200">
+                <div className="flex items-end gap-2 pt-2 border-t border-border">
                   <div className="w-24">
                     <Label className="text-xs mb-1 block">Heures sup</Label>
                     <Input type="number" min="0" value={heuresSup} onChange={(e) => setHeuresSup(parseFloat(e.target.value) || 0)} />
                   </div>
-                  <p className="text-xs text-gray-500 flex-1">
+                  <p className="text-xs text-muted-foreground flex-1">
                     Régime {regime}h — {regime === 48
                       ? "majoration 75%"
                       : "8 premières heures à 25%, au-delà à 50%"}
@@ -607,7 +597,7 @@ export default function GenerateurFichePaie() {
 
               <div className="flex justify-between pt-2">
                 <Button variant="ghost" onClick={() => setEtape(2)}>Retour</Button>
-                <Button disabled={!canAdvanceFromElements} onClick={() => setEtape(4)} className="bg-blue-700 hover:bg-blue-800 gap-2">
+                <Button disabled={!canAdvanceFromElements} onClick={() => setEtape(4)} className=" gap-2">
                   Suivant <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -616,8 +606,8 @@ export default function GenerateurFichePaie() {
 
           {/* Étape 5 : Vérification */}
           {etape === 4 && (
-            <Card className="p-8 border-0 shadow-sm space-y-5">
-              <h2 className="text-xl font-bold text-blue-900" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            <Card className="p-8 rounded-lg shadow-sm border border-border bg-card space-y-5">
+              <h2 className="text-xl font-bold text-foreground" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Vérification avant calcul
               </h2>
               <div className="space-y-3 text-sm">
@@ -642,9 +632,9 @@ export default function GenerateurFichePaie() {
                   </ul>
                 </div>
 
-                <div className="border-t border-gray-200 pt-4">
+                <div className="border-t border-border pt-4">
                   <strong>Champs à afficher sur la fiche de paie :</strong>
-                  <p className="text-xs text-gray-500 mb-2">Décoche ce que tu ne veux pas faire apparaître sur le document final.</p>
+                  <p className="text-xs text-muted-foreground mb-2">Décoche ce que tu ne veux pas faire apparaître sur le document final.</p>
                   <div className="grid grid-cols-2 gap-2">
                     {([
                       ["matriculeFiscal", "Matricule fiscal employeur"],
@@ -669,7 +659,7 @@ export default function GenerateurFichePaie() {
               </div>
               <div className="flex justify-between pt-2">
                 <Button variant="ghost" onClick={() => setEtape(3)}>Retour</Button>
-                <Button onClick={lancerCalcul} className="bg-blue-700 hover:bg-blue-800 gap-2">
+                <Button onClick={lancerCalcul} className=" gap-2">
                   Calculer <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -678,15 +668,15 @@ export default function GenerateurFichePaie() {
 
           {/* Étape 6 : Résultat détaillé (avec détail technique par élément) */}
           {etape === 5 && resultat && (
-            <Card className="p-8 border-0 shadow-sm space-y-4">
-              <h2 className="text-xl font-bold text-blue-900" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            <Card className="p-8 rounded-lg shadow-sm border border-border bg-card space-y-4">
+              <h2 className="text-xl font-bold text-foreground" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Détail technique du traitement
               </h2>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-xs border-collapse">
                   <thead>
-                    <tr className="border-b border-gray-300 text-gray-500 text-left">
+                    <tr className="border-b border-gray-300 text-muted-foreground text-left">
                       <th className="py-2 pr-2">Désignation</th>
                       <th className="py-2 pr-2">Montant</th>
                       <th className="py-2 pr-2">Brut</th>
@@ -703,19 +693,19 @@ export default function GenerateurFichePaie() {
                         <td className="py-2 pr-2">{e.inclusDansBrut ? "Oui" : "Non"}</td>
                         <td className="py-2 pr-2">{e.inclusBaseCNSS ? "Oui" : "Non"}</td>
                         <td className="py-2 pr-2">{e.inclusBaseFiscale ? "Oui" : "Non"}</td>
-                        <td className="py-2 pr-2 text-gray-500">{e.regleAppliquee}</td>
+                        <td className="py-2 pr-2 text-muted-foreground">{e.regleAppliquee}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
 
-              <div className="border-t border-gray-200 pt-3 space-y-2 text-sm">
+              <div className="border-t border-border pt-3 space-y-2 text-sm">
                 <div className="flex justify-between font-semibold">
                   <span>Rémunération brute</span>
                   <span>{formatMontantDT(resultat.totalRemunerationBrute)}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
+                <div className="flex justify-between text-muted-foreground">
                   <span>Base CNSS</span>
                   <span>{formatMontantDT(resultat.baseCNSS)}</span>
                 </div>
@@ -727,17 +717,17 @@ export default function GenerateurFichePaie() {
                   <span>Cotisation patronale (à la charge de l'employeur, n'affecte pas le net)</span>
                   <span>{formatMontantDT(resultat.cotisationPatronale)}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
+                <div className="flex justify-between text-muted-foreground">
                   <span>Abattement frais professionnels (10 %, plafond 2 000 DT/an)</span>
                   <span className="text-green-600">{formatMontantDT(-resultat.fraisProfessionnelsMensuel)}</span>
                 </div>
                 {resultat.deductionsFamilialesMensuelles > 0 && (
-                  <div className="flex justify-between text-gray-600">
+                  <div className="flex justify-between text-muted-foreground">
                     <span>Déductions familiales</span>
                     <span className="text-green-600">{formatMontantDT(-resultat.deductionsFamilialesMensuelles)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-gray-600">
+                <div className="flex justify-between text-muted-foreground">
                   <span>Assiette imposable nette</span>
                   <span>{formatMontantDT(resultat.assietteImposableNetteMensuelle)}</span>
                 </div>
@@ -761,21 +751,21 @@ export default function GenerateurFichePaie() {
                       <li key={e.id}>
                         {e.label} — {formatMontantDT(e.montant)} — {e.noteReglementaire || "règle non sourcée"}
                         <br />
-                        <span className="text-xs text-gray-500">Calcul automatique : non — {e.regleAppliquee}</span>
+                        <span className="text-xs text-muted-foreground">Calcul automatique : non — {e.regleAppliquee}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
 
-              <div className="flex justify-between items-center py-4 bg-gradient-to-r from-blue-50 to-blue-100 px-4 rounded-lg">
-                <span className="text-lg font-bold text-blue-900">Net à Payer</span>
+              <div className="flex justify-between items-center py-4 bg-gradient-to-r  px-4 rounded-lg">
+                <span className="text-lg font-bold text-foreground">Net à Payer</span>
                 <span className="text-2xl font-bold text-blue-700">{formatMontantDT(resultat.netAPayer)}</span>
               </div>
 
               <div className="flex justify-between pt-2">
                 <Button variant="ghost" onClick={() => setEtape(3)}>Modifier les éléments</Button>
-                <Button onClick={() => setEtape(6)} className="bg-blue-700 hover:bg-blue-800 gap-2">
+                <Button onClick={() => setEtape(6)} className=" gap-2">
                   Voir la fiche de paie <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -786,27 +776,27 @@ export default function GenerateurFichePaie() {
           {etape === 6 && resultat && (
             <>
               <div ref={ficheRef}>
-              <Card className="p-10 border-0 shadow-sm bg-white">
+              <Card className="p-10 rounded-lg shadow-sm border border-border bg-card bg-white">
                 <div className="flex justify-between items-start border-b-2 border-blue-900 pb-4 mb-6">
                   <div className="flex items-center gap-4">
                     {employeur.logoDataUrl && (
                       <img src={employeur.logoDataUrl} alt="Logo" className="h-14 w-14 object-contain" />
                     )}
                     <div>
-                      <h2 className="text-2xl font-bold text-blue-900" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                      <h2 className="text-2xl font-bold text-foreground" style={{ fontFamily: "Montserrat, sans-serif" }}>
                         Fiche de Paie
                       </h2>
-                      <p className="text-sm text-gray-600 font-medium">{employeur.nom}</p>
+                      <p className="text-sm text-muted-foreground font-medium">{employeur.nom}</p>
                       {employeur.adresse && <p className="text-xs text-gray-400">{employeur.adresse}</p>}
                       <p className="text-xs text-gray-400">
                         {employeur.matriculeCNSS && `CNSS : ${employeur.matriculeCNSS}`}
                         {champsAffiches.matriculeFiscal && employeur.matriculeFiscal && ` — MF : ${employeur.matriculeFiscal}`}
                         {champsAffiches.registreCommerce && employeur.registreCommerce && ` — RC : ${employeur.registreCommerce}`}
                       </p>
-                      <p className="text-sm text-gray-500">Période : {mois}/{annee}</p>
+                      <p className="text-sm text-muted-foreground">Période : {mois}/{annee}</p>
                     </div>
                   </div>
-                  <div className="text-right text-sm text-gray-600">
+                  <div className="text-right text-sm text-muted-foreground">
                     <p className="font-semibold">{salarie.prenom} {salarie.nom}</p>
                     {salarie.matricule && <p>Matricule : {salarie.matricule}</p>}
                     {(champsAffiches.poste || champsAffiches.categorieProfessionnelle) && salarie.poste && (
@@ -821,7 +811,7 @@ export default function GenerateurFichePaie() {
 
                 <table className="w-full text-sm mb-6">
                   <thead>
-                    <tr className="border-b border-gray-300 text-gray-500">
+                    <tr className="border-b border-gray-300 text-muted-foreground">
                       <th className="text-left py-2">Désignation</th>
                       <th className="text-right py-2">Montant</th>
                     </tr>
@@ -866,7 +856,7 @@ export default function GenerateurFichePaie() {
                 </div>
 
                 {champsAffiches.modePaiement && (
-                  <div className="mt-4 text-sm text-gray-600">
+                  <div className="mt-4 text-sm text-muted-foreground">
                     <strong>Paiement :</strong> {salarie.modePaiement === "virement" ? "Virement bancaire" : "Espèce"}
                     {salarie.modePaiement === "virement" && salarie.banque && ` — ${salarie.banque}`}
                     {salarie.modePaiement === "virement" && salarie.rib && ` — RIB : ${salarie.rib}`}
@@ -884,14 +874,12 @@ export default function GenerateurFichePaie() {
 
               <div className="flex justify-between pt-6">
                 <Button variant="ghost" onClick={() => setEtape(5)}>Retour au détail</Button>
-                <Button onClick={exporterPDF} disabled={exportEnCours} className="bg-blue-700 hover:bg-blue-800 gap-2">
+                <Button onClick={exporterPDF} disabled={exportEnCours} className=" gap-2">
                   <Download className="w-4 h-4" /> {exportEnCours ? "Export en cours..." : "Exporter en PDF"}
                 </Button>
               </div>
             </>
           )}
         </div>
-      </div>
-    </div>
   );
 }

@@ -5,20 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft } from "lucide-react";
-import { Link } from "wouter";
 import { calculerCotisationCNSS, calculerCSSAnnuelle } from "@/lib/payroll/cnss";
 import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "@/lib/payroll/irpp";
 import { formatMontantDT } from "@/lib/utils";
 import { validerMontantSalaire } from "@/lib/validation-salaire";
 
 /**
- * Design: Minimaliste & Professionnel
  * Calculateur de Paie CNSS (Salariés du secteur privé)
  *
  * Les formules (CNSS, CSS, IRPP) sont centralisées dans src/lib/payroll/
  * pour être réutilisées par le futur moteur de paie (PayrollEngine) sans
- * duplication. Ne pas recopier de constantes ici — importer depuis lib/payroll.
+ * duplication.
  */
 
 interface PayeResult {
@@ -32,9 +29,6 @@ interface PayeResult {
   css: number;
   salaireNet: number;
 }
-
-
-const SMIG_2025 = 508; // Dinars
 
 export default function PaieCNSS() {
   const [salaireBrut, setSalaireBrut] = useState<number>(1000);
@@ -62,7 +56,6 @@ export default function PaieCNSS() {
     const fraisPro = calculerFraisProfessionnels(salaireImposable * 12);
     const irpp = calculerIRPPAnnuel(salaireImposable * 12, deductions + fraisPro) / 12;
 
-    // CSS : même assiette annuelle que l'IRPP (après abattements), exonérée sous 5000D/an
     const assietteFiscaleAnnuelle = Math.max(salaireImposable * 12 - deductions - fraisPro, 0);
     const css = calculerCSSAnnuelle(assietteFiscaleAnnuelle) / 12;
     const salaireNet = salaireBrut - cotisationsCNSS - irpp - css;
@@ -81,230 +74,193 @@ export default function PaieCNSS() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4">
-          <Link href="/">
-            <Button variant="ghost" className="gap-2 text-blue-700 hover:text-blue-900">
-              <ArrowLeft className="w-4 h-4" />
-              Retour
-            </Button>
-          </Link>
-        </div>
-      </header>
+    <div className="max-w-3xl mx-auto py-8 px-4">
+      <h2
+        className="text-2xl font-bold text-foreground mb-1"
+        style={{ fontFamily: "Montserrat, sans-serif" }}
+      >
+        Calculateur de Paie CNSS
+      </h2>
+      <p className="text-muted-foreground text-sm mb-6">
+        Calculez votre salaire net à partir du brut selon la réglementation tunisienne. CNSS, IRPP et CSS inclus.
+      </p>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-4xl font-bold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
-            Calculateur de Paie CNSS
-          </h1>
-          <p className="text-gray-600 mb-8">
-            Calculez votre salaire net à partir du brut selon la réglementation tunisienne.
-          </p>
+      <Card className="p-6 rounded-lg shadow-sm border border-border bg-card mb-6">
+        <div className="space-y-6">
+          <div>
+            <Label className="text-base font-semibold text-foreground mb-2 block">
+              Salaire Brut Mensuel (D)
+            </Label>
+            <Input
+              type="number"
+              value={salaireBrut}
+              onChange={(e) => setSalaireBrut(parseFloat(e.target.value) || 0)}
+              className="text-lg p-3"
+              min="0"
+            />
+            {erreurSalaire && <p className="text-sm text-destructive mt-2">{erreurSalaire}</p>}
+          </div>
 
-          <Card className="p-8 border-0 shadow-sm mb-8">
-            <div className="space-y-6">
-              {/* Salaire Brut */}
-              <div>
-                <Label className="text-base font-semibold text-blue-900 mb-2 block">
-                  Salaire Brut Mensuel (D)
-                </Label>
-                <Input
-                  type="number"
-                  value={salaireBrut}
-                  onChange={(e) => setSalaireBrut(parseFloat(e.target.value) || 0)}
-                  className="text-lg p-3"
-                  min="0"
+          <div>
+            <Label className="text-base font-semibold text-foreground mb-2 block">
+              Année
+            </Label>
+            <Select value={annee.toString()} onValueChange={(v) => setAnnee(parseInt(v))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2025">2025 (CSS 0.5% applicable)</SelectItem>
+                <SelectItem value="2026">2026 (CSS 0.5% maintenue, LF2026)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="border-t border-border pt-6">
+            <h3 className="font-semibold text-foreground mb-4" style={{ fontFamily: "Montserrat, sans-serif" }}>
+              Situation Familiale
+            </h3>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="chef"
+                  checked={chefFamille}
+                  onCheckedChange={(checked) => setChefFamille(checked as boolean)}
                 />
-                {erreurSalaire && <p className="text-sm text-red-600 mt-2">{erreurSalaire}</p>}
+                <Label htmlFor="chef" className="cursor-pointer">
+                  Chef de famille (300 D)
+                </Label>
               </div>
 
-              {/* Année */}
               <div>
-                <Label className="text-base font-semibold text-blue-900 mb-2 block">
-                  Année
+                <Label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Nombre d'enfants (moins de 20 ans)
                 </Label>
-                <Select value={annee.toString()} onValueChange={(v) => setAnnee(parseInt(v))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <Select value={enfants.toString()} onValueChange={(v) => setEnfants(parseInt(v))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="2025">2025 (CSS 0.5% applicable)</SelectItem>
-                    <SelectItem value="2026">2026 (CSS 0.5% maintenue, LF2026)</SelectItem>
+                    {[0, 1, 2, 3, 4].map((n) => (
+                      <SelectItem key={n} value={n.toString()}>
+                        {n} enfant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 100)})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Situation Familiale */}
-              <div className="border-t border-gray-200 pt-6">
-                <h3 className="font-semibold text-blue-900 mb-4" style={{ fontFamily: "Montserrat, sans-serif" }}>
-                  Situation Familiale
-                </h3>
-
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Checkbox
-                      id="chef"
-                      checked={chefFamille}
-                      onCheckedChange={(checked) => setChefFamille(checked as boolean)}
-                    />
-                    <Label htmlFor="chef" className="cursor-pointer">
-                      Chef de famille (300 D)
-                    </Label>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                      Nombre d'enfants (moins de 20 ans)
-                    </Label>
-                    <Select value={enfants.toString()} onValueChange={(v) => setEnfants(parseInt(v))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[0, 1, 2, 3, 4].map((n) => (
-                          <SelectItem key={n} value={n.toString()}>
-                            {n} enfant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 100)})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                      Étudiants sans bourse
-                    </Label>
-                    <Select value={etudiants.toString()} onValueChange={(v) => setEtudiants(parseInt(v))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[0, 1, 2, 3, 4].map((n) => (
-                          <SelectItem key={n} value={n.toString()}>
-                            {n} étudiant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 1000)})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                      Enfants handicapés
-                    </Label>
-                    <Select value={infirmes.toString()} onValueChange={(v) => setInfirmes(parseInt(v))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[0, 1, 2, 3, 4].map((n) => (
-                          <SelectItem key={n} value={n.toString()}>
-                            {n} enfant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 2000)})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                      Autres déductions annuelles (D)
-                    </Label>
-                    <Input
-                      type="number"
-                      value={autresDeductions}
-                      onChange={(e) => setAutresDeductions(parseFloat(e.target.value) || 0)}
-                      placeholder="Ex: intérêts de crédit, épargne..."
-                      min="0"
-                    />
-                  </div>
-                </div>
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Étudiants sans bourse
+                </Label>
+                <Select value={etudiants.toString()} onValueChange={(v) => setEtudiants(parseInt(v))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[0, 1, 2, 3, 4].map((n) => (
+                      <SelectItem key={n} value={n.toString()}>
+                        {n} étudiant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 1000)})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Bouton Calculer */}
-              <Button
-                onClick={handleCalculer}
-                disabled={!!erreurSalaire}
-                className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Calculer
-              </Button>
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Enfants handicapés
+                </Label>
+                <Select value={infirmes.toString()} onValueChange={(v) => setInfirmes(parseInt(v))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[0, 1, 2, 3, 4].map((n) => (
+                      <SelectItem key={n} value={n.toString()}>
+                        {n} enfant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 2000)})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Autres déductions annuelles (D)
+                </Label>
+                <Input
+                  type="number"
+                  value={autresDeductions}
+                  onChange={(e) => setAutresDeductions(parseFloat(e.target.value) || 0)}
+                  placeholder="Ex: intérêts de crédit, épargne..."
+                  min="0"
+                />
+              </div>
             </div>
-          </Card>
+          </div>
 
-          {/* Résultats */}
-          {result && !erreurSalaire && (
-            <Card className="p-8 border-0 shadow-sm">
-              <h2 className="text-2xl font-bold text-blue-900 mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
-                Bulletin de Paie
-              </h2>
-
-              <div className="space-y-4">
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                  <span className="text-gray-700">Salaire Brut</span>
-                  <span className="font-semibold text-lg text-blue-900">{formatMontantDT(result.salaireBrut)}</span>
-                </div>
-
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                  <span className="text-gray-700">Cotisations CNSS (9.68%)</span>
-                  <span className="font-semibold text-red-600">{formatMontantDT(-result.cotisationsCNSS)}</span>
-                </div>
-
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                  <span className="text-gray-700">Salaire Imposable</span>
-                  <span className="font-semibold text-blue-900">{formatMontantDT(result.salaireImposable)}</span>
-                </div>
-
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                  <span className="text-gray-700">Abattement frais professionnels (10 %, plafond 2 000 DT/an)</span>
-                  <span className="font-semibold text-green-600">{formatMontantDT(-result.fraisProfessionnels)}</span>
-                </div>
-
-                {result.deductionsFamiliales > 0 && (
-                  <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                    <span className="text-gray-700">Déductions familiales</span>
-                    <span className="font-semibold text-green-600">{formatMontantDT(-result.deductionsFamiliales)}</span>
-                  </div>
-                )}
-
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                  <span className="text-gray-700">Assiette imposable nette</span>
-                  <span className="font-semibold text-blue-900">{formatMontantDT(result.assietteImposableNette)}</span>
-                </div>
-
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                  <span className="text-gray-700">IRPP</span>
-                  <span className="font-semibold text-red-600">{formatMontantDT(-result.irpp)}</span>
-                </div>
-
-                {result.css > 0 && (
-                  <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                    <span className="text-gray-700">CSS (0.5%)</span>
-                    <span className="font-semibold text-red-600">{formatMontantDT(-result.css)}</span>
-                  </div>
-                )}
-
-                <div className="flex justify-between items-center py-4 bg-gradient-to-r from-blue-50 to-blue-100 px-4 rounded-lg">
-                  <span className="text-lg font-bold text-blue-900">Salaire Net</span>
-                  <span className="text-2xl font-bold text-blue-700">{formatMontantDT(result.salaireNet)}</span>
-                </div>
-              </div>
-
-              <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                <p className="text-sm text-gray-600">
-                  <strong>Note :</strong> La CSS (0.5%) s'applique de 2023 à 2026 inclus (loi de
-                  finances 2026, article 87 — mesure exceptionnelle prolongée), avec exonération
-                  totale si le revenu net imposable annuel ne dépasse pas 5000 D. Ce calculateur
-                  applique automatiquement la bonne règle selon l'année choisie ci-dessus.
-                </p>
-              </div>
-            </Card>
-          )}
+          <Button
+            onClick={handleCalculer}
+            disabled={!!erreurSalaire}
+            className="w-full py-3 text-lg font-semibold"
+          >
+            Calculer
+          </Button>
         </div>
-      </div>
+      </Card>
+
+      {result && !erreurSalaire && (
+        <Card className="p-6 rounded-lg shadow-sm border border-border bg-card">
+          <h2 className="text-xl font-bold text-foreground mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            Bulletin de Paie
+          </h2>
+
+          <div className="space-y-4">
+            <div className="flex justify-between items-center py-3 border-b border-border">
+              <span className="text-muted-foreground">Salaire Brut</span>
+              <span className="font-semibold text-lg text-foreground">{formatMontantDT(result.salaireBrut)}</span>
+            </div>
+            <div className="flex justify-between items-center py-3 border-b border-border">
+              <span className="text-muted-foreground">Cotisations CNSS (9.68%)</span>
+              <span className="font-semibold text-destructive">{formatMontantDT(-result.cotisationsCNSS)}</span>
+            </div>
+            <div className="flex justify-between items-center py-3 border-b border-border">
+              <span className="text-muted-foreground">Salaire Imposable</span>
+              <span className="font-semibold text-foreground">{formatMontantDT(result.salaireImposable)}</span>
+            </div>
+            <div className="flex justify-between items-center py-3 border-b border-border">
+              <span className="text-muted-foreground">Abattement frais professionnels (10 %, plafond 2 000 DT/an)</span>
+              <span className="font-semibold text-green-600">{formatMontantDT(-result.fraisProfessionnels)}</span>
+            </div>
+            {result.deductionsFamiliales > 0 && (
+              <div className="flex justify-between items-center py-3 border-b border-border">
+                <span className="text-muted-foreground">Déductions familiales</span>
+                <span className="font-semibold text-green-600">{formatMontantDT(-result.deductionsFamiliales)}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center py-3 border-b border-border">
+              <span className="text-muted-foreground">Assiette imposable nette</span>
+              <span className="font-semibold text-foreground">{formatMontantDT(result.assietteImposableNette)}</span>
+            </div>
+            <div className="flex justify-between items-center py-3 border-b border-border">
+              <span className="text-muted-foreground">IRPP</span>
+              <span className="font-semibold text-destructive">{formatMontantDT(-result.irpp)}</span>
+            </div>
+            {result.css > 0 && (
+              <div className="flex justify-between items-center py-3 border-b border-border">
+                <span className="text-muted-foreground">CSS (0.5%)</span>
+                <span className="font-semibold text-destructive">{formatMontantDT(-result.css)}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center py-4 bg-primary/5 px-4 rounded-lg">
+              <span className="text-lg font-bold text-foreground">Salaire Net</span>
+              <span className="text-2xl font-bold text-primary">{formatMontantDT(result.salaireNet)}</span>
+            </div>
+          </div>
+          <div className="mt-6 p-4 bg-muted rounded-lg border border-border">
+            <p className="text-sm text-muted-foreground">
+              <strong>Note :</strong> La CSS (0.5%) s'applique de 2023 à 2026 inclus (loi de
+              finances 2026, article 87 — mesure exceptionnelle prolongée), avec exonération
+              totale si le revenu net imposable annuel ne dépasse pas 5000 D.
+            </p>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

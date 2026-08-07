@@ -4,36 +4,17 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft } from "lucide-react";
-import { Link } from "wouter";
 import { getSmigPourAnnee } from "@/lib/payroll/cnss";
 import { getCoefficientActualisation } from "@/lib/payroll/coefficients-actualisation";
 import { formatMontantDT } from "@/lib/utils";
 import { validerMontantSalaire } from "@/lib/validation-salaire";
 
 /**
- * Design: Minimaliste & Professionnel
  * Calculateur de Retraite CNSS - Salariés du secteur privé
  *
  * SOURCE UNIQUE ET OFFICIELLE : https://secu.tn/fr/calculateur-retraite-cnss.html
- * (dernière mise à jour secu.tn : 30-03-2025)
  * Coefficients d'actualisation : centralisés dans lib/payroll/coefficients-actualisation.ts
- * (table complète 1961-2029, même source que le calculateur d'actualisation des salaires —
- * les deux outils sont désormais liés via ce module unique, pas de duplication)
- * Table SMIG : centralisée dans lib/payroll/cnss.ts (corrigée le 19/07/2026
- * avec les vraies valeurs officielles datées, cf. jurisitetunisie.com/tunisie/index/SMIG.htm)
- *
- * Formule officielle :
- * Pension brute = Salaire de référence x Taux de pension
- * - Salaire de référence = moyenne des 10 dernières années de salaire brut,
- *   chaque salaire annuel étant (1) plafonné à 6x le SMIG en vigueur l'année
- *   où il a été perçu, puis (2) actualisé par le coefficient CNSS de cette année.
- * - Taux de pension = 40% pour les 10 premières années de cotisation,
- *   + 2%/an au-delà, plafonné à 80%. En dessous de 10 ans : pension
- *   proportionnelle (5 à 10 ans) ou aucune pension (< 5 ans, remboursement
- *   des cotisations salariales).
- * - Pension minimale garantie (>= 10 ans de cotisation) : 2/3 du SMIG
- * - Pension minimale garantie (5 à 10 ans de cotisation) : 50% du SMIG
+ * Table SMIG : centralisée dans lib/payroll/cnss.ts
  */
 
 interface RetraiteResult {
@@ -53,22 +34,14 @@ export default function RetraiteCNSS() {
 
   const erreurSalaire = validerMontantSalaire(salaireBrutMensuel);
 
-  // Taux de pension: 40% (10 premières années) + 2%/an au-delà, plafonné à 80%
-  // SOURCE: secu.tn/fr/calculateur-retraite-cnss.html, section "Quel est la taux de la pension de retraite"
   const calculerTauxPension = (duree: number): number => {
-    if (duree < 10) return 0; // pension proportionnelle ou nulle - cas non couvert par ce calculateur simplifié
+    if (duree < 10) return 0;
     const taux = 0.4 + (duree - 10) * 0.02;
     return Math.min(taux, 0.8);
   };
 
-  // Approximation du salaire de référence : le salaire mensuel saisi est supposé
-  // constant sur les 10 dernières années puis actualisé avec le coefficient de
-  // l'année (année de départ - 10), plafonné à 6x le SMIG de cette année-là.
-  // Pour un calcul exact, il faut saisir le salaire réel de chacune des 10 dernières
-  // années (cf. tableau secu.tn) - à implémenter en Phase 1 bis si besoin d'un
-  // simulateur ligne par ligne.
   const calculerSalaireActualiseMoyen = (): number => {
-    const anneeReference = anneeDepart - 5; // année médiane des 10 dernières années
+    const anneeReference = anneeDepart - 5;
     const smigAnnee = getSmigPourAnnee(anneeReference);
     const plafond = smigAnnee * 6;
     const salairePlafonne = Math.min(salaireBrutMensuel, plafond);
@@ -103,150 +76,125 @@ export default function RetraiteCNSS() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4">
-          <Link href="/">
-            <Button variant="ghost" className="gap-2 text-blue-700 hover:text-blue-900">
-              <ArrowLeft className="w-4 h-4" />
-              Retour
-            </Button>
-          </Link>
-        </div>
-      </header>
+    <div className="max-w-3xl mx-auto py-8 px-4">
+      <h2
+        className="text-2xl font-bold text-foreground mb-1"
+        style={{ fontFamily: "Montserrat, sans-serif" }}
+      >
+        Estimer sa retraite
+      </h2>
+      <p className="text-muted-foreground text-sm mb-6">
+        Estimez votre pension de retraite (salariés du secteur privé) selon les règles CNSS. Le calcul utilise les coefficients d'actualisation officiels.
+      </p>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-4xl font-bold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
-            Calculateur de Retraite CNSS
-          </h1>
-          <p className="text-gray-600 mb-8">
-            Estimez votre pension de retraite (salariés du secteur privé) selon les règles CNSS.
-          </p>
+      <div className="mb-6 p-4 bg-muted rounded-lg border border-border">
+        <p className="text-sm text-muted-foreground">
+          <strong>Simplification actuelle :</strong> ce calculateur suppose un salaire mensuel
+          constant sur les 10 dernières années. Pour un calcul précis, il faudrait saisir le
+          salaire réel de chacune des 10 dernières années.
+        </p>
+      </div>
 
-          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-sm text-gray-700">
-              <strong>Simplification actuelle :</strong> ce calculateur suppose un salaire mensuel
-              constant sur les 10 dernières années. Pour un calcul précis, il faudrait saisir le
-              salaire réel de chacune des 10 dernières années. Un mode "10 salaires réels" est
-              prévu comme amélioration future.
+      <Card className="p-6 rounded-lg shadow-sm border border-border bg-card mb-6">
+        <div className="space-y-6">
+          <div>
+            <Label className="text-base font-semibold text-foreground mb-2 block">
+              Salaire Brut Mensuel Moyen (D)
+            </Label>
+            <Input
+              type="number"
+              value={salaireBrutMensuel}
+              onChange={(e) => setSalaireBrutMensuel(parseFloat(e.target.value) || 0)}
+              className="text-lg p-3"
+              min="0"
+            />
+            {erreurSalaire && <p className="text-sm text-destructive mt-2">{erreurSalaire}</p>}
+          </div>
+
+          <div>
+            <Label className="text-base font-semibold text-foreground mb-2 block">
+              Durée de Cotisation (Années)
+            </Label>
+            <Input
+              type="number"
+              value={dureeeCotisation}
+              onChange={(e) => setDureeCotisation(parseInt(e.target.value) || 0)}
+              className="text-lg p-3"
+              min="0"
+              max="50"
+            />
+            <p className="text-sm text-muted-foreground mt-2">
+              Moins de 5 ans : pas de pension (remboursement des cotisations). 5 à 10 ans : pension
+              proportionnelle. 10 ans et plus : 40% + 2%/an au-delà de 10 ans, plafonné à 80%.
             </p>
           </div>
 
-          <Card className="p-8 border-0 shadow-sm mb-8">
-            <div className="space-y-6">
-              {/* Salaire mensuel */}
-              <div>
-                <Label className="text-base font-semibold text-blue-900 mb-2 block">
-                  Salaire Brut Mensuel Moyen (D)
-                </Label>
-                <Input
-                  type="number"
-                  value={salaireBrutMensuel}
-                  onChange={(e) => setSalaireBrutMensuel(parseFloat(e.target.value) || 0)}
-                  className="text-lg p-3"
-                  min="0"
-                />
-                {erreurSalaire && <p className="text-sm text-red-600 mt-2">{erreurSalaire}</p>}
-              </div>
+          <div>
+            <Label className="text-base font-semibold text-foreground mb-2 block">
+              Année de Départ à la Retraite
+            </Label>
+            <Select value={anneeDepart.toString()} onValueChange={(v) => setAnneeDepart(parseInt(v))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {[2024, 2025, 2026].map((year) => (
+                  <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-              {/* Durée de Cotisation */}
-              <div>
-                <Label className="text-base font-semibold text-blue-900 mb-2 block">
-                  Durée de Cotisation (Années)
-                </Label>
-                <Input
-                  type="number"
-                  value={dureeeCotisation}
-                  onChange={(e) => setDureeCotisation(parseInt(e.target.value) || 0)}
-                  className="text-lg p-3"
-                  min="0"
-                  max="50"
-                />
-                <p className="text-sm text-gray-500 mt-2">
-                  Moins de 5 ans : pas de pension (remboursement des cotisations). 5 à 10 ans : pension
-                  proportionnelle. 10 ans et plus : 40% + 2%/an au-delà de 10 ans, plafonné à 80%.
-                </p>
-              </div>
-
-              {/* Année de Départ */}
-              <div>
-                <Label className="text-base font-semibold text-blue-900 mb-2 block">
-                  Année de Départ à la Retraite
-                </Label>
-                <Select value={anneeDepart.toString()} onValueChange={(v) => setAnneeDepart(parseInt(v))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[2024, 2025, 2026].map((year) => (
-                      <SelectItem key={year} value={year.toString()}>
-                        {year}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button
-                onClick={handleCalculer}
-                disabled={!!erreurSalaire}
-                className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Calculer ma Pension
-              </Button>
-            </div>
-          </Card>
-
-          {/* Résultats */}
-          {result && !erreurSalaire && (
-            <Card className="p-8 border-0 shadow-sm">
-              <h2 className="text-2xl font-bold text-blue-900 mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
-                Estimation de Pension
-              </h2>
-
-              <div className="space-y-4">
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                  <span className="text-gray-700">Salaire de Référence Actualisé</span>
-                  <span className="font-semibold text-lg text-blue-900">{formatMontantDT(result.salaireActualiseMoyen)}</span>
-                </div>
-
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                  <span className="text-gray-700">Durée de Cotisation</span>
-                  <span className="font-semibold text-lg text-blue-900">{result.dureeeCotisation} ans</span>
-                </div>
-
-                <div className="flex justify-between items-center py-3 border-b border-gray-200">
-                  <span className="text-gray-700">Taux de Pension</span>
-                  <span className="font-semibold text-lg text-blue-900">{result.tauxPension.toFixed(1)}%</span>
-                </div>
-
-                <div className="flex justify-between items-center py-4 bg-gradient-to-r from-blue-50 to-blue-100 px-4 rounded-lg">
-                  <span className="text-lg font-bold text-blue-900">Pension Brute Mensuelle</span>
-                  <span className="text-2xl font-bold text-blue-700">{formatMontantDT(result.pensionBrute)}</span>
-                </div>
-
-                {result.pensionRetenue && (
-                  <p className="text-sm text-gray-600">
-                    Le montant calculé étant inférieur au minimum garanti, la pension minimale de{" "}
-                    {formatMontantDT(result.pensionMinimaleApplicable)} a été appliquée.
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                <p className="text-sm text-gray-600">
-                  <strong>Source :</strong> formules et coefficients d'actualisation officiels
-                  (coefficients publiés le 19/07/2024, barème retraite mis à jour le 30/03/2025).
-                  Cette estimation ne remplace pas un calcul officiel de la CNSS.
-                </p>
-              </div>
-            </Card>
-          )}
+          <Button
+            onClick={handleCalculer}
+            disabled={!!erreurSalaire}
+            className="w-full py-3 text-lg font-semibold"
+          >
+            Calculer ma Pension
+          </Button>
         </div>
-      </div>
+      </Card>
+
+      {result && !erreurSalaire && (
+        <Card className="p-6 rounded-lg shadow-sm border border-border bg-card">
+          <h2 className="text-xl font-bold text-foreground mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            Estimation de Pension
+          </h2>
+
+          <div className="space-y-4">
+            <div className="flex justify-between items-center py-3 border-b border-border">
+              <span className="text-muted-foreground">Salaire de Référence Actualisé</span>
+              <span className="font-semibold text-lg text-foreground">{formatMontantDT(result.salaireActualiseMoyen)}</span>
+            </div>
+            <div className="flex justify-between items-center py-3 border-b border-border">
+              <span className="text-muted-foreground">Durée de Cotisation</span>
+              <span className="font-semibold text-lg text-foreground">{result.dureeeCotisation} ans</span>
+            </div>
+            <div className="flex justify-between items-center py-3 border-b border-border">
+              <span className="text-muted-foreground">Taux de Pension</span>
+              <span className="font-semibold text-lg text-foreground">{result.tauxPension.toFixed(1)}%</span>
+            </div>
+
+            <div className="flex justify-between items-center py-4 bg-primary/5 px-4 rounded-lg">
+              <span className="text-lg font-bold text-foreground">Pension Brute Mensuelle</span>
+              <span className="text-2xl font-bold text-primary">{formatMontantDT(result.pensionBrute)}</span>
+            </div>
+
+            {result.pensionRetenue && (
+              <p className="text-sm text-muted-foreground">
+                Le montant calculé étant inférieur au minimum garanti, la pension minimale de{" "}
+                {formatMontantDT(result.pensionMinimaleApplicable)} a été appliquée.
+              </p>
+            )}
+          </div>
+
+          <div className="mt-6 p-4 bg-muted rounded-lg border border-border">
+            <p className="text-sm text-muted-foreground">
+              <strong>Source :</strong> formules et coefficients d'actualisation officiels
+              (coefficients publiés le 19/07/2024, barème retraite mis à jour le 30/03/2025).
+              Cette estimation ne remplace pas un calcul officiel de la CNSS.
+            </p>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
