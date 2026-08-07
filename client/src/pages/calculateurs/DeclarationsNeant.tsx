@@ -43,183 +43,171 @@ const neantItemSchema = z.object({
 
 type NeantItem = z.infer<typeof neantItemSchema>;
 
-// ── Trimestres libell\u00e9s ──
-const TRIMESTRE_LIBELLE: Record<number, string> = {
-  1: "1er Trimestre",
-  2: "2\u00e8me Trimestre",
-  3: "3\u00e8me Trimestre",
-  4: "4\u00e8me Trimestre",
-};
+type Calibrage = { x: number; y: number };
 
-// ── Helper: draw text safely (clamp within page) ──
-function safeDrawText(
+// ══════════════════════════════════════════════════════════════════════
+// INJECTION I3 — Fonction isol\u00e9e pour le mod\u00e8le \u00c9tat R\u00e9capitulatif
+// Coordonn\u00e9es de base sp\u00e9cifiques au template I3.pdf
+// ══════════════════════════════════════════════════════════════════════
+function injectDataIntoI3(
   page: PDFPage,
-  text: string,
-  x: number,
-  y: number,
-  opts: { font: PDFFont; size?: number; color: ReturnType<typeof rgb> }
-) {
-  const { width: pw, height: ph } = page.getSize();
-  const fontSize = opts.size ?? 10;
-  const clampedX = Math.max(10, Math.min(x, pw - 10));
-  const clampedY = Math.max(10, Math.min(y, ph - 10));
-  page.drawText(text, { ...opts, x: clampedX, y: clampedY, size: fontSize });
-}
-
-// ── Stamp N\u00c9ANT watermark (diagonal, 45pt, bold) ──
-function stampNeantWatermark(
-  page: PDFPage,
-  centerX: number,
-  centerY: number,
-  fontBold: PDFFont
-) {
-  page.drawText("N\u00c9ANT", {
-    x: centerX,
-    y: centerY,
-    font: fontBold,
-    size: 45,
-    color: rgb(0.75, 0.75, 0.75),
-    rotate: degrees(45),
-    opacity: 0.5,
-  });
-}
-
-// ── Stamp I3 template ──
-async function stampI3(
-  templateBytes: ArrayBuffer,
-  item: NeantItem,
+  data: NeantItem,
+  offsets: Calibrage,
   fontRegular: PDFFont,
   fontBold: PDFFont,
-  offsetX: number,
-  offsetY: number,
-): Promise<Uint8Array> {
-  const doc = await PDFDocument.load(templateBytes);
-  const page = doc.getPages()[0];
+) {
+  const { width } = page.getSize();
+  const ox = offsets.x;
+  const oy = offsets.y;
 
-  // En-t\u00eate : matricule, trimestre, ann\u00e9e, raisonSociale
-  safeDrawText(page, item.matricule, offsetX, offsetY, {
+  // Coordonn\u00e9es de base I3
+  const MATRICULE_BASE_X = 70;
+  const MATRICULE_BASE_Y = 710;
+  const ANNEE_BASE_X = 250;
+  const ANNEE_BASE_Y = 680;
+  const RAISON_BASE_X = 350;
+  const RAISON_BASE_Y = 710;
+  const TRIMESTRE_BASE_X = 180;
+  const TRIMESTRE_BASE_Y = 680;
+  const ZERO_DINAR_X = 350;
+  const ZERO_DINAR_Y = 80;
+  const WATERMARK_X = width / 2 - 60;
+  const WATERMARK_Y = 420;
+
+  // Matricule
+  page.drawText(data.matricule, {
+    x: MATRICULE_BASE_X + ox,
+    y: MATRICULE_BASE_Y + oy,
     font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
-  safeDrawText(page, item.raisonSociale, offsetX, offsetY - 16, {
+
+  // Raison Sociale
+  page.drawText(data.raisonSociale, {
+    x: RAISON_BASE_X + ox,
+    y: RAISON_BASE_Y + oy,
     font: fontBold, size: 10, color: rgb(0, 0, 0),
   });
-  safeDrawText(page, String(item.trimestre), offsetX, offsetY - 34, {
-    font: fontRegular, size: 10, color: rgb(0, 0, 0),
-  });
-  safeDrawText(page, String(item.annee), offsetX + 30, offsetY - 34, {
-    font: fontRegular, size: 10, color: rgb(0, 0, 0),
-  });
 
-  // Pied de page : "Z\u00e9ro Dinar"
-  safeDrawText(page, "Z\u00e9ro Dinar", offsetX, offsetY - 56, {
+  // Trimestre
+  page.drawText(String(data.trimestre), {
+    x: TRIMESTRE_BASE_X + ox,
+    y: TRIMESTRE_BASE_Y + oy,
     font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
-  // Filigrane N\u00c9ANT centr\u00e9 sur le tableau
-  const { width } = page.getSize();
-  stampNeantWatermark(page, width / 2 - 60, offsetY - 180, fontBold);
+  // Ann\u00e9e
+  page.drawText(String(data.annee), {
+    x: ANNEE_BASE_X + ox,
+    y: ANNEE_BASE_Y + oy,
+    font: fontRegular, size: 10, color: rgb(0, 0, 0),
+  });
 
-  return doc.save();
+  // "Z\u00e9ro Dinar" (arr\u00eat\u00e9e \u00e0 la somme de)
+  page.drawText("Z\u00e9ro Dinar", {
+    x: ZERO_DINAR_X + ox,
+    y: ZERO_DINAR_Y + oy,
+    font: fontRegular, size: 10, color: rgb(0, 0, 0),
+  });
+
+  // Filigrane N\u00c9ANT (45pt, bold, 45\u00b0 rotation, centr\u00e9 sur le tableau Salaires d\u00e9clar\u00e9s)
+  page.drawText("N\u00c9ANT", {
+    x: WATERMARK_X + ox,
+    y: WATERMARK_Y + oy,
+    font: fontBold, size: 45, color: rgb(0.75, 0.75, 0.75),
+    rotate: degrees(45), opacity: 0.5,
+  });
 }
 
-// ── Stamp I16 template ──
-async function stampI16(
-  templateBytes: ArrayBuffer,
-  item: NeantItem,
+// ══════════════════════════════════════════════════════════════════════
+// INJECTION I16 — Fonction isol\u00e9e pour le mod\u00e8le Bordereau de D\u00e9claration
+// Coordonn\u00e9es de base sp\u00e9cifiques au template I16.pdf
+// ══════════════════════════════════════════════════════════════════════
+function injectDataIntoI16(
+  page: PDFPage,
+  data: NeantItem,
+  offsets: Calibrage,
   fontRegular: PDFFont,
   fontBold: PDFFont,
-  offsetX: number,
-  offsetY: number,
-): Promise<Uint8Array> {
-  const doc = await PDFDocument.load(templateBytes);
-  const page = doc.getPages()[0];
+) {
   const { width, height } = page.getSize();
+  const ox = offsets.x;
+  const oy = offsets.y;
 
-  // En-t\u00eate : N\u00b0 Employeur (matricule)
-  safeDrawText(page, item.matricule, 155, height - 103, {
+  // Coordonn\u00e9es de base I16
+  const MATRICULE_BASE_X = 150;
+  const MATRICULE_BASE_Y = 740;
+  const ANNEE_BASE_X = 520;
+  const ANNEE_BASE_Y = 740;
+  const RAISON_BASE_X = 200;
+  const RAISON_BASE_Y = 710;
+  const TRIMESTRE_BASE_X = 445;
+  const TRIMESTRE_BASE_Y = 740;
+  const ZERO_DINAR_X = 175;
+  const ZERO_DINAR_Y = 130;
+  const WATERMARK_X = width / 2 - 60;
+  const WATERMARK_Y = height - 155 - 120;
+
+  // N\u00b0 Employeur (matricule)
+  page.drawText(data.matricule, {
+    x: MATRICULE_BASE_X + ox,
+    y: MATRICULE_BASE_Y + oy,
     font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
+
   // Trimestre
-  safeDrawText(page, String(item.trimestre), 445, height - 103, {
-    font: fontRegular, size: 10, color: rgb(0, 0, 0),
-  });
-  // Ann\u00e9e
-  safeDrawText(page, String(item.annee), 560, height - 103, {
+  page.drawText(String(data.trimestre), {
+    x: TRIMESTRE_BASE_X + ox,
+    y: TRIMESTRE_BASE_Y + oy,
     font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
-  // Pied de page : Raison Sociale (NOM ET ADRESSE)
-  safeDrawText(page, item.raisonSociale, 255, height - 126, {
+  // Ann\u00e9e
+  page.drawText(String(data.annee), {
+    x: ANNEE_BASE_X + ox,
+    y: ANNEE_BASE_Y + oy,
+    font: fontRegular, size: 10, color: rgb(0, 0, 0),
+  });
+
+  // NOM ET ADRESSE DE L'EMPLOYEUR (raison sociale)
+  page.drawText(data.raisonSociale, {
+    x: RAISON_BASE_X + ox,
+    y: RAISON_BASE_Y + oy,
     font: fontBold, size: 9, color: rgb(0, 0, 0),
   });
 
-  // Pied de page : "Z\u00e9ro Dinar" (arr\u00eat\u00e9 \u00e0 la somme de)
-  safeDrawText(page, "Z\u00e9ro Dinar", 175, 130, {
+  // "Z\u00e9ro Dinar" (arr\u00eat\u00e9 \u00e0 la somme de)
+  page.drawText("Z\u00e9ro Dinar", {
+    x: ZERO_DINAR_X + ox,
+    y: ZERO_DINAR_Y + oy,
     font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
-  // Filigrane N\u00c9ANT centr\u00e9 sur le tableau de 12 lignes
-  // Le tableau commence environ \u00e0 y=height-155 et descend ~240pt
-  const tableCenterX = width / 2 - 60;
-  const tableCenterY = height - 155 - 120;
-  stampNeantWatermark(page, tableCenterX, tableCenterY, fontBold);
-
-  return doc.save();
+  // Filigrane N\u00c9ANT (45pt, bold, 45\u00b0 rotation, centr\u00e9 sur le tableau de 12 lignes)
+  page.drawText("N\u00c9ANT", {
+    x: WATERMARK_X + ox,
+    y: WATERMARK_Y + oy,
+    font: fontBold, size: 45, color: rgb(0.75, 0.75, 0.75),
+    rotate: degrees(45), opacity: 0.5,
+  });
 }
 
-// ── Generate single page preview (base64) ──
-async function generatePreviewPage(
-  templateType: "I3" | "I16",
+// ── Helper: build a stamped PDF from template bytes ──
+async function buildStampedPage(
   templateBytes: ArrayBuffer,
   item: NeantItem,
-  offsetX: number,
-  offsetY: number,
-): Promise<string> {
+  offsets: Calibrage,
+  injectFn: typeof injectDataIntoI3 | typeof injectDataIntoI16,
+): Promise<Uint8Array> {
   const doc = await PDFDocument.load(templateBytes);
   const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
   const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
   const page = doc.getPages()[0];
-  const { width, height } = page.getSize();
+  injectFn(page, item, offsets, fontRegular, fontBold);
+  return doc.save();
+}
 
-  if (templateType === "I3") {
-    safeDrawText(page, item.matricule, offsetX, offsetY, {
-      font: fontRegular, size: 10, color: rgb(0, 0, 0),
-    });
-    safeDrawText(page, item.raisonSociale, offsetX, offsetY - 16, {
-      font: fontBold, size: 10, color: rgb(0, 0, 0),
-    });
-    safeDrawText(page, String(item.trimestre), offsetX, offsetY - 34, {
-      font: fontRegular, size: 10, color: rgb(0, 0, 0),
-    });
-    safeDrawText(page, String(item.annee), offsetX + 30, offsetY - 34, {
-      font: fontRegular, size: 10, color: rgb(0, 0, 0),
-    });
-    safeDrawText(page, "Z\u00e9ro Dinar", offsetX, offsetY - 56, {
-      font: fontRegular, size: 10, color: rgb(0, 0, 0),
-    });
-    stampNeantWatermark(page, width / 2 - 60, offsetY - 180, fontBold);
-  } else {
-    safeDrawText(page, item.matricule, 155, height - 103, {
-      font: fontRegular, size: 10, color: rgb(0, 0, 0),
-    });
-    safeDrawText(page, String(item.trimestre), 445, height - 103, {
-      font: fontRegular, size: 10, color: rgb(0, 0, 0),
-    });
-    safeDrawText(page, String(item.annee), 560, height - 103, {
-      font: fontRegular, size: 10, color: rgb(0, 0, 0),
-    });
-    safeDrawText(page, item.raisonSociale, 255, height - 126, {
-      font: fontBold, size: 9, color: rgb(0, 0, 0),
-    });
-    safeDrawText(page, "Z\u00e9ro Dinar", 175, 130, {
-      font: fontRegular, size: 10, color: rgb(0, 0, 0),
-    });
-    const tableCenterX = width / 2 - 60;
-    const tableCenterY = height - 155 - 120;
-    stampNeantWatermark(page, tableCenterX, tableCenterY, fontBold);
-  }
-
-  const pdfBytes = await doc.save();
+// ── Helper: convert Uint8Array to base64 data URI ──
+function pdfToDataUri(pdfBytes: Uint8Array): string {
   let binary = "";
   const bytes = new Uint8Array(pdfBytes);
   for (let i = 0; i < bytes.byteLength; i++) {
@@ -231,8 +219,8 @@ async function generatePreviewPage(
 // ── Component ──
 export default function DeclarationsNeant() {
   const [items, setItems] = useState<NeantItem[]>([]);
-  const [offsetX, setOffsetX] = useState(160);
-  const [offsetY, setOffsetY] = useState(520);
+  const [calibrageI3, setCalibrageI3] = useState<Calibrage>({ x: 0, y: 0 });
+  const [calibrageI16, setCalibrageI16] = useState<Calibrage>({ x: 0, y: 0 });
   const [isGenerating, setIsGenerating] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [previewTab, setPreviewTab] = useState<"I3" | "I16">("I3");
@@ -279,7 +267,7 @@ export default function DeclarationsNeant() {
     loadTemplates();
   }, []);
 
-  // Live Preview: regenerate on slider/item change
+  // Live Preview: regenerate on slider/item/tab change
   useEffect(() => {
     if (!i3TemplateBytes || !i16TemplateBytes || items.length === 0) {
       setPreviewUrl("");
@@ -291,8 +279,10 @@ export default function DeclarationsNeant() {
       try {
         const firstItem = items[0];
         const templateBytes = previewTab === "I3" ? i3TemplateBytes : i16TemplateBytes;
-        const url = await generatePreviewPage(previewTab, templateBytes, firstItem, offsetX, offsetY);
-        setPreviewUrl(url);
+        const offsets = previewTab === "I3" ? calibrageI3 : calibrageI16;
+        const injectFn = previewTab === "I3" ? injectDataIntoI3 : injectDataIntoI16;
+        const pdfBytes = await buildStampedPage(templateBytes, firstItem, offsets, injectFn);
+        setPreviewUrl(pdfToDataUri(pdfBytes));
       } catch {
         // silent fail for preview
       }
@@ -301,7 +291,7 @@ export default function DeclarationsNeant() {
     return () => {
       if (previewDebounceRef.current) clearTimeout(previewDebounceRef.current);
     };
-  }, [items, previewTab, offsetX, offsetY, i3TemplateBytes, i16TemplateBytes]);
+  }, [items, previewTab, calibrageI3, calibrageI16, i3TemplateBytes, i16TemplateBytes]);
 
   const onFormSubmit = (data: NeantItem) => {
     setItems((prev) => [...prev, data]);
@@ -383,18 +373,16 @@ export default function DeclarationsNeant() {
 
     try {
       const mergedPdf = await PDFDocument.create();
-      const fontRegular = await mergedPdf.embedFont(StandardFonts.Helvetica);
-      const fontBold = await mergedPdf.embedFont(StandardFonts.HelveticaBold);
 
       for (const item of items) {
         // ─── I3 : \u00c9tat R\u00e9capitulatif (template officiel) ───
-        const i3Bytes = await stampI3(i3TemplateBytes, item, fontRegular, fontBold, offsetX, offsetY);
+        const i3Bytes = await buildStampedPage(i3TemplateBytes, item, calibrageI3, injectDataIntoI3);
         const i3Doc = await PDFDocument.load(i3Bytes);
         const i3Copied = await mergedPdf.copyPages(i3Doc, i3Doc.getPageIndices());
         for (const cp of i3Copied) mergedPdf.addPage(cp);
 
         // ─── I16 : Bordereau de d\u00e9claration (template officiel) ───
-        const i16Bytes = await stampI16(i16TemplateBytes, item, fontRegular, fontBold, offsetX, offsetY);
+        const i16Bytes = await buildStampedPage(i16TemplateBytes, item, calibrageI16, injectDataIntoI16);
         const i16Doc = await PDFDocument.load(i16Bytes);
         const i16Copied = await mergedPdf.copyPages(i16Doc, i16Doc.getPageIndices());
         for (const cp of i16Copied) mergedPdf.addPage(cp);
@@ -416,6 +404,10 @@ export default function DeclarationsNeant() {
       setIsGenerating(false);
     }
   };
+
+  // Calibrage actif selon l'onglet
+  const activeCalibrage = previewTab === "I3" ? calibrageI3 : calibrageI16;
+  const setActiveCalibrage = previewTab === "I3" ? setCalibrageI3 : setCalibrageI16;
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
@@ -544,21 +536,9 @@ export default function DeclarationsNeant() {
               </p>
             )}
 
-            {/* Calibrage I3 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
-              <div className="space-y-2">
-                <Label>D\u00e9calage Horizontal I3 (X) : {offsetX} pt</Label>
-                <Slider min={0} max={500} step={1} value={[offsetX]} onValueChange={([v]) => setOffsetX(v)} />
-              </div>
-              <div className="space-y-2">
-                <Label>D\u00e9calage Vertical I3 (Y) : {offsetY} pt</Label>
-                <Slider min={0} max={800} step={1} value={[offsetY]} onValueChange={([v]) => setOffsetY(v)} />
-              </div>
-            </div>
-
-            {/* Live Preview */}
+            {/* Live Preview avec calibrage d\u00e9coupl\u00e9 */}
             {items.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-3 pt-4 border-t">
                 <div className="flex items-center gap-2">
                   <Eye className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium text-foreground">Aper\u00e7u en direct</span>
@@ -569,6 +549,18 @@ export default function DeclarationsNeant() {
                     <TabsTrigger value="I16">Mod\u00e8le I16</TabsTrigger>
                   </TabsList>
                   <TabsContent value={previewTab}>
+                    {/* Curseurs de calibrage d\u00e9coupl\u00e9s */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                      <div className="space-y-2">
+                        <Label>D\u00e9calage Horizontal {previewTab} (X) : {activeCalibrage.x} pt</Label>
+                        <Slider min={-200} max={200} step={1} value={[activeCalibrage.x]} onValueChange={([v]) => setActiveCalibrage((prev) => ({ ...prev, x: v }))} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>D\u00e9calage Vertical {previewTab} (Y) : {activeCalibrage.y} pt</Label>
+                        <Slider min={-200} max={200} step={1} value={[activeCalibrage.y]} onValueChange={([v]) => setActiveCalibrage((prev) => ({ ...prev, y: v }))} />
+                      </div>
+                    </div>
+
                     {previewUrl ? (
                       <iframe
                         src={previewUrl}
