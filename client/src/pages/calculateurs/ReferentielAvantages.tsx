@@ -449,38 +449,68 @@ export default function ReferentielAvantages() {
               )}
             </TabsContent>
 
-            {/* ─── Onglet Arabe ─── */}
+            {/* ─── Onglet Bilingue (split-view FR / AR) ─── */}
             <TabsContent value="ar">
-              <div dir="rtl" lang="ar" className="space-y-4">
-                <Accordion type="single" collapsible className="space-y-3">
-                  {avantagesFiltres.map((a) => (
-                    <AccordionItem key={a.numero} value={`ar-item-${a.numero}`} className="border-0">
-                      <Card className="rounded-lg shadow-sm border border-border bg-card overflow-hidden">
-                        <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                          <div className="flex items-center gap-3 text-right flex-wrap">
-                            <Badge variant="secondary" className="bg-blue-100 text-primary shrink-0">
-                              النقطة {a.numero}
-                            </Badge>
-                            {a.horsPlafond5pct && (
-                              <Badge variant="outline" className="text-amber-700 border-amber-300 shrink-0">
-                                خارج السقف 5%
-                              </Badge>
-                            )}
-                            <span className="font-semibold text-blue-900">النص القانوني</span>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-6 pb-6">
-                          <p className="text-sm text-muted-foreground leading-relaxed">
-                            النص القانوني
-                          </p>
-                        </AccordionContent>
-                      </Card>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
+              <div className="space-y-4">
                 {avantagesFiltres.length === 0 && (
                   <p className="text-center text-muted-foreground py-8">لا توجد نتائج.</p>
                 )}
+                {avantagesFiltres.map((a) => (
+                  <Card key={a.numero} className="rounded-lg shadow-sm border border-border bg-card overflow-hidden">
+                    {/* En-tête bilingue */}
+                    <div className="px-6 py-4 border-b border-border flex items-center gap-3 flex-wrap">
+                      <Badge variant="secondary" className="bg-blue-100 text-primary shrink-0">
+                        {a.numero}
+                      </Badge>
+                      {a.horsPlafond5pct && (
+                        <Badge variant="outline" className="text-amber-700 border-amber-300 shrink-0">
+                          Hors plafond 5% / خارج السقف 5%
+                        </Badge>
+                      )}
+                    </div>
+                    {/* Split view : FR à gauche, AR à droite */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
+                      {/* Colonne Français */}
+                      <div className="p-6">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-2">
+                          Français
+                        </p>
+                        <h3 className="text-sm font-semibold text-foreground mb-3">{a.titre}</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{a.base}</p>
+                        {a.type === "smig" && a.plafonds && (
+                          <Table className="mt-3">
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="text-xs">Période</TableHead>
+                                <TableHead className="text-xs text-right">Plafond</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {a.plafonds.filter(p => p.actuel).map((p) => (
+                                <TableRow key={p.periode}>
+                                  <TableCell className="text-xs">{p.periode}</TableCell>
+                                  <TableCell className="text-xs text-right font-mono">{formatMontantDT(p.montant)}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        )}
+                      </div>
+                      {/* Colonne Arabe */}
+                      <div dir="rtl" lang="ar" className="p-6">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-2">
+                          العربية
+                        </p>
+                        <h3 className="text-sm font-semibold text-foreground mb-3 leading-loose">
+                          النص القانوني
+                        </h3>
+                        <p className="text-sm text-muted-foreground leading-[2.2]">
+                          النص القانوني
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
               </div>
             </TabsContent>
           </Tabs>
