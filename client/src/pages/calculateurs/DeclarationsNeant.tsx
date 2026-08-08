@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -27,6 +27,7 @@ import {
   PDFPage,
   StandardFonts,
   rgb,
+  degrees,
 } from "pdf-lib";
 import type { PDFFont } from "pdf-lib";
 
@@ -37,16 +38,22 @@ const neantItemSchema = z.object({
     .min(1, "Le matricule est obligatoire")
     .regex(/^\d{8}-\d{2}$/, "Format invalide (ex: 12345678-99)"),
   raisonSociale: z.string().min(2, "Minimum 2 caracteres"),
+  adresse: z.string().default(""),
   trimestre: z.number().min(1).max(4),
   annee: z
     .number()
     .min(new Date().getFullYear() - 1)
     .max(new Date().getFullYear() + 1),
+  lieu: z.string().min(1, "Le lieu est obligatoire"),
+  dateDocument: z.string().min(1, "La date est obligatoire"),
 });
 
 type NeantItem = z.infer<typeof neantItemSchema>;
 
-// ── Sanitize: remove accents for pdf-lib StandardFonts (WinAnsiEncoding) ──
+// ── Zone type ──
+type Zone = { x: number; y: number; width: number; height: number };
+
+// ── Sanitize ──
 function sanitize(text: string): string {
   return text
     .replace(/[\u00c9\u00c8\u00ca\u00cb]/g, "E")
@@ -65,60 +72,165 @@ function sanitize(text: string): string {
     .replace(/[\u00f1]/g, "n");
 }
 
+// ── Helpers: centering in zone ──
+function centerXInZone(font: PDFFont, text: string, fontSize: number, zone: Zone): number {
+  const textWidth = font.widthOfTextAtSize(text, fontSize);
+  return zone.x + (zone.width - textWidth) / 2;
+}
+
+function drawTextInZone(
+  page: PDFPage,
+  font: PDFFont,
+  text: string,
+  zone: Zone,
+  options?: { size?: number; rotate?: ReturnType<typeof degrees>; color?: ReturnType<typeof rgb> },
+) {
+  const fontSize = options?.size ?? 11;
+  const color = options?.color ?? rgb(0, 0, 0);
+  const x = centerXInZone(font, text, fontSize, zone);
+  // Web coordinates: y is from top. pdf-lib: origin bottom-left.
+  // Convert: pdfY = pageHeight - y - height (baseline near bottom of zone)
+  const pageHeight = page.getHeight();
+  const pdfY = pageHeight - zone.y - zone.height;
+
+  const drawOpts: Parameters<PDFPage["drawText"]>[1] = {
+    x,
+    y: pdfY,
+    font,
+    size: fontSize,
+    color,
+  };
+  if (options?.rotate) drawOpts.rotate = options.rotate;
+  page.drawText(text, drawOpts);
+}
+
+/** Draw multiline text (two lines) in a zone, centered horizontally */
+function drawMultilineInZone(
+  page: PDFPage,
+  font: PDFFont,
+  line1: string,
+  line2: string,
+  zone: Zone,
+  options?: { size?: number; rotate?: ReturnType<typeof degrees>; color?: ReturnType<typeof rgb> },
+) {
+  const fontSize = options?.size ?? 11;
+  const color = options?.color ?? rgb(0, 0, 0);
+  const pageHeight = page.getHeight();
+  const lineHeight = fontSize * 1.2;
+
+  const x1 = centerXInZone(font, line1, fontSize, zone);
+  const x2 = centerXInZone(font, line2, fontSize, zone);
+
+  // First line: near top of zone. Second line: below it.
+  const y1 = pageHeight - zone.y - fontSize;
+  const y2 = y1 - lineHeight;
+
+  const baseOpts = { font, size: fontSize, color };
+  if (options?.rotate) (baseOpts as any).rotate = options.rotate;
+  page.drawText(line1, { x: x1, y: y1, ...baseOpts });
+  page.drawText(line2, { x: x2, y: y2, ...baseOpts });
+}
+
 // ══════════════════════════════════════════════════════════════════════
-// INJECTION I3 — Coordonnees definitives (Portrait)
+// INJECTION I3 — Zones definitives (Portrait)
 // ══════════════════════════════════════════════════════════════════════
 function injectDataIntoI3(
   page: PDFPage,
   data: NeantItem,
   font: PDFFont,
 ) {
-  const s = 11;
   const c = rgb(0, 0, 0);
 
-  page.drawText(sanitize(data.matricule), { x: 33, y: 618, font, size: s, color: c });
-  page.drawText(String(data.trimestre), { x: 33, y: 556, font, size: s, color: c });
-  page.drawText(String(data.annee), { x: 85, y: 557, font, size: s, color: c });
-  page.drawText(sanitize(data.raisonSociale), { x: 268, y: 560, font, size: s, color: c });
-  page.drawText("NEANT", { x: 31, y: 451, font, size: s, color: c });
-  page.drawText("0,000", { x: 454, y: 476, font, size: s, color: c });
-  page.drawText("0,000", { x: 449, y: 424, font, size: s, color: c });
-  page.drawText("0,000", { x: 447, y: 352, font, size: s, color: c });
+  const zones = {
+    matricule:  { x: 33,  y: 618, width: 120, height: 29 },
+    trimestre: { x: 33,  y: 556, width: 49,  height: 28 },
+    annee:     { x: 85,  y: 557, width: 52,  height: 26 },
+    rsAdresse: { x: 268, y: 560, width: 284, height: 73 },
+    salaires:  { x: 31,  y: 451, width: 132, height: 54 },
+    montant:   { x: 454, y: 476, width: 94,  height: 28 },
+    total:     { x: 449, y: 424, width: 105, height: 20 },
+    aPayer:    { x: 447, y: 352, width: 109, height: 28 },
+    faitA:     { x: 386, y: 220, width: 96,  height: 20 },
+    dateDoc:   { x: 257, y: 218, width: 112, height: 17 },
+  };
 
-  const today = new Date();
-  const lieu = "Tunis";
-  const dateStr = today.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
-  page.drawText(lieu, { x: 386, y: 220, font, size: s, color: c });
-  page.drawText(dateStr, { x: 257, y: 218, font, size: s, color: c });
+  // Detect page rotation and compensate
+  const rotation = page.getRotation().angle;
+  const rot = rotation ? degrees(-rotation) : undefined;
+
+  drawTextInZone(page, font, sanitize(data.matricule), zones.matricule, { rotate: rot, color: c });
+  drawTextInZone(page, font, String(data.trimestre), zones.trimestre, { rotate: rot, color: c });
+  drawTextInZone(page, font, String(data.annee), zones.annee, { rotate: rot, color: c });
+
+  // Raison sociale + Adresse (deux lignes)
+  drawMultilineInZone(
+    page, font,
+    sanitize(data.raisonSociale),
+    sanitize(data.adresse),
+    zones.rsAdresse,
+    { rotate: rot, color: c },
+  );
+
+  drawTextInZone(page, font, "NEANT", zones.salaires, { rotate: rot, color: c });
+  drawTextInZone(page, font, "0,000", zones.montant, { rotate: rot, color: c });
+  drawTextInZone(page, font, "0,000", zones.total, { rotate: rot, color: c });
+  drawTextInZone(page, font, "0,000", zones.aPayer, { rotate: rot, color: c });
+
+  // Format date from YYYY-MM-DD to DD/MM/YYYY
+  const dateParts = data.dateDocument.split("-");
+  const dateStr = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : data.dateDocument;
+  drawTextInZone(page, font, sanitize(data.lieu), zones.faitA, { rotate: rot, color: c });
+  drawTextInZone(page, font, dateStr, zones.dateDoc, { rotate: rot, color: c });
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// INJECTION I16 — Coordonnees definitives (Paysage)
+// INJECTION I16 — Zones definitives (Paysage)
 // ══════════════════════════════════════════════════════════════════════
 function injectDataIntoI16(
   page: PDFPage,
   data: NeantItem,
   font: PDFFont,
 ) {
-  const s = 11;
   const c = rgb(0, 0, 0);
 
-  page.drawText(sanitize(data.matricule), { x: 83, y: 503, font, size: s, color: c });
-  page.drawText(String(data.trimestre), { x: 142, y: 474, font, size: s, color: c });
-  page.drawText(String(data.annee), { x: 137, y: 449, font, size: s, color: c });
-  page.drawText(sanitize(data.raisonSociale), { x: 361, y: 449, font, size: s, color: c });
+  const zones = {
+    matricule:  { x: 83,  y: 503, width: 104, height: 21 },
+    trimestre: { x: 142, y: 474, width: 39,  height: 28 },
+    annee:     { x: 137, y: 449, width: 48,  height: 25 },
+    rsAdresse: { x: 361, y: 449, width: 447, height: 76 },
+    neantZone: { x: 155, y: 188, width: 583, height: 186 },
+    faitA:     { x: 568, y: 82,  width: 96,  height: 17 },
+    dateDoc:   { x: 678, y: 79,  width: 71,  height: 18 },
+  };
 
-  // NÉANT en grand format dans la zone de salaires
-  page.drawText("NEANT", { x: 155, y: 188, font, size: 45, color: c });
+  // Detect page rotation and compensate
+  const rotation = page.getRotation().angle;
+  const rot = rotation ? degrees(-rotation) : undefined;
 
-  const today = new Date();
-  const lieu = "Tunis";
-  const dateStr = today.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
-  page.drawText(lieu, { x: 568, y: 82, font, size: s, color: c });
-  page.drawText(dateStr, { x: 678, y: 79, font, size: s, color: c });
+  drawTextInZone(page, font, sanitize(data.matricule), zones.matricule, { rotate: rot, color: c });
+  drawTextInZone(page, font, String(data.trimestre), zones.trimestre, { rotate: rot, color: c });
+  drawTextInZone(page, font, String(data.annee), zones.annee, { rotate: rot, color: c });
+
+  // Raison sociale + Adresse (deux lignes)
+  drawMultilineInZone(
+    page, font,
+    sanitize(data.raisonSociale),
+    sanitize(data.adresse),
+    zones.rsAdresse,
+    { rotate: rot, color: c },
+  );
+
+  // NEANT en grand format centre dans la zone
+  drawTextInZone(page, font, "NEANT", zones.neantZone, { size: 40, rotate: rot, color: c });
+
+  // Format date from YYYY-MM-DD to DD/MM/YYYY
+  const dateParts = data.dateDocument.split("-");
+  const dateStr = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : data.dateDocument;
+  drawTextInZone(page, font, sanitize(data.lieu), zones.faitA, { rotate: rot, color: c });
+  drawTextInZone(page, font, dateStr, zones.dateDoc, { rotate: rot, color: c });
 }
 
-// ── Helper: build stamped PDF, first page only if requested ──
+// ── Helper: build stamped PDF ──
 async function buildStampedPage(
   templateBytes: ArrayBuffer,
   item: NeantItem,
@@ -140,6 +252,12 @@ async function buildStampedPage(
   return doc.save();
 }
 
+// ── Today's date as YYYY-MM-DD ──
+function todayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 // ══════════════════════════════════════════════════════════════════════
 // COMPONENT
 // ══════════════════════════════════════════════════════════════════════
@@ -151,6 +269,7 @@ export default function DeclarationsNeant() {
   const [i16Bytes, setI16Bytes] = useState<ArrayBuffer | null>(null);
 
   const currentYear = new Date().getFullYear();
+  const todayStr = todayISO();
 
   const {
     register,
@@ -162,8 +281,11 @@ export default function DeclarationsNeant() {
     defaultValues: {
       matricule: "",
       raisonSociale: "",
+      adresse: "",
       trimestre: 1,
       annee: currentYear,
+      lieu: "Tunis",
+      dateDocument: todayStr,
     },
   });
 
@@ -184,7 +306,15 @@ export default function DeclarationsNeant() {
 
   const onFormSubmit = (data: NeantItem) => {
     setItems((prev) => [...prev, data]);
-    reset({ matricule: "", raisonSociale: "", trimestre: 1, annee: currentYear });
+    reset({
+      matricule: "",
+      raisonSociale: "",
+      adresse: "",
+      trimestre: 1,
+      annee: currentYear,
+      lieu: "Tunis",
+      dateDocument: todayStr,
+    });
     toast.success(`Declaration ajoutee : ${data.matricule}`);
   };
 
@@ -193,6 +323,7 @@ export default function DeclarationsNeant() {
   };
 
   // ── Excel Import ──
+  // Colonnes: A=Matricule, B=Raison Sociale, C=Trimestre, D=Annee, E=Adresse, F=Lieu, G=Date
   const processExcelFile = useCallback(
     async (file: File) => {
       try {
@@ -205,17 +336,44 @@ export default function DeclarationsNeant() {
         for (let i = 1; i < rows.length; i++) {
           const row = rows[i];
           if (!row || !row[0]) continue;
+
           const rawMatricule = String(row[0] ?? "").trim();
           if (!/^\d{8}-\d{2}$/.test(rawMatricule)) continue;
+
           const rawTrimestre = Number(row[2]);
           const rawAnnee = Number(row[3]);
           if (rawTrimestre < 1 || rawTrimestre > 4) continue;
           if (!rawAnnee || rawAnnee < currentYear - 1 || rawAnnee > currentYear + 1) continue;
+
+          // Parse date from Excel (could be serial number or string)
+          let dateDoc = todayStr;
+          if (row[6] != null) {
+            const rawDate = row[6];
+            if (typeof rawDate === "number") {
+              // Excel serial date
+              const excelEpoch = new Date(1899, 11, 30);
+              const jsDate = new Date(excelEpoch.getTime() + rawDate * 86400000);
+              dateDoc = `${jsDate.getFullYear()}-${String(jsDate.getMonth() + 1).padStart(2, "0")}-${String(jsDate.getDate()).padStart(2, "0")}`;
+            } else {
+              const str = String(rawDate).trim();
+              if (/^\d{4}-\d{2}-\d{2}$/.test(str)) dateDoc = str;
+              else {
+                const parsed = new Date(str);
+                if (!isNaN(parsed.getTime())) {
+                  dateDoc = `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}-${String(parsed.getDate()).padStart(2, "0")}`;
+                }
+              }
+            }
+          }
+
           imported.push({
             matricule: rawMatricule,
             raisonSociale: String(row[1] ?? "").trim(),
+            adresse: String(row[4] ?? "").trim(),
             trimestre: rawTrimestre,
             annee: rawAnnee,
+            lieu: String(row[5] ?? "Tunis").trim() || "Tunis",
+            dateDocument: dateDoc,
           });
         }
 
@@ -229,7 +387,7 @@ export default function DeclarationsNeant() {
         toast.error("Erreur lecture du fichier Excel");
       }
     },
-    [currentYear],
+    [currentYear, todayStr],
   );
 
   const onDrop = useCallback(
@@ -317,6 +475,10 @@ export default function DeclarationsNeant() {
                 {errors.raisonSociale && <p className="text-sm text-destructive">{errors.raisonSociale.message}</p>}
               </div>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="adresse">Adresse</Label>
+              <Input id="adresse" placeholder="Adresse de l'entreprise" {...register("adresse")} />
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Trimestre</Label>
@@ -336,6 +498,18 @@ export default function DeclarationsNeant() {
                 {errors.annee && <p className="text-sm text-destructive">{errors.annee.message}</p>}
               </div>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="lieu">Fait a (Lieu)</Label>
+                <Input id="lieu" placeholder="Tunis" {...register("lieu")} />
+                {errors.lieu && <p className="text-sm text-destructive">{errors.lieu.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dateDocument">Date du document</Label>
+                <Input id="dateDocument" type="date" {...register("dateDocument")} />
+                {errors.dateDocument && <p className="text-sm text-destructive">{errors.dateDocument.message}</p>}
+              </div>
+            </div>
             <Button type="submit">Ajouter a la liste</Button>
           </form>
         </CardContent>
@@ -345,7 +519,7 @@ export default function DeclarationsNeant() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-foreground">Import Excel</CardTitle>
-          <CardDescription>Colonne A = Matricule, B = Raison Sociale, C = Trimestre, D = Annee.</CardDescription>
+          <CardDescription>Colonnes : A=Matricule, B=Raison Sociale, C=Trimestre, D=Annee, E=Adresse, F=Lieu, G=Date.</CardDescription>
         </CardHeader>
         <CardContent>
           <div
@@ -377,22 +551,28 @@ export default function DeclarationsNeant() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left">
-                    <th className="pb-2 pr-4 font-semibold text-foreground">#</th>
-                    <th className="pb-2 pr-4 font-semibold text-foreground">Matricule</th>
-                    <th className="pb-2 pr-4 font-semibold text-foreground">Raison sociale</th>
-                    <th className="pb-2 pr-4 font-semibold text-foreground">Trim.</th>
-                    <th className="pb-2 pr-4 font-semibold text-foreground">Annee</th>
+                    <th className="pb-2 pr-3 font-semibold text-foreground">#</th>
+                    <th className="pb-2 pr-3 font-semibold text-foreground">Matricule</th>
+                    <th className="pb-2 pr-3 font-semibold text-foreground">Raison sociale</th>
+                    <th className="pb-2 pr-3 font-semibold text-foreground">Adresse</th>
+                    <th className="pb-2 pr-3 font-semibold text-foreground">Trim.</th>
+                    <th className="pb-2 pr-3 font-semibold text-foreground">Annee</th>
+                    <th className="pb-2 pr-3 font-semibold text-foreground">Lieu</th>
+                    <th className="pb-2 pr-3 font-semibold text-foreground">Date</th>
                     <th className="pb-2 font-semibold text-foreground" />
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item, i) => (
                     <tr key={i} className="border-b last:border-0">
-                      <td className="py-2 pr-4 text-muted-foreground">{i + 1}</td>
-                      <td className="py-2 pr-4 font-mono text-foreground">{item.matricule}</td>
-                      <td className="py-2 pr-4 text-foreground">{item.raisonSociale}</td>
-                      <td className="py-2 pr-4 text-foreground">{item.trimestre}</td>
-                      <td className="py-2 pr-4 text-foreground">{item.annee}</td>
+                      <td className="py-2 pr-3 text-muted-foreground">{i + 1}</td>
+                      <td className="py-2 pr-3 font-mono text-foreground">{item.matricule}</td>
+                      <td className="py-2 pr-3 text-foreground">{item.raisonSociale}</td>
+                      <td className="py-2 pr-3 text-foreground">{item.adresse}</td>
+                      <td className="py-2 pr-3 text-foreground">{item.trimestre}</td>
+                      <td className="py-2 pr-3 text-foreground">{item.annee}</td>
+                      <td className="py-2 pr-3 text-foreground">{item.lieu}</td>
+                      <td className="py-2 pr-3 text-foreground">{item.dateDocument}</td>
                       <td className="py-2">
                         <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/80" onClick={() => removeItem(i)}>
                           <Trash2 className="h-4 w-4" />
