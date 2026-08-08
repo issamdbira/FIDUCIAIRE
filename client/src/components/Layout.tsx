@@ -86,10 +86,10 @@ const NAV_GROUPS: NavGroup[] = [
 
 const ENTREPRISE_NAV: NavChild[] = [
   { label: "Accueil", href: "/dashboard", icon: HomeIcon },
-  { label: "Facturation", href: "/dashboard", icon: Receipt },
-  { label: "Employés", href: "/dashboard", icon: Users },
-  { label: "Trésorerie", href: "/dashboard", icon: Wallet },
-  { label: "Paramètres", href: "/dashboard", icon: Settings },
+  { label: "Facturation", href: "/facturation", icon: Receipt },
+  { label: "Employés", href: "/employes", icon: Users },
+  { label: "Trésorerie", href: "/tresorerie", icon: Wallet },
+  { label: "Paramètres", href: "/parametres", icon: Settings },
 ];
 
 // ── Workspace Selector ──
@@ -123,7 +123,8 @@ function WorkspaceSelector() {
 // ── Sidebar Navigation (shared between sidebar & sheet) ──
 function NavContent({ onNavigate }: { onNavigate?: () => void }) {
   const [location] = useLocation();
-  const isEntreprise = location === "/dashboard";
+  const ENTREPRISE_ROUTES = ["/dashboard", "/facturation", "/employes", "/tresorerie", "/parametres"];
+  const isEntreprise = ENTREPRISE_ROUTES.includes(location);
 
   const navItems = isEntreprise ? ENTREPRISE_NAV : null;
 

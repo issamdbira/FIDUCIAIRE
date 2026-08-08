@@ -22,6 +22,10 @@ import FormulairesCNSS from "./pages/FormulairesCNSS";
 import DeclarationsNeant from "./pages/calculateurs/DeclarationsNeant";
 import FiduciaireDashboard from "./pages/FiduciaireDashboard";
 import EntrepriseDashboard from "./pages/EntrepriseDashboard";
+import Facturation from "./pages/Facturation";
+import Employes from "./pages/Employes";
+import Tresorerie from "./pages/Tresorerie";
+import Parametres from "./pages/Parametres";
 
 function AppRoutes() {
   const [location] = useLocation();
@@ -44,6 +48,10 @@ function AppRoutes() {
       <Route path="/fiche-de-paie" component={GenerateurFichePaie} />
       <Route path="/expert" component={FiduciaireDashboard} />
       <Route path="/dashboard" component={EntrepriseDashboard} />
+      <Route path="/facturation" component={Facturation} />
+      <Route path="/employes" component={Employes} />
+      <Route path="/tresorerie" component={Tresorerie} />
+      <Route path="/parametres" component={Parametres} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
