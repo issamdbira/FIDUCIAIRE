@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Calculator, Search } from "lucide-react";
@@ -385,60 +386,104 @@ export default function ReferentielAvantages() {
             />
           </div>
 
-          <Accordion type="single" collapsible className="space-y-3">
-            {avantagesFiltres.map((a) => (
-              <AccordionItem key={a.numero} value={`item-${a.numero}`} className="border-0">
-                <Card className="rounded-lg shadow-sm border border-border bg-card overflow-hidden">
-                  <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                    <div className="flex items-center gap-3 text-left flex-wrap">
-                      <Badge variant="secondary" className="bg-blue-100 text-primary shrink-0">
-                        Point {a.numero}
-                      </Badge>
-                      {a.horsPlafond5pct && (
-                        <Badge variant="outline" className="text-amber-700 border-amber-300 shrink-0">
-                          Hors plafond 5%
-                        </Badge>
-                      )}
-                      <span className="font-semibold text-blue-900">{a.titre}</span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="px-6 pb-6">
-                    <p className="text-sm text-muted-foreground mb-4">
-                      <strong>Base de calcul / condition :</strong> {a.base}
-                    </p>
-                    {a.type === "smig" && a.plafonds && (
-                      <>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Période</TableHead>
-                              <TableHead className="text-right">Montant maximal</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {a.plafonds.map((p) => (
-                              <TableRow key={p.periode}>
-                                <TableCell className="flex items-center gap-2">
-                                  {p.periode}
-                                  {p.actuel && <Badge className="bg-green-100 text-green-700">Actuel</Badge>}
-                                </TableCell>
-                                <TableCell className="text-right font-mono">{formatMontantDT(p.montant)}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                        <SimulateurPoint numero={a.numero} />
-                      </>
-                    )}
-                  </AccordionContent>
-                </Card>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          <Tabs defaultValue="fr" className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="fr">Français</TabsTrigger>
+              <TabsTrigger value="ar">العربية</TabsTrigger>
+            </TabsList>
 
-          {avantagesFiltres.length === 0 && (
-            <p className="text-center text-muted-foreground py-8">Aucun avantage ne correspond à cette recherche.</p>
-          )}
+            {/* ─── Onglet Français ─── */}
+            <TabsContent value="fr">
+              <Accordion type="single" collapsible className="space-y-3">
+                {avantagesFiltres.map((a) => (
+                  <AccordionItem key={a.numero} value={`item-${a.numero}`} className="border-0">
+                    <Card className="rounded-lg shadow-sm border border-border bg-card overflow-hidden">
+                      <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                        <div className="flex items-center gap-3 text-left flex-wrap">
+                          <Badge variant="secondary" className="bg-blue-100 text-primary shrink-0">
+                            Point {a.numero}
+                          </Badge>
+                          {a.horsPlafond5pct && (
+                            <Badge variant="outline" className="text-amber-700 border-amber-300 shrink-0">
+                              Hors plafond 5%
+                            </Badge>
+                          )}
+                          <span className="font-semibold text-blue-900">{a.titre}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-6 pb-6">
+                        <p className="text-sm text-muted-foreground mb-4">
+                          <strong>Base de calcul / condition :</strong> {a.base}
+                        </p>
+                        {a.type === "smig" && a.plafonds && (
+                          <>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Période</TableHead>
+                                  <TableHead className="text-right">Montant maximal</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {a.plafonds.map((p) => (
+                                  <TableRow key={p.periode}>
+                                    <TableCell className="flex items-center gap-2">
+                                      {p.periode}
+                                      {p.actuel && <Badge className="bg-green-100 text-green-700">Actuel</Badge>}
+                                    </TableCell>
+                                    <TableCell className="text-right font-mono">{formatMontantDT(p.montant)}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                            <SimulateurPoint numero={a.numero} />
+                          </>
+                        )}
+                      </AccordionContent>
+                    </Card>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+              {avantagesFiltres.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">Aucun avantage ne correspond à cette recherche.</p>
+              )}
+            </TabsContent>
+
+            {/* ─── Onglet Arabe ─── */}
+            <TabsContent value="ar">
+              <div dir="rtl" lang="ar" className="space-y-4">
+                <Accordion type="single" collapsible className="space-y-3">
+                  {avantagesFiltres.map((a) => (
+                    <AccordionItem key={a.numero} value={`ar-item-${a.numero}`} className="border-0">
+                      <Card className="rounded-lg shadow-sm border border-border bg-card overflow-hidden">
+                        <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                          <div className="flex items-center gap-3 text-right flex-wrap">
+                            <Badge variant="secondary" className="bg-blue-100 text-primary shrink-0">
+                              النقطة {a.numero}
+                            </Badge>
+                            {a.horsPlafond5pct && (
+                              <Badge variant="outline" className="text-amber-700 border-amber-300 shrink-0">
+                                خارج السقف 5%
+                              </Badge>
+                            )}
+                            <span className="font-semibold text-blue-900">النص القانوني</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-6 pb-6">
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            النص القانوني
+                          </p>
+                        </AccordionContent>
+                      </Card>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+                {avantagesFiltres.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">لا توجد نتائج.</p>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
 
           <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
             <p className="text-sm text-muted-foreground">

@@ -14,6 +14,7 @@ import {
   ArrowUpDown,
   FileSearch,
   FileX,
+  ScrollText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "./ThemeToggle";
@@ -65,6 +66,7 @@ const NAV_GROUPS: NavGroup[] = [
     groupLabel: "Ressources",
     items: [
       { label: "Référentiel légal", href: "/referentiel-avantages-exclus", icon: BookOpen },
+      { label: "Formulaires CNSS", href: "/formulaires-cnss", icon: ScrollText },
     ],
   },
 ];
