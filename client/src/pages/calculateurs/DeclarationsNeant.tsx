@@ -27,6 +27,7 @@ import {
   PDFPage,
   StandardFonts,
   rgb,
+  degrees,
 } from "pdf-lib";
 import type { PDFFont } from "pdf-lib";
 
@@ -68,11 +69,6 @@ function sanitize(text: string): string {
     .replace(/[\u00f1]/g, "n");
 }
 
-// ── Draw helper: x,y used directly as anchor ──
-function draw(page: PDFPage, font: PDFFont, text: string, x: number, y: number, size: number, color: ReturnType<typeof rgb>) {
-  page.drawText(text, { x, y, font, size, color });
-}
-
 // ── Format date YYYY-MM-DD -> DD/MM/YYYY ──
 function formatDate(d: string): string {
   const p = d.split("-");
@@ -80,40 +76,64 @@ function formatDate(d: string): string {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// INJECTION I3 — Reperes exacts (Portrait)
+// INJECTION I3 — Reperes exacts valides (Portrait, sans rotation)
 // ══════════════════════════════════════════════════════════════════════
-function injectDataIntoI3(page: PDFPage, data: NeantItem, font: PDFFont) {
+function fillI3(page: PDFPage, data: NeantItem, font: PDFFont) {
   const s = 11;
   const c = rgb(0, 0, 0);
 
-  draw(page, font, sanitize(data.matricule),      33,  618, s, c);
-  draw(page, font, String(data.trimestre),       33,  556, s, c);
-  draw(page, font, String(data.annee),           85,  557, s, c);
-  draw(page, font, sanitize(data.raisonSociale), 298,  599, s, c);
-  draw(page, font, sanitize(data.adresse),       259,  555, s, c);
-  draw(page, font, "NEANT",                      31,  451, s, c);
-  draw(page, font, "0,000",                     454,  476, s, c);
-  draw(page, font, "0,000",                     449,  424, s, c);
-  draw(page, font, "0,000",                     447,  352, s, c);
-  draw(page, font, sanitize(data.lieu),          386,  220, s, c);
-  draw(page, font, formatDate(data.dateDocument),257, 218, s, c);
+  page.drawText(sanitize(data.matricule),       { x: 33,  y: 618, font, size: s, color: c });
+  page.drawText(String(data.trimestre),        { x: 33,  y: 556, font, size: s, color: c });
+  page.drawText(String(data.annee),            { x: 85,  y: 557, font, size: s, color: c });
+  page.drawText(sanitize(data.raisonSociale),  { x: 298, y: 599, font, size: s, color: c });
+  page.drawText(sanitize(data.adresse),        { x: 259, y: 555, font, size: s, color: c });
+  page.drawText("NEANT",                       { x: 31,  y: 451, font, size: s, color: c });
+  page.drawText("0,000",                      { x: 454, y: 476, font, size: s, color: c });
+  page.drawText("0,000",                      { x: 449, y: 424, font, size: s, color: c });
+  page.drawText("0,000",                      { x: 447, y: 352, font, size: s, color: c });
+  page.drawText(sanitize(data.lieu),           { x: 386, y: 220, font, size: s, color: c });
+  page.drawText(formatDate(data.dateDocument), { x: 257, y: 218, font, size: s, color: c });
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// INJECTION I16 — Reperes exacts (Paysage)
+// INJECTION I16 — Reperes exacts (Paysage, avec compensation rotation)
 // ══════════════════════════════════════════════════════════════════════
-function injectDataIntoI16(page: PDFPage, data: NeantItem, font: PDFFont) {
+function fillI16(page: PDFPage, data: NeantItem, font: PDFFont) {
   const s = 11;
   const c = rgb(0, 0, 0);
 
-  draw(page, font, sanitize(data.matricule),      83,  503, s, c);
-  draw(page, font, String(data.trimestre),      142,  474, s, c);
-  draw(page, font, String(data.annee),           137,  449, s, c);
-  draw(page, font, sanitize(data.raisonSociale), 364,  489, s, c);
-  draw(page, font, sanitize(data.adresse),       365,  451, s, c);
-  draw(page, font, "NEANT",                     155,  188, 40, c);
-  draw(page, font, sanitize(data.lieu),          568,   82, s, c);
-  draw(page, font, formatDate(data.dateDocument),678,   79, s, c);
+  // Detecter la rotation interne de la page
+  const angle = page.getRotation().angle;
+  const { width: pw, height: ph } = page.getSize();
+
+  // Helper : injecte un texte en compensant la rotation de la page
+  // Les coordonnees (x, y) sont celles du repere visuel (identiques a l'I3).
+  // Si la page est pivotee, on convertit (x,y) visuel -> (ix,iy) interne
+  // et on contre-rotate le texte pour qu'il paraisse horizontal.
+  const stamp = (text: string, x: number, y: number, size: number) => {
+    if (angle === 0) {
+      page.drawText(text, { x, y, font, size, color: c });
+    } else if (angle === 90) {
+      // Visuel (x,y) -> Interne (y, pw - x)
+      page.drawText(text, { x: y, y: pw - x, font, size, color: c, rotate: degrees(-90) });
+    } else if (angle === 180) {
+      page.drawText(text, { x: pw - x, y: ph - y, font, size, color: c, rotate: degrees(-180) });
+    } else if (angle === 270) {
+      // Visuel (x,y) -> Interne (ph - y, x)
+      page.drawText(text, { x: ph - y, y: x, font, size, color: c, rotate: degrees(-270) });
+    } else {
+      page.drawText(text, { x, y, font, size, color: c });
+    }
+  };
+
+  stamp(sanitize(data.matricule),       83,  503, s);
+  stamp(String(data.trimestre),       142,  474, s);
+  stamp(String(data.annee),           137,  449, s);
+  stamp(sanitize(data.raisonSociale), 364,  489, s);
+  stamp(sanitize(data.adresse),       365,  451, s);
+  stamp("NEANT",                     155,  188, 40);
+  stamp(sanitize(data.lieu),          568,   82, s);
+  stamp(formatDate(data.dateDocument), 678,  79, s);
 }
 
 // ── Helper: build stamped PDF ──
@@ -301,12 +321,12 @@ export default function DeclarationsNeant() {
       const mergedPdf = await PDFDocument.create();
 
       for (const item of items) {
-        const i3Stamped = await buildStampedPage(i3Bytes, item, injectDataIntoI3, false);
+        const i3Stamped = await buildStampedPage(i3Bytes, item, fillI3, false);
         const i3Doc = await PDFDocument.load(i3Stamped);
         const i3Copied = await mergedPdf.copyPages(i3Doc, i3Doc.getPageIndices());
         for (const cp of i3Copied) mergedPdf.addPage(cp);
 
-        const i16Stamped = await buildStampedPage(i16Bytes, item, injectDataIntoI16, true);
+        const i16Stamped = await buildStampedPage(i16Bytes, item, fillI16, true);
         const i16Doc = await PDFDocument.load(i16Stamped);
         const i16Copied = await mergedPdf.copyPages(i16Doc, i16Doc.getPageIndices());
         for (const cp of i16Copied) mergedPdf.addPage(cp);
