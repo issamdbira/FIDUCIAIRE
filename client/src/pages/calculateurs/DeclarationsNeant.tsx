@@ -27,7 +27,6 @@ import {
   PDFPage,
   StandardFonts,
   rgb,
-  degrees,
 } from "pdf-lib";
 import type { PDFFont } from "pdf-lib";
 
@@ -50,9 +49,6 @@ const neantItemSchema = z.object({
 
 type NeantItem = z.infer<typeof neantItemSchema>;
 
-// ── Zone type ──
-type Zone = { x: number; y: number; width: number; height: number };
-
 // ── Sanitize ──
 function sanitize(text: string): string {
   return text
@@ -72,162 +68,52 @@ function sanitize(text: string): string {
     .replace(/[\u00f1]/g, "n");
 }
 
-// ── Helpers: centering in zone ──
-function centerXInZone(font: PDFFont, text: string, fontSize: number, zone: Zone): number {
-  const textWidth = font.widthOfTextAtSize(text, fontSize);
-  return zone.x + (zone.width - textWidth) / 2;
+// ── Draw helper: x,y used directly as anchor ──
+function draw(page: PDFPage, font: PDFFont, text: string, x: number, y: number, size: number, color: ReturnType<typeof rgb>) {
+  page.drawText(text, { x, y, font, size, color });
 }
 
-function drawTextInZone(
-  page: PDFPage,
-  font: PDFFont,
-  text: string,
-  zone: Zone,
-  options?: { size?: number; rotate?: ReturnType<typeof degrees>; color?: ReturnType<typeof rgb> },
-) {
-  const fontSize = options?.size ?? 11;
-  const color = options?.color ?? rgb(0, 0, 0);
-  const x = centerXInZone(font, text, fontSize, zone);
-  // Web coordinates: y is from top. pdf-lib: origin bottom-left.
-  // Convert: pdfY = pageHeight - y - height (baseline near bottom of zone)
-  const pageHeight = page.getHeight();
-  const pdfY = pageHeight - zone.y - zone.height;
-
-  const drawOpts: Parameters<PDFPage["drawText"]>[1] = {
-    x,
-    y: pdfY,
-    font,
-    size: fontSize,
-    color,
-  };
-  if (options?.rotate) drawOpts.rotate = options.rotate;
-  page.drawText(text, drawOpts);
-}
-
-/** Draw multiline text (two lines) in a zone, centered horizontally */
-function drawMultilineInZone(
-  page: PDFPage,
-  font: PDFFont,
-  line1: string,
-  line2: string,
-  zone: Zone,
-  options?: { size?: number; rotate?: ReturnType<typeof degrees>; color?: ReturnType<typeof rgb> },
-) {
-  const fontSize = options?.size ?? 11;
-  const color = options?.color ?? rgb(0, 0, 0);
-  const pageHeight = page.getHeight();
-  const lineHeight = fontSize * 1.2;
-
-  const x1 = centerXInZone(font, line1, fontSize, zone);
-  const x2 = centerXInZone(font, line2, fontSize, zone);
-
-  // First line: near top of zone. Second line: below it.
-  const y1 = pageHeight - zone.y - fontSize;
-  const y2 = y1 - lineHeight;
-
-  const baseOpts = { font, size: fontSize, color };
-  if (options?.rotate) (baseOpts as any).rotate = options.rotate;
-  page.drawText(line1, { x: x1, y: y1, ...baseOpts });
-  page.drawText(line2, { x: x2, y: y2, ...baseOpts });
+// ── Format date YYYY-MM-DD -> DD/MM/YYYY ──
+function formatDate(d: string): string {
+  const p = d.split("-");
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// INJECTION I3 — Zones definitives (Portrait)
+// INJECTION I3 — Reperes exacts (Portrait)
 // ══════════════════════════════════════════════════════════════════════
-function injectDataIntoI3(
-  page: PDFPage,
-  data: NeantItem,
-  font: PDFFont,
-) {
+function injectDataIntoI3(page: PDFPage, data: NeantItem, font: PDFFont) {
+  const s = 11;
   const c = rgb(0, 0, 0);
 
-  const zones = {
-    matricule:  { x: 33,  y: 618, width: 120, height: 29 },
-    trimestre: { x: 33,  y: 556, width: 49,  height: 28 },
-    annee:     { x: 85,  y: 557, width: 52,  height: 26 },
-    rsAdresse: { x: 268, y: 560, width: 284, height: 73 },
-    salaires:  { x: 31,  y: 451, width: 132, height: 54 },
-    montant:   { x: 454, y: 476, width: 94,  height: 28 },
-    total:     { x: 449, y: 424, width: 105, height: 20 },
-    aPayer:    { x: 447, y: 352, width: 109, height: 28 },
-    faitA:     { x: 386, y: 220, width: 96,  height: 20 },
-    dateDoc:   { x: 257, y: 218, width: 112, height: 17 },
-  };
-
-  // Detect page rotation and compensate
-  const rotation = page.getRotation().angle;
-  const rot = rotation ? degrees(-rotation) : undefined;
-
-  drawTextInZone(page, font, sanitize(data.matricule), zones.matricule, { rotate: rot, color: c });
-  drawTextInZone(page, font, String(data.trimestre), zones.trimestre, { rotate: rot, color: c });
-  drawTextInZone(page, font, String(data.annee), zones.annee, { rotate: rot, color: c });
-
-  // Raison sociale + Adresse (deux lignes)
-  drawMultilineInZone(
-    page, font,
-    sanitize(data.raisonSociale),
-    sanitize(data.adresse),
-    zones.rsAdresse,
-    { rotate: rot, color: c },
-  );
-
-  drawTextInZone(page, font, "NEANT", zones.salaires, { rotate: rot, color: c });
-  drawTextInZone(page, font, "0,000", zones.montant, { rotate: rot, color: c });
-  drawTextInZone(page, font, "0,000", zones.total, { rotate: rot, color: c });
-  drawTextInZone(page, font, "0,000", zones.aPayer, { rotate: rot, color: c });
-
-  // Format date from YYYY-MM-DD to DD/MM/YYYY
-  const dateParts = data.dateDocument.split("-");
-  const dateStr = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : data.dateDocument;
-  drawTextInZone(page, font, sanitize(data.lieu), zones.faitA, { rotate: rot, color: c });
-  drawTextInZone(page, font, dateStr, zones.dateDoc, { rotate: rot, color: c });
+  draw(page, font, sanitize(data.matricule),      33,  618, s, c);
+  draw(page, font, String(data.trimestre),       33,  556, s, c);
+  draw(page, font, String(data.annee),           85,  557, s, c);
+  draw(page, font, sanitize(data.raisonSociale), 298,  599, s, c);
+  draw(page, font, sanitize(data.adresse),       259,  555, s, c);
+  draw(page, font, "NEANT",                      31,  451, s, c);
+  draw(page, font, "0,000",                     454,  476, s, c);
+  draw(page, font, "0,000",                     449,  424, s, c);
+  draw(page, font, "0,000",                     447,  352, s, c);
+  draw(page, font, sanitize(data.lieu),          386,  220, s, c);
+  draw(page, font, formatDate(data.dateDocument),257, 218, s, c);
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// INJECTION I16 — Zones definitives (Paysage)
+// INJECTION I16 — Reperes exacts (Paysage)
 // ══════════════════════════════════════════════════════════════════════
-function injectDataIntoI16(
-  page: PDFPage,
-  data: NeantItem,
-  font: PDFFont,
-) {
+function injectDataIntoI16(page: PDFPage, data: NeantItem, font: PDFFont) {
+  const s = 11;
   const c = rgb(0, 0, 0);
 
-  const zones = {
-    matricule:  { x: 83,  y: 503, width: 104, height: 21 },
-    trimestre: { x: 142, y: 474, width: 39,  height: 28 },
-    annee:     { x: 137, y: 449, width: 48,  height: 25 },
-    rsAdresse: { x: 361, y: 449, width: 447, height: 76 },
-    neantZone: { x: 155, y: 188, width: 583, height: 186 },
-    faitA:     { x: 568, y: 82,  width: 96,  height: 17 },
-    dateDoc:   { x: 678, y: 79,  width: 71,  height: 18 },
-  };
-
-  // Detect page rotation and compensate
-  const rotation = page.getRotation().angle;
-  const rot = rotation ? degrees(-rotation) : undefined;
-
-  drawTextInZone(page, font, sanitize(data.matricule), zones.matricule, { rotate: rot, color: c });
-  drawTextInZone(page, font, String(data.trimestre), zones.trimestre, { rotate: rot, color: c });
-  drawTextInZone(page, font, String(data.annee), zones.annee, { rotate: rot, color: c });
-
-  // Raison sociale + Adresse (deux lignes)
-  drawMultilineInZone(
-    page, font,
-    sanitize(data.raisonSociale),
-    sanitize(data.adresse),
-    zones.rsAdresse,
-    { rotate: rot, color: c },
-  );
-
-  // NEANT en grand format centre dans la zone
-  drawTextInZone(page, font, "NEANT", zones.neantZone, { size: 40, rotate: rot, color: c });
-
-  // Format date from YYYY-MM-DD to DD/MM/YYYY
-  const dateParts = data.dateDocument.split("-");
-  const dateStr = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : data.dateDocument;
-  drawTextInZone(page, font, sanitize(data.lieu), zones.faitA, { rotate: rot, color: c });
-  drawTextInZone(page, font, dateStr, zones.dateDoc, { rotate: rot, color: c });
+  draw(page, font, sanitize(data.matricule),      83,  503, s, c);
+  draw(page, font, String(data.trimestre),      142,  474, s, c);
+  draw(page, font, String(data.annee),           137,  449, s, c);
+  draw(page, font, sanitize(data.raisonSociale), 364,  489, s, c);
+  draw(page, font, sanitize(data.adresse),       365,  451, s, c);
+  draw(page, font, "NEANT",                     155,  188, 40, c);
+  draw(page, font, sanitize(data.lieu),          568,   82, s, c);
+  draw(page, font, formatDate(data.dateDocument),678,   79, s, c);
 }
 
 // ── Helper: build stamped PDF ──
