@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Layout from "./components/Layout";
@@ -19,8 +19,10 @@ import Admin from "./pages/Admin";
 import ReferentielAvantages from "./pages/calculateurs/ReferentielAvantages";
 import DeclarationsNeant from "./pages/calculateurs/DeclarationsNeant";
 
-function Router() {
-  return (
+function AppRoutes() {
+  const [location] = useLocation();
+
+  const routes = (
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/about" component={About} />
@@ -39,6 +41,12 @@ function Router() {
       <Route component={NotFound} />
     </Switch>
   );
+
+  if (location === "/") {
+    return routes;
+  }
+
+  return <Layout>{routes}</Layout>;
 }
 
 function App() {
@@ -47,9 +55,7 @@ function App() {
       <ThemeProvider defaultTheme="light" switchable>
         <TooltipProvider>
           <Toaster />
-          <Layout>
-            <Router />
-          </Layout>
+          <AppRoutes />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
