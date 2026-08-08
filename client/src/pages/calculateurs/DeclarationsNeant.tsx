@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Upload, FileSpreadsheet, Trash2, FileDown, Eye } from "lucide-react";
 import * as XLSX from "xlsx";
@@ -42,6 +43,25 @@ const neantItemSchema = z.object({
 
 type NeantItem = z.infer<typeof neantItemSchema>;
 
+// ── Calibrage coordinates per document type ──
+type CalibrageCoords = {
+  matriculeX: number;
+  matriculeY: number;
+  neantX: number;
+  neantY: number;
+  trimestreX: number;
+  trimestreY: number;
+};
+
+const DEFAULT_CALIBRAGE: CalibrageCoords = {
+  matriculeX: 70,
+  matriculeY: 710,
+  neantX: 230,
+  neantY: 420,
+  trimestreX: 180,
+  trimestreY: 680,
+};
+
 // ── Sanitize: remove accents for pdf-lib StandardFonts (WinAnsiEncoding) ──
 function sanitize(text: string): string {
   return text
@@ -62,30 +82,30 @@ function sanitize(text: string): string {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// INJECTION I3 — Fonction isolee pour le modele Etat Recapitulatif
-// Coordonnees independantes et codees en dur pour chaque champ
+// INJECTION I3 — Coordonnees pilotées par le calibrage
 // ══════════════════════════════════════════════════════════════════════
 function injectDataIntoI3(
   page: PDFPage,
   data: NeantItem,
+  c: CalibrageCoords,
   fontRegular: PDFFont,
   fontBold: PDFFont,
 ) {
-  const { width } = page.getSize();
-
   // Matricule Employeur
   page.drawText(sanitize(data.matricule), {
-    x: 70, y: 710, font: fontRegular, size: 10, color: rgb(0, 0, 0),
+    x: c.matriculeX, y: c.matriculeY,
+    font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
-  // Raison Sociale (Nom et adresse de l'employeur)
+  // Raison Sociale
   page.drawText(sanitize(data.raisonSociale), {
     x: 350, y: 710, font: fontBold, size: 10, color: rgb(0, 0, 0),
   });
 
   // Trimestre
   page.drawText(String(data.trimestre), {
-    x: 180, y: 680, font: fontRegular, size: 10, color: rgb(0, 0, 0),
+    x: c.trimestreX, y: c.trimestreY,
+    font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
   // Annee
@@ -93,39 +113,41 @@ function injectDataIntoI3(
     x: 250, y: 680, font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
-  // "Zero Dinar" (arretee a la somme de)
+  // "Zero Dinar"
   page.drawText("Zero Dinar", {
     x: 350, y: 80, font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
-  // Filigrane NEANT (45pt, bold, 45 degres, centre sur le tableau)
+  // Filigrane NEANT (45pt, bold, 45 degres)
   page.drawText("NEANT", {
-    x: width / 2 - 60, y: 420,
+    x: c.neantX, y: c.neantY,
     font: fontBold, size: 45, color: rgb(0.75, 0.75, 0.75),
     rotate: degrees(45), opacity: 0.5,
   });
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// INJECTION I16 — Fonction isolee pour le modele Bordereau
-// Coordonnees independantes et codees en dur pour chaque champ
+// INJECTION I16 — Coordonnees pilotées par le calibrage
 // ══════════════════════════════════════════════════════════════════════
 function injectDataIntoI16(
   page: PDFPage,
   data: NeantItem,
+  c: CalibrageCoords,
   fontRegular: PDFFont,
   fontBold: PDFFont,
 ) {
   const { width, height } = page.getSize();
 
-  // N. Employeur (matricule) — dans sa case dediee
+  // N. Employeur (matricule)
   page.drawText(sanitize(data.matricule), {
-    x: 155, y: 740, font: fontRegular, size: 10, color: rgb(0, 0, 0),
+    x: c.matriculeX, y: c.matriculeY,
+    font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
-  // Trimestre — independant, sous le numero de l'employeur
+  // Trimestre
   page.drawText(String(data.trimestre), {
-    x: 445, y: 740, font: fontRegular, size: 10, color: rgb(0, 0, 0),
+    x: c.trimestreX, y: c.trimestreY,
+    font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
   // Annee
@@ -133,38 +155,38 @@ function injectDataIntoI16(
     x: 560, y: 740, font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
-  // NOM ET ADRESSE DE L'EMPLOYEUR (raison sociale)
+  // NOM ET ADRESSE DE L'EMPLOYEUR
   page.drawText(sanitize(data.raisonSociale), {
     x: 255, y: 718, font: fontBold, size: 9, color: rgb(0, 0, 0),
   });
 
-  // "Zero Dinar" (arrete a la somme de)
+  // "Zero Dinar"
   page.drawText("Zero Dinar", {
     x: 175, y: 130, font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
-  // Filigrane NEANT (45pt, bold, 45 degres, centre dans le tableau de 12 lignes)
+  // Filigrane NEANT (45pt, bold, 45 degres)
   page.drawText("NEANT", {
-    x: width / 2 - 60, y: height - 275,
+    x: c.neantX, y: c.neantY,
     font: fontBold, size: 45, color: rgb(0.75, 0.75, 0.75),
     rotate: degrees(45), opacity: 0.5,
   });
 }
 
-// ── Helper: build a stamped PDF, optionally limited to first page only ──
+// ── Helper: build stamped PDF, first page only if requested ──
 async function buildStampedPage(
   templateBytes: ArrayBuffer,
   item: NeantItem,
-  injectFn: (page: PDFPage, data: NeantItem, fR: PDFFont, fB: PDFFont) => void,
+ c: CalibrageCoords,
+  injectFn: (page: PDFPage, data: NeantItem, c: CalibrageCoords, fR: PDFFont, fB: PDFFont) => void,
   firstPageOnly: boolean,
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.load(templateBytes);
   const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
   const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
   const page = doc.getPages()[0];
-  injectFn(page, item, fontRegular, fontBold);
+  injectFn(page, item, c, fontRegular, fontBold);
 
-  // Limiter strictement a la premiere page si demande (ex: I16 a 2 pages)
   if (firstPageOnly && doc.getPageCount() > 1) {
     const pagesToRemove = doc.getPageIndices().slice(1);
     for (let i = pagesToRemove.length - 1; i >= 0; i--) {
@@ -175,7 +197,7 @@ async function buildStampedPage(
   return doc.save();
 }
 
-// ── Helper: convert Uint8Array to base64 data URI ──
+// ── Helper: Uint8Array to base64 data URI ──
 function pdfToDataUri(pdfBytes: Uint8Array): string {
   let binary = "";
   const bytes = new Uint8Array(pdfBytes);
@@ -183,6 +205,36 @@ function pdfToDataUri(pdfBytes: Uint8Array): string {
     binary += String.fromCharCode(bytes[i]!);
   }
   return `data:application/pdf;base64,${btoa(binary)}`;
+}
+
+// ── Single slider row component with numeric display ──
+function CalibrageSlider({
+  label,
+  value,
+  onChange,
+  min = 0,
+  max = 800,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <Label className="w-40 shrink-0 text-xs text-muted-foreground">{label}</Label>
+      <Slider
+        min={min} max={max} step={1}
+        value={[value]}
+        onValueChange={([v]) => onChange(v)}
+        className="flex-1"
+      />
+      <span className="w-12 text-right text-xs font-mono text-foreground tabular-nums">
+        {value}
+      </span>
+    </div>
+  );
 }
 
 // ── Component ──
@@ -195,6 +247,10 @@ export default function DeclarationsNeant() {
   const [i3TemplateBytes, setI3TemplateBytes] = useState<ArrayBuffer | null>(null);
   const [i16TemplateBytes, setI16TemplateBytes] = useState<ArrayBuffer | null>(null);
   const previewDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Calibrage states — separated per document type
+  const [calibrageI3, setCalibrageI3] = useState<CalibrageCoords>({ ...DEFAULT_CALIBRAGE });
+  const [calibrageI16, setCalibrageI16] = useState<CalibrageCoords>({ ...DEFAULT_CALIBRAGE });
 
   const currentYear = new Date().getFullYear();
 
@@ -234,7 +290,15 @@ export default function DeclarationsNeant() {
     loadTemplates();
   }, []);
 
-  // Live Preview: regenerate on item/tab change (no sliders)
+  // Active calibrage state based on preview tab
+  const activeCalibrage = previewTab === "I3" ? calibrageI3 : calibrageI16;
+  const setActiveCalibrage = previewTab === "I3" ? setCalibrageI3 : setCalibrageI16;
+
+  const updateCalibrage = (key: keyof CalibrageCoords, value: number) => {
+    setActiveCalibrage((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // Live Preview
   useEffect(() => {
     if (!i3TemplateBytes || !i16TemplateBytes || items.length === 0) {
       setPreviewUrl("");
@@ -248,17 +312,18 @@ export default function DeclarationsNeant() {
         const templateBytes = previewTab === "I3" ? i3TemplateBytes : i16TemplateBytes;
         const injectFn = previewTab === "I3" ? injectDataIntoI3 : injectDataIntoI16;
         const firstPageOnly = previewTab === "I16";
-        const pdfBytes = await buildStampedPage(templateBytes, firstItem, injectFn, firstPageOnly);
+        const coords = previewTab === "I3" ? calibrageI3 : calibrageI16;
+        const pdfBytes = await buildStampedPage(templateBytes, firstItem, coords, injectFn, firstPageOnly);
         setPreviewUrl(pdfToDataUri(pdfBytes));
       } catch {
-        // silent fail for preview
+        // silent
       }
     }, 150);
 
     return () => {
       if (previewDebounceRef.current) clearTimeout(previewDebounceRef.current);
     };
-  }, [items, previewTab, i3TemplateBytes, i16TemplateBytes]);
+  }, [items, previewTab, calibrageI3, calibrageI16, i3TemplateBytes, i16TemplateBytes]);
 
   const onFormSubmit = (data: NeantItem) => {
     setItems((prev) => [...prev, data]);
@@ -277,9 +342,7 @@ export default function DeclarationsNeant() {
         const buffer = await file.arrayBuffer();
         const workbook = XLSX.read(buffer, { type: "array" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
-          header: 1,
-        });
+        const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { header: 1 });
 
         const imported: NeantItem[] = [];
 
@@ -333,7 +396,7 @@ export default function DeclarationsNeant() {
     e.target.value = "";
   };
 
-  // ── PDF Generation (I3 + I16 fusionnes, coordonnees fixes) ──
+  // ── PDF Generation ──
   const generatePDF = async () => {
     if (items.length === 0 || !i3TemplateBytes || !i16TemplateBytes) return;
     setIsGenerating(true);
@@ -342,14 +405,14 @@ export default function DeclarationsNeant() {
       const mergedPdf = await PDFDocument.create();
 
       for (const item of items) {
-        // I3 : Etat Recapitulatif (template officiel)
-        const i3Bytes = await buildStampedPage(i3TemplateBytes, item, injectDataIntoI3, false);
+        // I3
+        const i3Bytes = await buildStampedPage(i3TemplateBytes, item, calibrageI3, injectDataIntoI3, false);
         const i3Doc = await PDFDocument.load(i3Bytes);
         const i3Copied = await mergedPdf.copyPages(i3Doc, i3Doc.getPageIndices());
         for (const cp of i3Copied) mergedPdf.addPage(cp);
 
-        // I16 : Bordereau (template officiel, STRICTEMENT 1ere page uniquement)
-        const i16Bytes = await buildStampedPage(i16TemplateBytes, item, injectDataIntoI16, true);
+        // I16 (strictement premiere page)
+        const i16Bytes = await buildStampedPage(i16TemplateBytes, item, calibrageI16, injectDataIntoI16, true);
         const i16Doc = await PDFDocument.load(i16Bytes);
         const i16Copied = await mergedPdf.copyPages(i16Doc, i16Doc.getPageIndices());
         for (const cp of i16Copied) mergedPdf.addPage(cp);
@@ -384,7 +447,7 @@ export default function DeclarationsNeant() {
           </p>
         </div>
 
-        {/* A. Formulaire de saisie */}
+        {/* A. Saisie manuelle */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-foreground">Saisie manuelle</CardTitle>
@@ -453,7 +516,7 @@ export default function DeclarationsNeant() {
           </CardContent>
         </Card>
 
-        {/* List + Preview + Generation */}
+        {/* C. Liste + Calibrage + Preview + Generation */}
         <Card>
           <CardHeader>
             <CardTitle className="text-foreground">Liste des declarations ({items.length})</CardTitle>
@@ -499,19 +562,62 @@ export default function DeclarationsNeant() {
               </p>
             )}
 
-            {/* Live Preview (sans curseurs) */}
+            {/* Calibrage + Live Preview */}
             {items.length > 0 && (
-              <div className="space-y-3 pt-4 border-t">
+              <div className="space-y-4 pt-4 border-t">
                 <div className="flex items-center gap-2">
                   <Eye className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">Apercu en direct</span>
+                  <span className="text-sm font-medium text-foreground">Apercu et calibrage ({previewTab})</span>
                 </div>
+
                 <Tabs value={previewTab} onValueChange={(v) => setPreviewTab(v as "I3" | "I16")}>
                   <TabsList>
                     <TabsTrigger value="I3">Modele I3</TabsTrigger>
                     <TabsTrigger value="I16">Modele I16</TabsTrigger>
                   </TabsList>
                   <TabsContent value={previewTab}>
+                    {/* Groupe 1 : Matricule + NEANT */}
+                    <div className="space-y-2 mb-4 rounded-md border p-3 bg-muted/30">
+                      <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Matricule Employeur</p>
+                      <CalibrageSlider
+                        label="Position X"
+                        value={activeCalibrage.matriculeX}
+                        onChange={(v) => updateCalibrage("matriculeX", v)}
+                      />
+                      <CalibrageSlider
+                        label="Position Y"
+                        value={activeCalibrage.matriculeY}
+                        onChange={(v) => updateCalibrage("matriculeY", v)}
+                      />
+                      <p className="text-xs font-semibold text-foreground uppercase tracking-wide mt-3">Mention NEANT</p>
+                      <CalibrageSlider
+                        label="Position X"
+                        value={activeCalibrage.neantX}
+                        onChange={(v) => updateCalibrage("neantX", v)}
+                      />
+                      <CalibrageSlider
+                        label="Position Y"
+                        value={activeCalibrage.neantY}
+                        onChange={(v) => updateCalibrage("neantY", v)}
+                      />
+                    </div>
+
+                    {/* Groupe 2 : Trimestre */}
+                    <div className="space-y-2 mb-4 rounded-md border p-3 bg-muted/30">
+                      <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Trimestre</p>
+                      <CalibrageSlider
+                        label="Position X"
+                        value={activeCalibrage.trimestreX}
+                        onChange={(v) => updateCalibrage("trimestreX", v)}
+                      />
+                      <CalibrageSlider
+                        label="Position Y"
+                        value={activeCalibrage.trimestreY}
+                        onChange={(v) => updateCalibrage("trimestreY", v)}
+                      />
+                    </div>
+
+                    {/* Preview iframe */}
                     {previewUrl ? (
                       <iframe
                         src={previewUrl}
