@@ -4,6 +4,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { WorkspaceProvider } from "./contexts/WorkspaceContext";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import About from "./pages/About";
@@ -19,6 +20,8 @@ import Admin from "./pages/Admin";
 import ReferentielAvantages from "./pages/calculateurs/ReferentielAvantages";
 import FormulairesCNSS from "./pages/FormulairesCNSS";
 import DeclarationsNeant from "./pages/calculateurs/DeclarationsNeant";
+import FiduciaireDashboard from "./pages/FiduciaireDashboard";
+import EntrepriseDashboard from "./pages/EntrepriseDashboard";
 
 function AppRoutes() {
   const [location] = useLocation();
@@ -39,6 +42,8 @@ function AppRoutes() {
       <Route path="/calculateurs/testeur-txt-cnss" component={TesteurTXT} />
       <Route path="/calculateurs/declarations-neant" component={DeclarationsNeant} />
       <Route path="/fiche-de-paie" component={GenerateurFichePaie} />
+      <Route path="/expert" component={FiduciaireDashboard} />
+      <Route path="/dashboard" component={EntrepriseDashboard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
@@ -55,10 +60,12 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light" switchable>
-        <TooltipProvider>
-          <Toaster />
-          <AppRoutes />
-        </TooltipProvider>
+        <WorkspaceProvider>
+          <TooltipProvider>
+            <Toaster />
+            <AppRoutes />
+          </TooltipProvider>
+        </WorkspaceProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

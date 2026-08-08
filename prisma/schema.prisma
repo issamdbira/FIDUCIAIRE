@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum WorkspaceMemberRole {
+  OWNER
+  ACCOUNTANT
+  HR_ADMIN
+}
+
+enum ContactType {
+  CLIENT
+  VENDOR
+}
+
+enum CivilStatus {
+  CELIBATAIRE
+  MARIE
+  DIVORCE
+  VEUF
+}
+
+model Workspace {
+  id               String   @id @default(uuid())
+  name             String
+  matriculeCnss    String
+  codeExploitation  String
+  matriculeFiscal  String
+  address          String
+  tauxAtMp         Float
+  createdAt        DateTime @default(now())
+
+  members   WorkspaceMember[]
+  contacts  Contact[]
+  employees Employee[]
+}
+
+model User {
+  id           String             @id @default(uuid())
+  email        String             @unique
+  passwordHash String
+  fullName     String
+
+  workspaces WorkspaceMember[]
+
+  @@map("users")
+}
+
+model WorkspaceMember {
+  userId      String
+  workspaceId String
+  role        WorkspaceMemberRole
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([userId, workspaceId])
+}
+
+model Contact {
+  id              String      @id @default(uuid())
+  workspaceId     String
+  name            String
+  type            ContactType
+  matriculeFiscal String?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("contacts")
+}
+
+model Employee {
+  id              String      @id @default(uuid())
+  workspaceId     String
+  matriculeCnss   String
+  firstName       String
+  lastName        String
+  baseSalary      Float
+  civilStatus     CivilStatus  @default(CELIBATAIRE)
+  numberOfChildren Int        @default(0)
+  isActive        Boolean     @default(true)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("employees")
+}
