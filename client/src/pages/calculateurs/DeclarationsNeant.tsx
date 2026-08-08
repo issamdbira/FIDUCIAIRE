@@ -20,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Upload, FileSpreadsheet, Trash2, FileDown, Eye } from "lucide-react";
 import * as XLSX from "xlsx";
@@ -33,7 +32,7 @@ const neantItemSchema = z.object({
     .string()
     .min(1, "Le matricule est obligatoire")
     .regex(/^\d{8}-\d{2}$/, "Format invalide (ex: 12345678-99)"),
-  raisonSociale: z.string().min(2, "Minimum 2 caract\u00e8res"),
+  raisonSociale: z.string().min(2, "Minimum 2 caracteres"),
   trimestre: z.number().min(1).max(4),
   annee: z
     .number()
@@ -43,166 +42,136 @@ const neantItemSchema = z.object({
 
 type NeantItem = z.infer<typeof neantItemSchema>;
 
-type Calibrage = { x: number; y: number };
+// ── Sanitize: remove accents for pdf-lib StandardFonts (WinAnsiEncoding) ──
+function sanitize(text: string): string {
+  return text
+    .replace(/[\u00c9\u00c8\u00ca\u00cb]/g, "E")
+    .replace(/[\u00e9\u00e8\u00ea\u00eb]/g, "e")
+    .replace(/[\u00c0\u00c1\u00c2\u00c3\u00c4]/g, "A")
+    .replace(/[\u00e0\u00e1\u00e2\u00e3\u00e4]/g, "a")
+    .replace(/[\u00d9\u00da\u00db\u00dc]/g, "U")
+    .replace(/[\u00f9\u00fa\u00fb\u00fc]/g, "u")
+    .replace(/[\u00ce\u00cf]/g, "I")
+    .replace(/[\u00ee\u00ef]/g, "i")
+    .replace(/[\u00d2\u00d3\u00d4\u00d5\u00d6]/g, "O")
+    .replace(/[\u00f2\u00f3\u00f4\u00f5\u00f6]/g, "o")
+    .replace(/[\u00c7]/g, "C")
+    .replace(/[\u00e7]/g, "c")
+    .replace(/[\u00d1]/g, "N")
+    .replace(/[\u00f1]/g, "n");
+}
 
 // ══════════════════════════════════════════════════════════════════════
-// INJECTION I3 — Fonction isol\u00e9e pour le mod\u00e8le \u00c9tat R\u00e9capitulatif
-// Coordonn\u00e9es de base sp\u00e9cifiques au template I3.pdf
+// INJECTION I3 — Fonction isolee pour le modele Etat Recapitulatif
+// Coordonnees independantes et codees en dur pour chaque champ
 // ══════════════════════════════════════════════════════════════════════
 function injectDataIntoI3(
   page: PDFPage,
   data: NeantItem,
-  offsets: Calibrage,
   fontRegular: PDFFont,
   fontBold: PDFFont,
 ) {
   const { width } = page.getSize();
-  const ox = offsets.x;
-  const oy = offsets.y;
 
-  // Coordonn\u00e9es de base I3
-  const MATRICULE_BASE_X = 70;
-  const MATRICULE_BASE_Y = 710;
-  const ANNEE_BASE_X = 250;
-  const ANNEE_BASE_Y = 680;
-  const RAISON_BASE_X = 350;
-  const RAISON_BASE_Y = 710;
-  const TRIMESTRE_BASE_X = 180;
-  const TRIMESTRE_BASE_Y = 680;
-  const ZERO_DINAR_X = 350;
-  const ZERO_DINAR_Y = 80;
-  const WATERMARK_X = width / 2 - 60;
-  const WATERMARK_Y = 420;
-
-  // Matricule
-  page.drawText(data.matricule, {
-    x: MATRICULE_BASE_X + ox,
-    y: MATRICULE_BASE_Y + oy,
-    font: fontRegular, size: 10, color: rgb(0, 0, 0),
+  // Matricule Employeur
+  page.drawText(sanitize(data.matricule), {
+    x: 70, y: 710, font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
-  // Raison Sociale
-  page.drawText(data.raisonSociale, {
-    x: RAISON_BASE_X + ox,
-    y: RAISON_BASE_Y + oy,
-    font: fontBold, size: 10, color: rgb(0, 0, 0),
+  // Raison Sociale (Nom et adresse de l'employeur)
+  page.drawText(sanitize(data.raisonSociale), {
+    x: 350, y: 710, font: fontBold, size: 10, color: rgb(0, 0, 0),
   });
 
   // Trimestre
   page.drawText(String(data.trimestre), {
-    x: TRIMESTRE_BASE_X + ox,
-    y: TRIMESTRE_BASE_Y + oy,
-    font: fontRegular, size: 10, color: rgb(0, 0, 0),
+    x: 180, y: 680, font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
-  // Ann\u00e9e
+  // Annee
   page.drawText(String(data.annee), {
-    x: ANNEE_BASE_X + ox,
-    y: ANNEE_BASE_Y + oy,
-    font: fontRegular, size: 10, color: rgb(0, 0, 0),
+    x: 250, y: 680, font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
-  // "Z\u00e9ro Dinar" (arr\u00eat\u00e9e \u00e0 la somme de)
-  page.drawText("Z\u00e9ro Dinar", {
-    x: ZERO_DINAR_X + ox,
-    y: ZERO_DINAR_Y + oy,
-    font: fontRegular, size: 10, color: rgb(0, 0, 0),
+  // "Zero Dinar" (arretee a la somme de)
+  page.drawText("Zero Dinar", {
+    x: 350, y: 80, font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
-  // Filigrane N\u00c9ANT (45pt, bold, 45\u00b0 rotation, centr\u00e9 sur le tableau Salaires d\u00e9clar\u00e9s)
-  page.drawText("N\u00c9ANT", {
-    x: WATERMARK_X + ox,
-    y: WATERMARK_Y + oy,
+  // Filigrane NEANT (45pt, bold, 45 degres, centre sur le tableau)
+  page.drawText("NEANT", {
+    x: width / 2 - 60, y: 420,
     font: fontBold, size: 45, color: rgb(0.75, 0.75, 0.75),
     rotate: degrees(45), opacity: 0.5,
   });
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// INJECTION I16 — Fonction isol\u00e9e pour le mod\u00e8le Bordereau de D\u00e9claration
-// Coordonn\u00e9es de base sp\u00e9cifiques au template I16.pdf
+// INJECTION I16 — Fonction isolee pour le modele Bordereau
+// Coordonnees independantes et codees en dur pour chaque champ
 // ══════════════════════════════════════════════════════════════════════
 function injectDataIntoI16(
   page: PDFPage,
   data: NeantItem,
-  offsets: Calibrage,
   fontRegular: PDFFont,
   fontBold: PDFFont,
 ) {
   const { width, height } = page.getSize();
-  const ox = offsets.x;
-  const oy = offsets.y;
 
-  // Coordonn\u00e9es de base I16
-  const MATRICULE_BASE_X = 150;
-  const MATRICULE_BASE_Y = 740;
-  const ANNEE_BASE_X = 520;
-  const ANNEE_BASE_Y = 740;
-  const RAISON_BASE_X = 200;
-  const RAISON_BASE_Y = 710;
-  const TRIMESTRE_BASE_X = 445;
-  const TRIMESTRE_BASE_Y = 740;
-  const ZERO_DINAR_X = 175;
-  const ZERO_DINAR_Y = 130;
-  const WATERMARK_X = width / 2 - 60;
-  const WATERMARK_Y = height - 155 - 120;
-
-  // N\u00b0 Employeur (matricule)
-  page.drawText(data.matricule, {
-    x: MATRICULE_BASE_X + ox,
-    y: MATRICULE_BASE_Y + oy,
-    font: fontRegular, size: 10, color: rgb(0, 0, 0),
+  // N. Employeur (matricule) — dans sa case dediee
+  page.drawText(sanitize(data.matricule), {
+    x: 155, y: 740, font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
-  // Trimestre
+  // Trimestre — independant, sous le numero de l'employeur
   page.drawText(String(data.trimestre), {
-    x: TRIMESTRE_BASE_X + ox,
-    y: TRIMESTRE_BASE_Y + oy,
-    font: fontRegular, size: 10, color: rgb(0, 0, 0),
+    x: 445, y: 740, font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
-  // Ann\u00e9e
+  // Annee
   page.drawText(String(data.annee), {
-    x: ANNEE_BASE_X + ox,
-    y: ANNEE_BASE_Y + oy,
-    font: fontRegular, size: 10, color: rgb(0, 0, 0),
+    x: 560, y: 740, font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
   // NOM ET ADRESSE DE L'EMPLOYEUR (raison sociale)
-  page.drawText(data.raisonSociale, {
-    x: RAISON_BASE_X + ox,
-    y: RAISON_BASE_Y + oy,
-    font: fontBold, size: 9, color: rgb(0, 0, 0),
+  page.drawText(sanitize(data.raisonSociale), {
+    x: 255, y: 718, font: fontBold, size: 9, color: rgb(0, 0, 0),
   });
 
-  // "Z\u00e9ro Dinar" (arr\u00eat\u00e9 \u00e0 la somme de)
-  page.drawText("Z\u00e9ro Dinar", {
-    x: ZERO_DINAR_X + ox,
-    y: ZERO_DINAR_Y + oy,
-    font: fontRegular, size: 10, color: rgb(0, 0, 0),
+  // "Zero Dinar" (arrete a la somme de)
+  page.drawText("Zero Dinar", {
+    x: 175, y: 130, font: fontRegular, size: 10, color: rgb(0, 0, 0),
   });
 
-  // Filigrane N\u00c9ANT (45pt, bold, 45\u00b0 rotation, centr\u00e9 sur le tableau de 12 lignes)
-  page.drawText("N\u00c9ANT", {
-    x: WATERMARK_X + ox,
-    y: WATERMARK_Y + oy,
+  // Filigrane NEANT (45pt, bold, 45 degres, centre dans le tableau de 12 lignes)
+  page.drawText("NEANT", {
+    x: width / 2 - 60, y: height - 275,
     font: fontBold, size: 45, color: rgb(0.75, 0.75, 0.75),
     rotate: degrees(45), opacity: 0.5,
   });
 }
 
-// ── Helper: build a stamped PDF from template bytes ──
+// ── Helper: build a stamped PDF, optionally limited to first page only ──
 async function buildStampedPage(
   templateBytes: ArrayBuffer,
   item: NeantItem,
-  offsets: Calibrage,
-  injectFn: typeof injectDataIntoI3 | typeof injectDataIntoI16,
+  injectFn: (page: PDFPage, data: NeantItem, fR: PDFFont, fB: PDFFont) => void,
+  firstPageOnly: boolean,
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.load(templateBytes);
   const fontRegular = await doc.embedFont(StandardFonts.Helvetica);
   const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
   const page = doc.getPages()[0];
-  injectFn(page, item, offsets, fontRegular, fontBold);
+  injectFn(page, item, fontRegular, fontBold);
+
+  // Limiter strictement a la premiere page si demande (ex: I16 a 2 pages)
+  if (firstPageOnly && doc.getPageCount() > 1) {
+    const pagesToRemove = doc.getPageIndices().slice(1);
+    for (let i = pagesToRemove.length - 1; i >= 0; i--) {
+      doc.removePage(pagesToRemove[i]!);
+    }
+  }
+
   return doc.save();
 }
 
@@ -219,8 +188,6 @@ function pdfToDataUri(pdfBytes: Uint8Array): string {
 // ── Component ──
 export default function DeclarationsNeant() {
   const [items, setItems] = useState<NeantItem[]>([]);
-  const [calibrageI3, setCalibrageI3] = useState<Calibrage>({ x: 0, y: 0 });
-  const [calibrageI16, setCalibrageI16] = useState<Calibrage>({ x: 0, y: 0 });
   const [isGenerating, setIsGenerating] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [previewTab, setPreviewTab] = useState<"I3" | "I16">("I3");
@@ -255,19 +222,19 @@ export default function DeclarationsNeant() {
           fetch("/I16.pdf"),
         ]);
         if (!i3Res.ok || !i16Res.ok) {
-          toast.error("Mod\u00e8les PDF introuvables (I3/I16)");
+          toast.error("Modeles PDF introuvables (I3/I16)");
           return;
         }
         setI3TemplateBytes(await i3Res.arrayBuffer());
         setI16TemplateBytes(await i16Res.arrayBuffer());
       } catch {
-        toast.error("Erreur lors du chargement des mod\u00e8les PDF");
+        toast.error("Erreur lors du chargement des modeles PDF");
       }
     }
     loadTemplates();
   }, []);
 
-  // Live Preview: regenerate on slider/item/tab change
+  // Live Preview: regenerate on item/tab change (no sliders)
   useEffect(() => {
     if (!i3TemplateBytes || !i16TemplateBytes || items.length === 0) {
       setPreviewUrl("");
@@ -279,9 +246,9 @@ export default function DeclarationsNeant() {
       try {
         const firstItem = items[0];
         const templateBytes = previewTab === "I3" ? i3TemplateBytes : i16TemplateBytes;
-        const offsets = previewTab === "I3" ? calibrageI3 : calibrageI16;
         const injectFn = previewTab === "I3" ? injectDataIntoI3 : injectDataIntoI16;
-        const pdfBytes = await buildStampedPage(templateBytes, firstItem, offsets, injectFn);
+        const firstPageOnly = previewTab === "I16";
+        const pdfBytes = await buildStampedPage(templateBytes, firstItem, injectFn, firstPageOnly);
         setPreviewUrl(pdfToDataUri(pdfBytes));
       } catch {
         // silent fail for preview
@@ -291,12 +258,12 @@ export default function DeclarationsNeant() {
     return () => {
       if (previewDebounceRef.current) clearTimeout(previewDebounceRef.current);
     };
-  }, [items, previewTab, calibrageI3, calibrageI16, i3TemplateBytes, i16TemplateBytes]);
+  }, [items, previewTab, i3TemplateBytes, i16TemplateBytes]);
 
   const onFormSubmit = (data: NeantItem) => {
     setItems((prev) => [...prev, data]);
     reset({ matricule: "", raisonSociale: "", trimestre: 1, annee: currentYear });
-    toast.success(`D\u00e9claration ajout\u00e9e : ${data.matricule}`);
+    toast.success(`Declaration ajoutee : ${data.matricule}`);
   };
 
   const removeItem = (index: number) => {
@@ -339,9 +306,9 @@ export default function DeclarationsNeant() {
 
         if (imported.length > 0) {
           setItems((prev) => [...prev, ...imported]);
-          toast.success(`${imported.length} d\u00e9claration(s) import\u00e9e(s) depuis Excel`);
+          toast.success(`${imported.length} declaration(s) importee(s) depuis Excel`);
         } else {
-          toast.error("Aucune donn\u00e9e valide trouv\u00e9e dans le fichier Excel");
+          toast.error("Aucune donnee valide trouvee dans le fichier Excel");
         }
       } catch {
         toast.error("Erreur lors de la lecture du fichier Excel");
@@ -366,7 +333,7 @@ export default function DeclarationsNeant() {
     e.target.value = "";
   };
 
-  // ── PDF Generation (I3 + I16 fusionn\u00e9s) ──
+  // ── PDF Generation (I3 + I16 fusionnes, coordonnees fixes) ──
   const generatePDF = async () => {
     if (items.length === 0 || !i3TemplateBytes || !i16TemplateBytes) return;
     setIsGenerating(true);
@@ -375,14 +342,14 @@ export default function DeclarationsNeant() {
       const mergedPdf = await PDFDocument.create();
 
       for (const item of items) {
-        // ─── I3 : \u00c9tat R\u00e9capitulatif (template officiel) ───
-        const i3Bytes = await buildStampedPage(i3TemplateBytes, item, calibrageI3, injectDataIntoI3);
+        // I3 : Etat Recapitulatif (template officiel)
+        const i3Bytes = await buildStampedPage(i3TemplateBytes, item, injectDataIntoI3, false);
         const i3Doc = await PDFDocument.load(i3Bytes);
         const i3Copied = await mergedPdf.copyPages(i3Doc, i3Doc.getPageIndices());
         for (const cp of i3Copied) mergedPdf.addPage(cp);
 
-        // ─── I16 : Bordereau de d\u00e9claration (template officiel) ───
-        const i16Bytes = await buildStampedPage(i16TemplateBytes, item, calibrageI16, injectDataIntoI16);
+        // I16 : Bordereau (template officiel, STRICTEMENT 1ere page uniquement)
+        const i16Bytes = await buildStampedPage(i16TemplateBytes, item, injectDataIntoI16, true);
         const i16Doc = await PDFDocument.load(i16Bytes);
         const i16Copied = await mergedPdf.copyPages(i16Doc, i16Doc.getPageIndices());
         for (const cp of i16Copied) mergedPdf.addPage(cp);
@@ -397,27 +364,23 @@ export default function DeclarationsNeant() {
       a.click();
       URL.revokeObjectURL(url);
 
-      toast.success(`${items.length} d\u00e9claration(s) g\u00e9n\u00e9r\u00e9e(s) : I3 + I16`);
+      toast.success(`${items.length} declaration(s) generee(s) : I3 + I16`);
     } catch {
-      toast.error("Erreur lors de la g\u00e9n\u00e9ration du PDF");
+      toast.error("Erreur lors de la generation du PDF");
     } finally {
       setIsGenerating(false);
     }
   };
-
-  // Calibrage actif selon l'onglet
-  const activeCalibrage = previewTab === "I3" ? calibrageI3 : calibrageI16;
-  const setActiveCalibrage = previewTab === "I3" ? setCalibrageI3 : setCalibrageI16;
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
         {/* Header */}
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-foreground mb-1" style={{ fontFamily: "Montserrat, sans-serif" }}>
-            D\u00e9clarations N\u00e9ant
+            Declarations Neant
           </h2>
           <p className="text-muted-foreground text-sm">
-            G\u00e9n\u00e9rez par lot vos d\u00e9clarations n\u00e9ant (\u00c9tat R\u00e9capitulatif I3 + Bordereau I16) en injectant les donn\u00e9es employeur et la mention \u00ab N\u00c9ANT \u00bb.
+            Generez par lot vos declarations neant (Etat Recapitulatif I3 + Bordereau I16) en injectant les donnees employeur et la mention NEANT.
           </p>
         </div>
 
@@ -425,7 +388,7 @@ export default function DeclarationsNeant() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-foreground">Saisie manuelle</CardTitle>
-            <CardDescription>Ajoutez une d\u00e9claration \u00e0 la liste avant g\u00e9n\u00e9ration.</CardDescription>
+            <CardDescription>Ajoutez une declaration a la liste avant generation.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
@@ -455,12 +418,12 @@ export default function DeclarationsNeant() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="annee">Ann\u00e9e</Label>
+                  <Label htmlFor="annee">Annee</Label>
                   <Input id="annee" type="number" min={currentYear - 1} max={currentYear + 1} {...register("annee", { valueAsNumber: true })} />
                   {errors.annee && <p className="text-sm text-destructive">{errors.annee.message}</p>}
                 </div>
               </div>
-              <Button type="submit">Ajouter \u00e0 la liste</Button>
+              <Button type="submit">Ajouter a la liste</Button>
             </form>
           </CardContent>
         </Card>
@@ -469,7 +432,7 @@ export default function DeclarationsNeant() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-foreground">Import Excel</CardTitle>
-            <CardDescription>Glissez un fichier .xlsx ou cliquez pour s\u00e9lectionner. Colonne A = Matricule, B = Raison Sociale, C = Trimestre, D = Ann\u00e9e.</CardDescription>
+            <CardDescription>Glissez un fichier .xlsx ou cliquez pour selectionner. Colonne A = Matricule, B = Raison Sociale, C = Trimestre, D = Annee.</CardDescription>
           </CardHeader>
           <CardContent>
             <div
@@ -483,17 +446,17 @@ export default function DeclarationsNeant() {
             >
               <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
               <p className="text-sm text-muted-foreground">
-                {dragOver ? "D\u00e9posez le fichier ici" : "Glissez un fichier .xlsx ici ou cliquez pour s\u00e9lectionner"}
+                {dragOver ? "Deposez le fichier ici" : "Glissez un fichier .xlsx ici ou cliquez pour selectionner"}
               </p>
               <input id="excel-input-neant" type="file" accept=".xlsx,.xls" className="hidden" onChange={onFileSelect} />
             </div>
           </CardContent>
         </Card>
 
-        {/* List + Calibrage + Preview + Generation */}
+        {/* List + Preview + Generation */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-foreground">Liste des d\u00e9clarations ({items.length})</CardTitle>
+            <CardTitle className="text-foreground">Liste des declarations ({items.length})</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {items.length > 0 && (
@@ -505,7 +468,7 @@ export default function DeclarationsNeant() {
                       <th className="pb-2 pr-4 font-semibold text-foreground">Matricule</th>
                       <th className="pb-2 pr-4 font-semibold text-foreground">Raison sociale</th>
                       <th className="pb-2 pr-4 font-semibold text-foreground">Trim.</th>
-                      <th className="pb-2 pr-4 font-semibold text-foreground">Ann\u00e9e</th>
+                      <th className="pb-2 pr-4 font-semibold text-foreground">Annee</th>
                       <th className="pb-2 font-semibold text-foreground" />
                     </tr>
                   </thead>
@@ -532,44 +495,32 @@ export default function DeclarationsNeant() {
             {items.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-6">
                 <FileSpreadsheet className="mx-auto h-8 w-8 mb-2" />
-                Aucune d\u00e9claration dans la liste. Utilisez le formulaire ou importez un Excel.
+                Aucune declaration dans la liste. Utilisez le formulaire ou importez un Excel.
               </p>
             )}
 
-            {/* Live Preview avec calibrage d\u00e9coupl\u00e9 */}
+            {/* Live Preview (sans curseurs) */}
             {items.length > 0 && (
               <div className="space-y-3 pt-4 border-t">
                 <div className="flex items-center gap-2">
                   <Eye className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">Aper\u00e7u en direct</span>
+                  <span className="text-sm font-medium text-foreground">Apercu en direct</span>
                 </div>
                 <Tabs value={previewTab} onValueChange={(v) => setPreviewTab(v as "I3" | "I16")}>
                   <TabsList>
-                    <TabsTrigger value="I3">Mod\u00e8le I3</TabsTrigger>
-                    <TabsTrigger value="I16">Mod\u00e8le I16</TabsTrigger>
+                    <TabsTrigger value="I3">Modele I3</TabsTrigger>
+                    <TabsTrigger value="I16">Modele I16</TabsTrigger>
                   </TabsList>
                   <TabsContent value={previewTab}>
-                    {/* Curseurs de calibrage d\u00e9coupl\u00e9s */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                      <div className="space-y-2">
-                        <Label>D\u00e9calage Horizontal {previewTab} (X) : {activeCalibrage.x} pt</Label>
-                        <Slider min={-200} max={200} step={1} value={[activeCalibrage.x]} onValueChange={([v]) => setActiveCalibrage((prev) => ({ ...prev, x: v }))} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>D\u00e9calage Vertical {previewTab} (Y) : {activeCalibrage.y} pt</Label>
-                        <Slider min={-200} max={200} step={1} value={[activeCalibrage.y]} onValueChange={([v]) => setActiveCalibrage((prev) => ({ ...prev, y: v }))} />
-                      </div>
-                    </div>
-
                     {previewUrl ? (
                       <iframe
                         src={previewUrl}
                         className="w-full h-[600px] border rounded-md"
-                        title={"Aper\u00e7u " + previewTab}
+                        title={"Apercu " + previewTab}
                       />
                     ) : (
                       <div className="w-full h-[600px] border rounded-md flex items-center justify-center bg-muted/30">
-                        <p className="text-sm text-muted-foreground">Chargement de l'aper\u00e7u...</p>
+                        <p className="text-sm text-muted-foreground">Chargement de l'apercu...</p>
                       </div>
                     )}
                   </TabsContent>
@@ -580,7 +531,7 @@ export default function DeclarationsNeant() {
             {/* Generate Button */}
             <Button className="w-full py-5" size="lg" disabled={items.length === 0 || isGenerating} onClick={generatePDF}>
               <FileDown className="mr-2 h-5 w-5" />
-              {isGenerating ? "G\u00e9n\u00e9ration..." : "G\u00e9n\u00e9rer les d\u00e9clarations N\u00e9ant"}
+              {isGenerating ? "Generation..." : "Generer les declarations Neant"}
             </Button>
           </CardContent>
         </Card>
