@@ -9,11 +9,15 @@
  * "standard" et n'a pas de règle validée (traitement = "en_attente_de_regle")
  * sont exclus du calcul et remontés séparément dans `elementsEnAttente`.
  * On n'invente jamais de règle par défaut pour ces éléments.
+ *
+ * Sprint 3 — Décret 2003-1098 : les avantages exclus (isAvantageExclus)
+ * sont traités avec plafond individuel par point puis contrôle global 5%.
  */
 
 import { calculerCotisationCNSS, calculerCSSAnnuelle } from "./cnss";
 import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "./irpp";
 import { getPayrollConfig } from "./config";
+import { calculerPlafondUnitaire, getPointAvantageSMIG } from "./avantages-exclus";
 import type { PayrollInput, PayrollItem, PayrollResult } from "./types";
 
 function estCalculable(item: PayrollItem): boolean {
@@ -59,15 +63,78 @@ function documenterElement(item: PayrollItem): PayrollItem {
   };
 }
 
+/**
+ * Calcule le plafond légal d'un avantage exclu pour l'année de paie.
+ * Retourne 0 si le point n'est pas identifiable ou si le code est invalide.
+ */
+function getPlafondAvantageExclus(
+  codeAvantage: string,
+  annee: number
+): number {
+  const numero = parseInt(codeAvantage, 10);
+  if (isNaN(numero)) return 0;
+  const point = getPointAvantageSMIG(numero);
+  if (!point) return 0;
+  const dateRef = new Date(annee, 6, 1); // milieu d'année pour obtenir le SMIG en vigueur
+  return calculerPlafondUnitaire(point, dateRef);
+}
+
 export function runPayrollEngine(input: PayrollInput): PayrollResult {
   const { employeur, salarie, periode, elements, autresDeductionsFiscalesAnnuelles = 0 } = input;
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Étape 3.1 — Initialisation des accumulateurs Décret 2003-1098
+  // ═══════════════════════════════════════════════════════════════════
+  let totalAvantagesBruts = 0;
+  let totalExonereIndividuel = 0;
+  let totalReintegreIndividuel = 0;
 
   const elementsCalculables = elements.filter(estCalculable).map(documenterElement);
   const elementsEnAttente = elements.filter((e) => !estCalculable(e)).map(documenterElement);
 
+  // ═══════════════════════════════════════════════════════════════════
+  // Étape 3.2 — Traitement individuel des avantages exclus
+  // ═══════════════════════════════════════════════════════════════════
+  for (const element of elementsCalculables) {
+    if (element.isAvantageExclus && element.codeAvantage) {
+      const plafondLegal = getPlafondAvantageExclus(element.codeAvantage, periode.annee);
+      const montantElement = element.montant;
+
+      const partExoneree = Math.min(montantElement, plafondLegal);
+      const partSoumise = montantElement - partExoneree;
+
+      totalAvantagesBruts += montantElement;
+      totalExonereIndividuel += partExoneree;
+      totalReintegreIndividuel += partSoumise;
+
+      // Documenter le traitement de cet avantage exclus
+      element.inclusBaseCNSS = partSoumise > 0;
+      element.inclusBaseFiscale = partSoumise > 0;
+      element.regleAppliquee =
+        `Décret 2003-1098 point ${element.codeAvantage} : plafond ${round2(plafondLegal)} DT, exonéré ${round2(partExoneree)} DT, réintégré ${round2(partSoumise)} DT`;
+    }
+  }
+
   const totalRemunerationBrute = elementsCalculables.reduce((sum, e) => sum + e.montant, 0);
 
-  const baseCNSS = elementsCalculables.reduce((sum, e) => sum + partSoumiseCNSS(e), 0);
+  // ═══════════════════════════════════════════════════════════════════
+  // Étape 3.3 — Contrôle global de l'Article 3 (règle des 5%)
+  // ═══════════════════════════════════════════════════════════════════
+  const plafondGlobalArticle3 = round2(totalRemunerationBrute * 0.05);
+  const exonereeDefinitive = Math.min(totalExonereIndividuel, plafondGlobalArticle3);
+  const reintegreArticle3 = totalExonereIndividuel - exonereeDefinitive;
+
+  // Base CNSS standard (hors avantages exclus — leur part exonérée est exclue par défaut)
+  let baseCNSS = elementsCalculables.reduce((sum, e) => {
+    // Les avantages exclus ont un traitement partSoumisCNSS à 0 car traités séparément
+    return sum + partSoumiseCNSS(e);
+  }, 0);
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Étape 3.4 — Réintégration dans l'assiette sociale
+  // ═══════════════════════════════════════════════════════════════════
+  baseCNSS = baseCNSS + totalReintegreIndividuel + reintegreArticle3;
+
   const config = getPayrollConfig();
   // Secteur agricole : taux spécifique piloté par /admin. Non-agricole (défaut) :
   // taux standard, dépendant de l'année (cf. cnss.ts) sauf override admin.
@@ -78,9 +145,7 @@ export function runPayrollEngine(input: PayrollInput): PayrollResult {
   const tauxPatronal = employeur.secteur === "agricole" ? config.cnssPatronalAgricole : config.cnssPatronalNonAgricole;
   const cotisationPatronale = baseCNSS * tauxPatronal;
 
-  // Base fiscale mensuelle = rémunération brute - cotisation CNSS (les éléments
-  // exonérés totalement d'IRPP ne sont pas encore gérés séparément - MVP : même
-  // base que CNSS pour les éléments standard)
+  // Base fiscale mensuelle = rémunération brute - cotisation CNSS
   const baseFiscaleMensuelle = totalRemunerationBrute - cotisationCNSS;
 
   const deductionsAnnuellesFamiliales = calculerDeductionsAnnuelles({
@@ -107,6 +172,9 @@ export function runPayrollEngine(input: PayrollInput): PayrollResult {
 
   const netAPayer = totalRemunerationBrute - cotisationCNSS - irppMensuel - css;
 
+  // ═══════════════════════════════════════════════════════════════════
+  // Étape 3.5 — Mapping du retour
+  // ═══════════════════════════════════════════════════════════════════
   return {
     elements: elementsCalculables,
     totalRemunerationBrute: round2(totalRemunerationBrute),
@@ -122,6 +190,10 @@ export function runPayrollEngine(input: PayrollInput): PayrollResult {
     totalAutresRetenues: round2(totalAutresRetenues),
     netAPayer: round2(netAPayer),
     elementsEnAttente,
+    avantagesTotal: round2(totalAvantagesBruts),
+    avantagesExoneresIndividuels: round2(totalExonereIndividuel),
+    avantagesReintegresIndividuels: round2(totalReintegreIndividuel),
+    avantagesReintegresArticle3: round2(reintegreArticle3),
   };
 }
 

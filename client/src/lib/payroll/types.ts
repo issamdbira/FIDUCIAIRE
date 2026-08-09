@@ -36,6 +36,9 @@ export interface PayrollItem {
   inclusBaseFiscale?: boolean;
   regleAppliquee?: string;
   reference?: string;
+  // Avantages exclus du Décret 2003-1098
+  isAvantageExclus?: boolean;
+  codeAvantage?: string; // numéro du point (ex: "1", "13", "14")
 }
 
 export interface Employeur {
@@ -99,4 +102,9 @@ export interface PayrollResult {
   netAPayer: number;
   // Éléments dont le traitement n'a pas pu être appliqué faute de règle validée
   elementsEnAttente: PayrollItem[];
+  // Sprint 3 — Traçage Décret 2003-1098 (avantages exclus)
+  avantagesTotal: number;
+  avantagesExoneresIndividuels: number;
+  avantagesReintegresIndividuels: number;
+  avantagesReintegresArticle3: number;
 }
