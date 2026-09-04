@@ -36,9 +36,9 @@ export interface PayrollItem {
   inclusBaseFiscale?: boolean;
   regleAppliquee?: string;
   reference?: string;
-  // Avantages exclus du Décret 2003-1098
-  isAvantageExclus?: boolean;
-  codeAvantage?: string; // numéro du point (ex: "1", "13", "14")
+  // ─── Décret n° 2003-1098 : avantages exclus de l'assiette CNSS ───
+  isAvantageExclus?: boolean; // true si cet élément est un avantage exclus au sens du décret
+  codeAvantage?: string; // numéro du point du décret (ex: "1", "13", "14")
 }
 
 export interface Employeur {
@@ -102,9 +102,9 @@ export interface PayrollResult {
   netAPayer: number;
   // Éléments dont le traitement n'a pas pu être appliqué faute de règle validée
   elementsEnAttente: PayrollItem[];
-  // Sprint 3 — Traçage Décret 2003-1098 (avantages exclus)
-  avantagesTotal: number;
-  avantagesExoneresIndividuels: number;
-  avantagesReintegresIndividuels: number;
-  avantagesReintegresArticle3: number;
+  // ─── Décret n° 2003-1098 : réintégration des avantages exclus ───
+  avantagesTotal: number; // total brut des avantages exclus
+  avantagesExoneresIndividuels: number; // somme des exonérations individuelles (min(montant, plafond) par point)
+  avantagesReintegresIndividuels: number; // part soumise après plafond individuel (montant - exonéré)
+  avantagesReintegresArticle3: number; // réintégration Art.3 : part dépassant la limite globale 5% du brut
 }

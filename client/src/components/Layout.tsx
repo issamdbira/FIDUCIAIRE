@@ -3,7 +3,6 @@ import { Link, useLocation } from "wouter";
 import {
   Calculator,
   Home as HomeIcon,
-  FileText,
   ClipboardList,
   BookOpen,
   Menu,
@@ -15,11 +14,6 @@ import {
   FileSearch,
   FileX,
   ScrollText,
-  Receipt,
-  Users,
-  Wallet,
-  Settings,
-  Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "./ThemeToggle";
@@ -30,14 +24,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 // ── Navigation Groups ──
 interface NavChild {
@@ -84,72 +70,34 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-const ENTREPRISE_NAV: NavChild[] = [
-  { label: "Accueil", href: "/dashboard", icon: HomeIcon },
-  { label: "Facturation", href: "/facturation", icon: Receipt },
-  { label: "Employés", href: "/employes", icon: Users },
-  { label: "Trésorerie", href: "/tresorerie", icon: Wallet },
-  { label: "Paramètres", href: "/parametres", icon: Settings },
-];
-
-// ── Workspace Selector ──
-function WorkspaceSelector() {
-   const { activeWorkspace, setActiveWorkspace, workspaces } = useWorkspace();
-
-  return (
-    <div className="px-3 py-2 border-b border-white/10">
-      <Select
-        value={activeWorkspace?.id ?? ""}
-        onValueChange={(id) => {
-          const ws = workspaces.find((w) => w.id === id);
-          if (ws) setActiveWorkspace(ws);
-        }}
-      >
-        <SelectTrigger className="w-full bg-slate-900 border-slate-700 text-white text-xs h-9">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="bg-slate-900 border-slate-700">
-          {workspaces.map((ws) => (
-            <SelectItem key={ws.id} value={ws.id} className="text-white text-xs focus:bg-slate-800 focus:text-white">
-              {ws.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
-
 // ── Sidebar Navigation (shared between sidebar & sheet) ──
 function NavContent({ onNavigate }: { onNavigate?: () => void }) {
   const [location] = useLocation();
-  const ENTREPRISE_ROUTES = ["/dashboard", "/facturation", "/employes", "/tresorerie", "/parametres"];
-  const isEntreprise = ENTREPRISE_ROUTES.includes(location);
-
-  const navItems = isEntreprise ? ENTREPRISE_NAV : null;
 
   return (
     <nav className="flex flex-col gap-1 px-3 py-4">
-      {!isEntreprise && (
-        <Link
-          href="/"
-          onClick={onNavigate}
-          className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
-            location === "/" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
-          }`}
-        >
-          <HomeIcon className="size-5 shrink-0" />
-          Accueil
-        </Link>
-      )}
+      <Link
+        href="/"
+        onClick={onNavigate}
+        className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+          location === "/" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
+        }`}
+      >
+        <HomeIcon className="size-5 shrink-0" />
+        Accueil
+      </Link>
 
-      {navItems
-        ? navItems.map((item) => {
+      {NAV_GROUPS.map((group) => (
+        <div key={group.groupLabel} className="mt-3">
+          <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-white/30 mb-1">
+            {group.groupLabel}
+          </p>
+          {group.items.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.href;
             return (
               <Link
-                key={item.href + item.label}
+                key={item.href}
                 href={item.href}
                 onClick={onNavigate}
                 className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
@@ -160,31 +108,9 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
                 {item.label}
               </Link>
             );
-          })
-        : NAV_GROUPS.map((group) => (
-            <div key={group.groupLabel} className="mt-3">
-              <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-white/30 mb-1">
-                {group.groupLabel}
-              </p>
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                const isActive = location === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={onNavigate}
-                    className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
-                      isActive ? "bg-white/10 text-white" : "text-white/50 hover:bg-white/5 hover:text-white/90"
-                    }`}
-                  >
-                    <Icon className="size-4 shrink-0" />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
+          })}
+        </div>
+      ))}
     </nav>
   );
 }
@@ -206,8 +132,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </span>
         </div>
 
-        <WorkspaceSelector />
-
         <div className="flex-1 overflow-y-auto">
           <NavContent />
         </div>
@@ -217,7 +141,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* ─── Main workspace ─── */}
+      {/* ─── Main content ─── */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden flex h-16 shrink-0 items-center justify-between px-4 border-b bg-background">
           <div className="flex items-center gap-2">
@@ -242,9 +166,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   LE FIDUCIAIRE
                 </SheetTitle>
               </SheetHeader>
-              <div className="px-3 py-2 border-b border-white/10">
-                <WorkspaceSelector />
-              </div>
               <NavContent onNavigate={() => setSheetOpen(false)} />
               <div className="border-t border-white/10 px-3 py-3">
                 <ThemeToggle />

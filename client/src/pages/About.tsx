@@ -240,17 +240,7 @@ export default function About() {
             <p className="text-blue-100">
               © 2026 LE FIDUCIAIRE. Tous droits réservés.
             </p>
-            <div className="flex gap-6 mt-4 md:mt-0">
-              <a href="#" className="text-blue-100 hover:text-white transition-colors">
-                Mentions légales
-              </a>
-              <a href="#" className="text-blue-100 hover:text-white transition-colors">
-                Confidentialité
-              </a>
-              <a href="#" className="text-blue-100 hover:text-white transition-colors">
-                Contact
-              </a>
-            </div>
+  
           </div>
         </div>
       </footer>
