@@ -2,87 +2,127 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import {
-  Building2,
-  Briefcase,
-  Scale,
-  FileStack,
+  DollarSign,
+  BarChart3,
+  TrendingUp,
+  PenTool,
+  ArrowUpDown,
+  ClipboardList,
+  FileX,
+  FileSearch,
+  BookOpen,
+  ScrollText,
   ShieldCheck,
-  ArrowRight,
+  Upload,
+  FileDown,
   Calculator,
-  Users,
-  Globe,
-  Menu,
-  X,
+  ArrowRight,
 } from "lucide-react";
-import { useState } from "react";
 
-/* ─── Data ─── */
+/* ─── Outils fonctionnels (tous ont une route réelle) ─── */
 
-const PILIERS_PME = [
+const OUTILS = [
   {
-    icon: Scale,
-    title: "Moteur de paie 100% conforme",
-    description:
-      "Calculs automatiques selon la législation tunisienne : CNSS, IRPP, avantages exclus (Décret n° 2003-1098) et barèmes à jour.",
-    cta: "Calculer un salaire",
+    id: "calculer-salaire",
+    title: "Calculer un salaire",
+    description: "Brut → Net ou Net → Brut, avec CNSS, IRPP, CSS et avantages exclus (Décret 2003-1098).",
+    icon: DollarSign,
     href: "/calculateurs/calculer-salaire",
   },
   {
-    icon: FileStack,
-    title: "Fiches de paie individualisées",
-    description:
-      "Générez des fiches de paie PDF avec logo, détail des cotisations et net à payer. Importez vos données et exportez en un clic.",
-    cta: "Générer une fiche de paie",
+    id: "irpp",
+    title: "Impôt sur le revenu (IRPP)",
+    description: "Estimez votre IRPP annuel selon le barème progressif et votre situation familiale.",
+    icon: BarChart3,
+    href: "/calculateurs/irpp",
+  },
+  {
+    id: "retraite-cnss",
+    title: "Estimer sa retraite",
+    description: "Estimez votre pension de retraite selon votre ancienneté et salaire actualisé.",
+    icon: TrendingUp,
+    href: "/calculateurs/retraite-cnss",
+  },
+  {
+    id: "fiche-de-paie",
+    title: "Générer une fiche de paie",
+    description: "Employeur, logo, salarié, éléments de rémunération, détail du calcul et export PDF.",
+    icon: PenTool,
     href: "/fiche-de-paie",
   },
   {
-    icon: ShieldCheck,
-    title: "Multi-organisations",
-    description:
-      "Gérez plusieurs entités sous un même compte. Basculez entre vos sociétés et centralisez votre suivi de paie.",
-    cta: "Démarrer",
-    href: "/calculateurs/declarations-cnss",
+    id: "actualisation-salaire",
+    title: "Actualisation des salaires",
+    description: "Actualisez un salaire par le coefficient CNSS de son année (calcul de retraite).",
+    icon: ArrowUpDown,
+    href: "/calculateurs/actualisation-salaire",
   },
-];
-
-const PILIERS_FIDUCIAIRE = [
   {
-    icon: FileStack,
-    title: "Import en masse et déclarations lot",
-    description:
-      "Génération en lot des états I3 et bordereaux I16, import Excel massif, export du fichier TXT 122 caractères prêt à dépôt CNSS.",
-    cta: "Déclarations CNSS",
+    id: "declarations-cnss",
+    title: "Déclaration CNSS",
+    description: "Saisie ou import CSV/Excel, contrôle des données, génération du fichier TXT.",
+    icon: ClipboardList,
     href: "/calculateurs/declarations-cnss",
   },
   {
-    icon: ShieldCheck,
-    title: "Audit des plafonds légaux",
-    description:
-      "Détection automatique des écarts de conformité sur les avantages exclus, avec recommandations d'optimisation par dossier.",
-    cta: "Référentiel légal",
+    id: "declarations-neant",
+    title: "Déclarations Néant",
+    description: "Générez par lot vos déclarations néant (État I3 + Bordereau I16) avec calibrage PDF.",
+    icon: FileX,
+    href: "/calculateurs/declarations-neant",
+  },
+  {
+    id: "testeur-txt",
+    title: "Testeur de fichier TXT",
+    description: "Vérifiez la conformité d'un fichier TXT CNSS 122 caractères.",
+    icon: FileSearch,
+    href: "/calculateurs/testeur-txt-cnss",
+  },
+  {
+    id: "referentiel-avantages",
+    title: "Référentiel légal",
+    description: "Consultez les plafonds des avantages exclus (Décret n° 2003-1098).",
+    icon: BookOpen,
     href: "/referentiel-avantages-exclus",
   },
   {
-    icon: Users,
-    title: "Gestion multi-dossiers clients",
-    description:
-      "Centralisez tous vos clients, générez leurs déclarations en lot et suivez la conformité de chaque dossier en temps réel.",
-    cta: "Voir l'espace Fiduciaire",
-    href: "/calculateurs/declarations-neant",
+    id: "formulaires-cnss",
+    title: "Formulaires CNSS",
+    description: "Formulaires officiels de déclaration CNSS avec aide au remplissage.",
+    icon: ScrollText,
+    href: "/formulaires-cnss",
   },
 ];
 
-/* ─── Component ─── */
+const POINTS_FORTS = [
+  {
+    icon: ShieldCheck,
+    title: "Conformité Légale",
+    description:
+      "Textes de loi à jour, gestion des avantages exclus selon le Décret n° 2003-1098 et les barèmes CNSS officiels.",
+  },
+  {
+    icon: Upload,
+    title: "Zéro Saisie Manuelle",
+    description:
+      "Import Excel robuste pour les déclarations de masse. Glissez votre fichier et tout est pré-rempli.",
+  },
+  {
+    icon: FileDown,
+    title: "Documents Prêts à l'Emploi",
+    description:
+      "Génération de PDF I3 et I16 normés, fiches de paie exportables et fichiers TXT conformes CNSS.",
+  },
+];
+
+/* ─── Composant ─── */
 
 export default function Home() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   return (
     <div className="min-h-screen bg-background">
-      {/* ═══════════════ NAVIGATION BAR (QuickBooks-inspired, dark) ═══════════════ */}
+      {/* ═══════════════ HEADER ═══════════════ */}
       <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-blue-950">
         <div className="max-w-6xl mx-auto flex h-14 items-center justify-between px-4">
-          {/* Logo */}
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-white/10">
               <Calculator className="size-4 text-white" />
@@ -94,72 +134,16 @@ export default function Home() {
               LE FIDUCIAIRE
             </span>
           </div>
-
-          {/* Desktop menus */}
-          <nav className="hidden md:flex items-center gap-1">
-            <Link href="/calculateurs/calculer-salaire">
-              <span className="px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer">
-                Solutions pour Entreprises
-              </span>
-            </Link>
-            <Link href="/calculateurs/declarations-cnss">
-              <span className="px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer">
-                Solutions pour Experts-Comptables
-              </span>
-            </Link>
-            <Link href="/formulaires-cnss">
-              <span className="px-4 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer">
-                Formulaires CNSS
-              </span>
-            </Link>
-          </nav>
-
-          {/* CTA + mobile toggle */}
-          <div className="flex items-center gap-2">
-            <Link href="/calculateurs/declarations-cnss">
-              <Button
-                size="sm"
-                className="hidden sm:inline-flex bg-white text-blue-950 hover:bg-white/90 font-semibold"
-              >
-                Commencer gratuitement
-              </Button>
-            </Link>
+          <Link href="/calculateurs/calculer-salaire">
             <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden text-white hover:bg-white/10"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              size="sm"
+              className="bg-white text-blue-950 hover:bg-white/90 font-semibold"
             >
-              {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+              Commencer
+              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>
-          </div>
+          </Link>
         </div>
-
-        {/* Mobile menu dropdown */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-white/10 bg-blue-950 px-4 pb-4 pt-2 space-y-1">
-            <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-white/30 mb-1">
-              Solutions
-            </p>
-            <Link href="/calculateurs/calculer-salaire" onClick={() => setMobileMenuOpen(false)}>
-              <span className="block px-3 py-2 text-sm text-white/70 hover:text-white rounded-md">
-                Solutions pour Entreprises
-                <span className="block text-[10px] text-white/40">Simplify business for smalls</span>
-              </span>
-            </Link>
-            <Link href="/calculateurs/declarations-cnss" onClick={() => setMobileMenuOpen(false)}>
-              <span className="block px-3 py-2 text-sm text-white/70 hover:text-white rounded-md">
-                Solutions pour Experts-Comptables
-                <span className="block text-[10px] text-white/40">Ledger Business — Gestion multi-dossiers</span>
-              </span>
-            </Link>
-            <Link href="/formulaires-cnss" onClick={() => setMobileMenuOpen(false)}>
-              <span className="block px-3 py-2 text-sm text-white/70 hover:text-white rounded-md">
-                Formulaires CNSS
-              </span>
-            </Link>
-          </div>
-        )}
       </header>
 
       {/* ═══════════════ HERO ═══════════════ */}
@@ -169,153 +153,88 @@ export default function Home() {
             className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-5"
             style={{ fontFamily: "Montserrat, sans-serif" }}
           >
-            La gestion de paie et la conformité sociale tunisienne, simplifiées.
+            Paie et déclarations sociales tunisiennes, simplifiées.
           </h1>
           <p className="text-blue-100/80 text-base sm:text-lg max-w-2xl mx-auto mb-8">
-            Une plateforme conçue pour les PME et les experts-comptables.
-            Automatisez vos calculs, générez vos déclarations et restez conforme en quelques clics.
+            Calculez vos salaires, générez vos fiches de paie et exportez vos
+            déclarations CNSS — sans erreur et en quelques clics.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/calculateurs/calculer-salaire">
-              <Button size="lg" className="bg-white text-blue-950 hover:bg-white/90 font-semibold px-8">
-                Espace Entreprise
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/calculateurs/declarations-cnss">
-              <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 px-8">
-                Espace Fiduciaire
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
+          <Button
+            size="lg"
+            className="bg-white text-blue-950 hover:bg-white/90 font-semibold px-8"
+            onClick={() =>
+              document
+                .getElementById("outils")
+                ?.scrollIntoView({ behavior: "smooth" })
+            }
+          >
+            Accéder aux outils
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
         </div>
       </section>
 
-      {/* ═══════════════ DOUBLE ENTRÉE ═══════════════ */}
-      <section className="max-w-5xl mx-auto px-4 -mt-8 relative z-10 mb-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="rounded-xl shadow-md border border-border bg-card p-8 flex flex-col justify-between min-h-[240px]">
-            <div>
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                <Building2 className="h-6 w-6 text-primary" />
-              </div>
-              <h2 className="text-xl font-bold text-foreground mb-2">
-                Pour les Entreprises (PME)
-              </h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Simplify business for smalls — Gérez votre paie, éditez vos fiches et suivez
-                votre trésorerie en toute simplicité.
-              </p>
-            </div>
-            <Link href="/calculateurs/calculer-salaire">
-              <Button className="mt-6 w-fit" size="lg">
-                Espace Entreprise
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </Card>
-
-          <Card className="rounded-xl shadow-md border border-border bg-card p-8 flex flex-col justify-between min-h-[240px]">
-            <div>
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                <Briefcase className="h-6 w-6 text-primary" />
-              </div>
-              <h2 className="text-xl font-bold text-foreground mb-2">
-                Pour les Experts-Comptables
-              </h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Ledger Business — Gérez tous vos dossiers clients, auditez les plafonds et
-                exportez les déclarations CNSS en lot.
-              </p>
-            </div>
-            <Link href="/calculateurs/declarations-cnss">
-              <Button className="mt-6 w-fit" size="lg">
-                Espace Fiduciaire
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </Card>
-        </div>
-      </section>
-
-      {/* ═══════════════ FONCTIONS DE FORCE — PME ═══════════════ */}
-      <section className="max-w-5xl mx-auto px-4 mb-14">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-            <Building2 className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h2
-              className="text-xl font-bold text-foreground"
-              style={{ fontFamily: "Montserrat, sans-serif" }}
-            >
-              Fonctions de force — Entreprises
-            </h2>
-            <p className="text-xs text-muted-foreground">Simplify business for smalls</p>
-          </div>
-        </div>
+      {/* ═══════════════ POINTS FORTS ═══════════════ */}
+      <section className="max-w-4xl mx-auto px-4 -mt-8 relative z-10 mb-14">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {PILIERS_PME.map((pilier) => {
-            const Icon = pilier.icon;
+          {POINTS_FORTS.map((pf) => {
+            const Icon = pf.icon;
             return (
-              <Card key={pilier.title} className="rounded-lg shadow-sm border border-border bg-card p-6 flex flex-col">
+              <Card
+                key={pf.title}
+                className="rounded-xl shadow-md border border-border bg-card p-6"
+              >
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                   <Icon className="h-5 w-5 text-primary" />
                 </div>
-                <h3 className="text-sm font-semibold text-foreground mb-2">{pilier.title}</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed flex-1">{pilier.description}</p>
-                <Link href={pilier.href} className="mt-4">
-                  <Button variant="outline" size="sm" className="text-xs">
-                    {pilier.cta}
-                    <ArrowRight className="ml-1.5 h-3 w-3" />
-                  </Button>
-                </Link>
+                <h3 className="text-sm font-semibold text-foreground mb-2">
+                  {pf.title}
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {pf.description}
+                </p>
               </Card>
             );
           })}
         </div>
       </section>
 
-      {/* ═══════════════ FONCTIONS DE FORCE — FIDUCIAIRES ═══════════════ */}
-      <section className="max-w-5xl mx-auto px-4 pb-16">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-            <Briefcase className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h2
-              className="text-xl font-bold text-foreground"
-              style={{ fontFamily: "Montserrat, sans-serif" }}
-            >
-              Fonctions de force — Experts-Comptables
-            </h2>
-            <p className="text-xs text-muted-foreground">Ledger Business</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {PILIERS_FIDUCIAIRE.map((pilier) => {
-            const Icon = pilier.icon;
+      {/* ═══════════════ OUTILS ═══════════════ */}
+      <section id="outils" className="max-w-5xl mx-auto px-4 pb-16">
+        <h2
+          className="text-2xl font-bold text-foreground mb-2"
+          style={{ fontFamily: "Montserrat, sans-serif" }}
+        >
+          Outils
+        </h2>
+        <p className="text-muted-foreground text-sm mb-8">
+          Sélectionnez un outil pour commencer.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {OUTILS.map((outil) => {
+            const Icon = outil.icon;
             return (
-              <Card key={pilier.title} className="rounded-lg shadow-sm border border-border bg-card p-6 flex flex-col">
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <Icon className="h-5 w-5 text-primary" />
-                </div>
-                <h3 className="text-sm font-semibold text-foreground mb-2">{pilier.title}</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed flex-1">{pilier.description}</p>
-                <Link href={pilier.href} className="mt-4">
-                  <Button variant="outline" size="sm" className="text-xs">
-                    {pilier.cta}
-                    <ArrowRight className="ml-1.5 h-3 w-3" />
-                  </Button>
-                </Link>
-              </Card>
+              <Link key={outil.id} href={outil.href}>
+                <Card className="h-full hover:shadow-md transition-shadow cursor-pointer rounded-lg shadow-sm border border-border bg-card group">
+                  <div className="p-5">
+                    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                      <Icon className="h-4.5 w-4.5 text-primary" />
+                    </div>
+                    <h3 className="text-sm font-semibold text-foreground mb-1">
+                      {outil.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {outil.description}
+                    </p>
+                  </div>
+                </Card>
+              </Link>
             );
           })}
         </div>
       </section>
 
-      {/* ═══════════════ FOOTER MINIMAL ═══════════════ */}
+      {/* ═══════════════ FOOTER ═══════════════ */}
       <footer className="border-t border-border py-8">
         <div className="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
