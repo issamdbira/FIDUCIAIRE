@@ -1,142 +1,114 @@
-# Audit de terminologie, cohérence et contexte tunisien
+# Audit Terminologique — LE FIDUCIAIRE
 
-> **Document de synthèse — AUCUNE modification de code ou de texte affiché.**
-> Ce document cataloge les problèmes terminologiques détectés dans l'interface
-> utilisateur de FIDUCIAIRE. Chaque entrée est classée dans une des quatre
-> catégories définies ci-dessous. Il appartient au validateur de trancher,
-> terme par terme, avant qu'une tâche de réécriture soit lancée.
-
-**Date de l'audit** : 2026-09-06
-**Périmètre** : toutes les pages et composants visibles par l'utilisateur final
-(calculateurs, générateur de fiche de paie, référentiel, messages d'erreur,
-tooltips, placeholders, mentions légales, page 404, panneau admin).
-
-**Catégories de problèmes** :
-
-1. **Jargon non expliqué** — terme technique affiché sans info-bulle ni reformulation accessible à un non-spécialiste.
-2. **Ton/style générique « template IA »** — formulations, titres ou messages qui ressemblent à un texte par défaut de générateur plutôt qu'à un contenu écrit pour ce produit précis.
-3. **Référence juridique/institutionnelle non tunisienne** — mention de lois, d'organismes, de formulaires ou de terminologie qui ne correspond pas au cadre légal tunisien, ou qui manque de précision sur le contexte tunisien.
-4. **Incohérence de nommage** — un champ de formulaire dont le libellé visible ne correspond pas à la convention de nommage utilisée dans le code (variables, id de champ, nom de fichier du module) ou dont le libellé diffère d'un calculateur à l'autre pour désigner la même notion.
+> **Date** : 2026-09-06
+> **Périmètre** : Ensemble des pages et composants orientés utilisateur
+> **Méthode** : Analyse statique du texte affiché (labels, titres, descriptions, placeholders, messages d'erreur, infobulles, mentions légales, page 404)
+> **Action** : Document **en lecture seule** — aucune modification de fichier source n'a été effectuée. L'utilisateur valide avant toute réécriture.
 
 ---
 
-## 1. Jargon non expliqué
+## Synthèse
 
-| # | Terme / texte affiché | Emplacement | Problème |
-|---|---|---|---|
-| 1.1 | « IRPP » | Home, PaieCNSS, CalculerSalaire, IRPP (titre + résultats), About, Admin | Sigle jamais développé en clair dans l'interface. L'explication « Impôt sur le Revenu des Personnes Physiques » n'apparaît qu'en commentaire de code ou en description de page About. Un utilisateur non-fiscaliste ne sait pas ce que signifie IRPP. |
-| 1.2 | « CSS » | PaieCNSS (résultat), Admin (section dédiée) | Sigle « Contribution Sociale de Solidarité » jamais développé en clair dans les calculateurs. L'Admin affiche le nom complet, mais les pages de résultat utilisent uniquement « CSS ». |
-| 1.3 | « Assiette imposable nette » | CalculerSalaire (résultat), PaieCNSS (résultat), IRPP (résultat) | Terme fiscal technique. Aucune info-bulle n'explique que c'est le revenu après déduction des frais professionnels et des déductions familiales, sur lequel l'IRPP est calculé. |
-| 1.4 | « Abattement frais professionnels (10 %, plafond 2 000 DT/an) » | CalculerSalaire, PaieCNSS, IRPP | La notion d'« abattement » et le mécanisme de plafond sont compris par les experts mais obscurs pour un salarié lambda. Aucune info-bulle. |
-| 1.5 | « Assiette des cotisations sociales » | ReferentielAvantages (titre de page) | « Assiette » est un jargon technique. Le titre complet « avantages exclus de l'assiette des cotisations sociales » est juridiquement exact mais opaque pour un non-initié. |
-| 1.6 | « SMIG » | ReferentielAvantages, ActualisationSalaire | Sigle « Salaire Minimum Interprofessionnel Garanti » jamais développé. |
-| 1.7 | « Régime 48h/semaine » | ReferentielAvantages (points 1-5, 8, 13-14) | Seuls les professionnels RH connaissent la distinction régime 48h vs 40h. Aucune explication. |
-| 1.8 | « Matricule » / « Matricule CNSS » | DeclarationsCNSS, DeclarationsNeant, TesteurTXT | Utilisé comme label de champ sans expliquer qu'il s'agit du numéro d'affiliation CNSS à 8 chiffres de l'employeur (ou du salarié selon le contexte). |
-| 1.9 | « JORT n°41 » | ReferentielAvantages | Sigle « Journal Officiel de la République Tunisienne » jamais expliqué. |
-| 1.10 | « Décret n° 2003-1098 » | ReferentielAvantages, Home | Référence légale citée mais aucun lien vers le texte officiel ni explication de son objet. |
-| 1.11 | « Écart de déclaration (soumis − déclaré) » | ReferentielAvantages (simulateur) | Le concept d'écart entre montant soumis et montant déclaré est technique. Aucune explication de son utilité pratique (vérification de conformité de la déclaration de l'employeur). |
-| 1.12 | « Zone vierge » | TesteurTXT (détail ligne par ligne) | Terme technique du format CNSS 122 caractères. Non expliqué. |
-| 1.13 | « Coefficient d'Actualisation » | ActualisationSalaire (résultat) | Pas d'explication de ce que représente ce coefficient ni pourquoi il est nécessaire pour le calcul de retraite. |
-| 1.14 | « Salaire de Référence Actualisé » | RetraiteCNSS (résultat) | Pas d'explication du concept ni de son rôle dans le calcul de la pension. |
-| 1.15 | « Pension Brute Mensuelle » / « pension minimale » | RetraiteCNSS (résultat) | La distinction entre pension brute et pension minimale garantie n'est pas expliquée. Le message conditionnel « Le montant calculé étant inférieur au minimum garanti… » aide, mais arrive trop tard. |
-| 1.16 | « Cotisation patronale (à la charge de l'employeur, n'affecte pas le net) » | GenerateurFichePaie (résultat) | La parenthèse est utile mais le terme « cotisation patronale » reste du jargon. |
-| 1.17 | « État I3 » / « Bordereau I16 » | Home, DeclarationsNeant | Noms des formulaires CNSS cités sans explication. Un employeur novice ne sait pas ce que sont l'État Récapitulatif I3 et le Bordereau I16. |
-| 1.18 | « Plafond global de 5% (art. 3) » | ReferentielAvantages | Référence à l'article 3 du décret sans expliquer la règle : le total des avantages exclus (hors points 16-19, 23-24) ne peut dépasser 5% de la masse salariale. |
-| 1.19 | « Rémunération brute » | CalculerSalaire (résultat) | Terme plus générique que « salaire brut ». Un salarié comprend « salaire brut » mais « rémunération brute » peut prêter à confusion (inclut-il les primes ? les avantages en nature ?). |
-| 1.20 | « Retenue à la source mensuelle » | Admin (parents à charge) | Jargon fiscal sans explication. |
+| Catégorie | Nombre |
+|-----------|--------|
+| 1 — Jargon non expliqué | 18 |
+| 2 — Ton/style générique « template IA » | 8 |
+| 3 — Référence juridique/institutionnelle non tunisienne | 4 |
+| 4 — Incohérence de nommage | 8 |
+| **Total** | **38** |
 
 ---
 
-## 2. Ton / style générique « template IA »
+## Catégorie 1 — Jargon non expliqué
 
-| # | Terme / texte affiché | Emplacement | Problème |
-|---|---|---|---|
-| 2.1 | « Page Not Found » + « Sorry, the page you are looking for doesn't exist. It may have been moved or deleted. » + « Go Home » | NotFound.tsx | **Intégralité de la page 404 en anglais**. C'est le texte par défaut d'un template Vite/React. Pour un produit 100% francophone ciblant la Tunisie, la page 404 doit être en français et contextualisée (ex : « Page introuvable — l'outil que vous cherchez n'existe pas ou a été déplacé. Retour à l'accueil. »). |
-| 2.2 | « Accéder à l'espace de travail » | Home (CTA principal) | Formulation vague et générique. « Espace de travail » ne désigne rien de concret. Préférer une formulation plus spécifique comme « Découvrir les outils » ou « Commencer un calcul ». |
-| 2.3 | « Sélectionnez un outil pour commencer. » | Home (sous-titre section Outils) | Phrase générique de type dashboard template. Pourrait être plus engageante / contextualisée. |
-| 2.4 | « Besoin d'aide ? » + « Pour toute question ou suggestion concernant LE FIDUCIAIRE, n'hésitez pas à nous contacter. » | About | Placeholder de type SaaS template. Aucun canal de contact n'est fourni (ni email, ni formulaire, ni lien). La phrase est creuse sans moyen de contact. |
-| 2.5 | « Mentions légales » / « Confidentialité » / « Contact » | About (footer, liens href="#") | Liens placeholder avec `href="#"` — typique d'un template non personnalisé. Ces liens ne mènent nulle part. |
-| 2.6 | « Retour aux Calculateurs » | About (CTA en bas) | Le lien pointe vers `/` (page d'accueil) mais le libellé suggère une page dédiée aux calculateurs qui n'existe pas. Incohérent. |
-| 2.7 | « Simplifiez votre gestion de paie et vos déclarations sociales en Tunisie. » | Home (hero h1) | Formulation marketing générique de type landing page IA. Manque de personnalité et de spécificité produit. |
-| 2.8 | « Aucun avantage ne correspond à cette recherche. » | ReferentielAvantages | Message fonctionnel correct mais pourrait être plus aidant (ex : proposer des termes de recherche ou indiquer le nombre total de points). |
+Termes techniques ou juridiques utilisés sans explication pour un utilisateur non expert.
 
----
-
-## 3. Référence juridique / institutionnelle non tunisienne
-
-| # | Terme / texte affiché | Emplacement | Problème |
-|---|---|---|---|
-| 3.1 | « Réglementation CNSS 2025 » | About (Calculateur de Paie CNSS, Calculateur de Retraite CNSS) | L'année « 2025 » est obsolète (nous sommes en 2026). De plus, le terme « Réglementation CNSS » sans « tunisienne » est ambigu : il existe des organismes CNSS dans d'autres pays (Maroc, etc.). Devrait être « Réglementation CNSS tunisienne 2026 ». |
-| 3.2 | « Réglementation CNRPS 2025 » | About (Calculateur de Paie CNRPS) | Même problème : année obsolète et contexte tunisien implicite mais non explicite. |
-| 3.3 | « Barème IRPP 2025 - Ministère des Finances » | About | Année obsolète. Devrait être « Barème IRPP 2026 — Ministère des Finances (République Tunisienne) ». |
-| 3.4 | « ministère des affaires sociales » | ActualisationSalaire (note de source) | Minuscules incorrectes pour un nom d'institution (« Ministère des Affaires Sociales ») et absence de la mention « de Tunisie » ou « de la République Tunisienne ». |
-| 3.5 | « Code du travail » | ReferentielAvantages (point 23 : « indemnité prévue par le Code du travail ») | Devrait être « Code du Travail tunisien » pour lever toute ambiguïté sur le cadre juridique applicable. |
-| 3.6 | « inspection du travail » / « commission de contrôle des licenciements » | ReferentielAvantages (point 23) | Institutions tunisiennes citées correctement mais en minuscules et sans préciser « tunisienne ». Pour un produit qui pourrait être consulté hors contexte, la précision pays est importante. |
-| 3.7 | « Ce calculateur utilise le barème IRPP 2025. » | IRPP (note en bas de résultat) | Année obsolète. Le barème en vigueur est 2026. |
+| # | Fichier | Ligne(s) | Texte actuel | Problème | Suggestion |
+|---|---------|----------|--------------|----------|------------|
+| 1 | `Home.tsx` | 65 | `"Déclarations Néant"` | « Néant » est un terme CNSS spécifique (zéro salarié à déclarer) — opaque pour les non-experts | Ajouter une parenthèse : `"Déclarations néant (aucun salarié)"` |
+| 2 | `Home.tsx` | 65 | `"État I3 + Bordereau I16"` | I3 et I16 sont des codes de formulaires CNSS sans explication | Ajouter une expansion : `"État I3 (récapitulatif) + Bordereau I16 (déclaration)"` |
+| 3 | `Home.tsx` | 72 | `"fichier TXT CNSS 122 caractères"` | Spécification technique de format CNSS incompréhensible pour un utilisateur non technique | Simplifier : `"fichier de déclaration CNSS"` et mettre « 122 caractères » en infobulle |
+| 4 | `Home.tsx` | 79 | `"assiette CNSS"` | « Assiette » est du jargon fiscal/juridique signifiant « base de calcul » | Reformuler : `"base de calcul des cotisations CNSS"` |
+| 5 | `Home.tsx` | 79 | `"Décret n° 2003-1098"` | Référence juridique nue sans explication lisible | Ajouter une parenthèse : `"Décret n° 2003-1098 (avantages exclus de l'assiette CNSS)"` |
+| 6 | `CalculerSalaire.tsx` | 166 | `"Assiette imposable nette"` | « Assiette imposable » est du jargon juridique sans explication | Ajouter une infobulle : `"Assiette imposable nette (base de calcul de l'impôt après déductions)"` |
+| 7 | `CalculerSalaire.tsx` | 175 | `"CSS"` | Acronyme utilisé seul sans expansion | Utiliser : `"CSS (Contribution Sociale de Solidarité)"` à la première occurrence |
+| 8 | `PaieCNSS.tsx` | 200 | `"Salaire Imposable"` | Jargon — concept intermédiaire non expliqué | Ajouter une infobulle ou reformuler : `"Salaire imposable (brut − cotisations CNSS)"` |
+| 9 | `PaieCNSS.tsx` | 214 | `"Assiette imposable nette"` | Même problème que #6 | Même correction que #6 |
+| 10 | `IRPP.tsx` | 248 | `"Assiette imposable nette"` | Même problème que #6 | Même correction que #6 |
+| 11 | `IRPP.tsx` | 270 | `"barème IRPP 2025"` | « Barème » est du jargon pour le tableau des taux progressifs | Ajouter : `"barème IRPP 2025 (tableau des taux progressifs)"` |
+| 12 | `IRPP.tsx` | 271 | `"crédits d'impôt"` | Jargon fiscal sans explication | Ajouter une parenthèse : `"crédits d'impôt (réduction directe de l'impôt dû)"` |
+| 13 | `RetraiteCNSS.tsx` | 164 | `"Salaire de Référence Actualisé"` | Jargon composé — « référence » et « actualisé » nécessitent tous deux une explication | Ajouter une infobulle : `"Salaire moyen revalorisé par les coefficients CNSS"` |
+| 14 | `ActualisationSalaire.tsx` | 59-60 | `"plafonné à 6× le SMIG puis actualisé par un coefficient"` | « SMIG » et « actualisation » non expliqués sur cette page | Développer : `"plafonné à 6× le SMIG (salaire minimum interprofessionnel garanti) puis revalorisé par un coefficient d'actualisation"` |
+| 15 | `GenerateurFichePaie.tsx` | 247-248 | `"40h/semaine"`, `"48h/semaine"` | « Régime 40h/48h » est du jargon CNSS (horaire non agricole vs agricole) | Ajouter des labels : `"40h/semaine (non agricole)"`, `"48h/semaine (non agricole, régime de droit)"` |
+| 16 | `GenerateurFichePaie.tsx` | 731 | `"Assiette imposable nette"` | Même problème que #6 | Même correction que #6 |
+| 17 | `ReferentielAvantages.tsx` | 73, 80, 101… | `"SMIG mensuel (régime 48h/semaine)"` | « SMIG » et « régime 48h » utilisés à répétition sans aucune expansion | Ajouter un encadré de définition en haut de page : `"SMIG = Salaire Minimum Interprofessionnel Garanti. Régime 48h = horaire hebdomadaire standard du secteur non agricole."` |
+| 18 | `ReferentielAvantages.tsx` | 322 | `"Montant soumis (CNSS + IRPP)"` | Deux acronymes empilés sans expansion | Développer : `"Montant soumis aux cotisations CNSS et à l'impôt IRPP"` |
 
 ---
 
-## 4. Incohérence de nommage
+## Catégorie 2 — Ton/style générique « template IA »
 
-| # | Terme / texte affiché | Emplacement | Variable / id code | Problème |
-|---|---|---|---|---|
-| 4.1 | « Rémunération brute » | CalculerSalaire (résultat) | `resultat.totalRemunerationBrute` | Incohérent avec PaieCNSS qui affiche « Salaire Brut » pour le même champ `totalRemunerationBrute`. Le libellé « Rémunération brute » est plus large (inclut primes/avantages) mais crée une confusion pour l'utilisateur qui passe d'un calculateur à l'autre. |
-| 4.2 | « Salaire Brut » | PaieCNSS (résultat) | `result.totalRemunerationBrute` | Même variable que 4.1, libellé différent. |
-| 4.3 | « Revenu Annuel Brut (D) » | IRPP (champ de saisie) | `revenuAnnuel` | Concept similaire au salaire brut mais libellé totalement différent car le calculateur IRPP travaille sur une base annuelle. L'absence de lien explicite entre les trois dénominations est source de confusion. |
-| 4.4 | « Salaire Imposable » | PaieCNSS (résultat, ligne intermédiaire) | `result.baseFiscaleMensuelle` | Ce libellé intermédiaire (salaire après cotisations CNSS, avant frais pro) n'apparaît que dans PaieCNSS. CalculerSalaire et IRPP ne l'affichent pas, créant une asymétrie dans le détail de calcul. |
-| 4.5 | « Assiette imposable nette » | CalculerSalaire, PaieCNSS | `resultat.assietteImposableNetteMensuelle` | — |
-| 4.6 | « Assiette fiscale » | IRPP (variable interne) | `result.assietteFiscale` | **Même notion que 4.5 mais libellé et nom de variable différents.** La variable code est `assietteFiscale` (IRPP) vs `assietteImposableNetteMensuelle` (PaieCNSS/CalculerSalaire). L'IRPP affiche « Assiette imposable nette » mais la variable est `assietteFiscale`. |
-| 4.7 | « Déductions familiales » | CalculerSalaire, PaieCNSS, GenerateurFichePaie | `deductionsFamilialesMensuelles` | — |
-| 4.8 | « Déductions Fiscales » | IRPP (résultat) | `result.deductions` | **Même notion que 4.7** mais libellé différent. L'IRPP agrège les déductions familiales + autres déductions (intérêt crédit, cotisations syndicales), d'où le libellé plus large, mais la différence avec les autres calculateurs n'est pas expliquée. |
-| 4.9 | « Salaire Net » | CalculerSalaire, PaieCNSS (résultat final) | `resultat.netAPayer` | **Le libellé « Salaire Net » ne correspond pas au nom de variable `netAPayer`.** Le GenerateurFichePaie utilise le libellé correct « Net à Payer ». |
-| 4.10 | « Net à Payer » | GenerateurFichePaie (résultat) | `resultat.netAPayer` | Libellé cohérent avec la variable mais incohérent avec CalculerSalaire/PaieCNSS qui disent « Salaire Net ». |
-| 4.11 | « Calculer » | CalculerSalaire, PaieCNSS (bouton) | — | Libellé générique. |
-| 4.12 | « Calculer mon IRPP » | IRPP (bouton) | — | Libellé personnalisé. Incohérent avec les autres calculateurs. |
-| 4.13 | « Calculer ma Pension » | RetraiteCNSS (bouton) | — | Libellé personnalisé. Incohérent avec CalculerSalaire/PaieCNSS. |
-| 4.14 | « Actualiser » | ActualisationSalaire (bouton) | — | Verbe différent, cohérent avec le contexte mais contraste avec les autres. |
-| 4.15 | « Bulletin de Paie » | PaieCNSS (titre du résultat) | — | Suggère un bulletin officiel, mais c'est un résumé de calcul. |
-| 4.16 | « Détail du calcul » | CalculerSalaire (titre du résultat) | — | Plus neutre et exact. |
-| 4.17 | « Détail de l'Impôt » | IRPP (titre du résultat) | — | Spécifique mais incohérent avec les autres. |
-| 4.18 | « Estimation de Pension » | RetraiteCNSS (titre du résultat) | — | Spécifique mais incohérent. |
-| 4.19 | « (D) » | CalculerSalaire, PaieCNSS, IRPP (labels de champs) | — | Abréviation « D » pour dinar, mais la fonction `formatMontantDT` affiche « DT ». Incohérence entre le label du champ et le format de sortie. |
-| 4.20 | « DT » / « D/an » | Résultats (via `formatMontantDT`) et Admin | — | La fonction de formatage utilise « DT » mais les labels utilisent parfois « D » ou « D/an ». Devrait être unifié en « DT » partout (dinar tunisien). |
-| 4.21 | « Salaire Brut Mensuel (D) » | CalculerSalaire, PaieCNSS | — | Le « (D) » en suffixe du label utilise l'abréviation « D » tandis que les résultats affichent « DT ». |
-| 4.22 | « Enfants (moins de 20 ans) » | PaieCNSS, IRPP | `config.deductionEnfant` | Cohérent entre les deux calculateurs mais le seuil d'âge (20 ans) est une règle fiscale tunisienne qui n'est pas expliquée. |
-| 4.23 | « Étudiants sans bourse » | PaieCNSS, IRPP | `config.deductionEtudiant` | Cohérent, mais la condition « sans bourse » et le seuil d'âge (<25 ans) ne sont pas mentionnés dans PaieCNSS (seulement dans IRPP et Admin). |
-| 4.24 | « Chef de famille » | CalculerSalaire, PaieCNSS, IRPP | `chefFamille` | Terme tunisien standard pour la situation de chef de famille (déduction de 3 600 DT/an). Pas de problème de nommage mais le montant n'est pas toujours affiché (CalculerSalaire ne l'affiche pas, PaieCNSS oui). |
+Phrases qui sonnent comme du boilerplate SaaS/marketing générique plutôt qu'un ton professionnel de fiduciaire tunisien.
+
+| # | Fichier | Ligne(s) | Texte actuel | Problème | Suggestion |
+|---|---------|----------|--------------|----------|------------|
+| 1 | `Home.tsx` | 113 | `"Simplifiez votre gestion de paie et vos déclarations sociales en Tunisie."` | Formulation marketing SaaS classique — « simplifiez votre X » | Adopter un ton professionnel tunisien : `"Calculez vos salaires, générez vos fiches de paie et produisez vos déclarations CNSS conformément à la réglementation tunisienne."` |
+| 2 | `Home.tsx` | 118 | `"en quelques clics"` | Phrase marketing SaaS/AI générique | Remplacer par une affirmation concrète : `"sans erreur de calcul"` |
+| 3 | `Home.tsx` | 88 | `"Conformité Légale"` | Buzz-word marketing SaaS ; un outil de fiduciaire incarne la conformité, il ne la vend pas | Remplacer par : `"Barèmes officiels à jour"` ou `"Taux et barèmes officiels"` |
+| 4 | `Home.tsx` | 93 | `"Zéro Saisie Manuelle"` | Superlatif marketing SaaS | Remplacer par : `"Import Excel des déclarations"` |
+| 5 | `Home.tsx` | 99 | `"Documents Prêts à l'Emploi"` | Copie marketing SaaS — vague et générique | Remplacer par : `"Fiches de paie PDF et fichiers TXT CNSS normés"` |
+| 6 | `Home.tsx` | 129 | `"Accéder à l'espace de travail"` | CTA SaaS générique | Remplacer par : `"Voir les outils"` ou `"Commencer"` |
+| 7 | `About.tsx` | 40-42 | `"simplifier les calculs sociaux et fiscaux pour les citoyens tunisiens. Notre objectif est de rendre accessible à tous les informations complexes"` | Mission statement de type ChatGPT — trop abstrait et générique | Réécrire en ton fiduciaire authentique : `"Calculer un salaire net, estimer une pension de retraite ou préparer une déclaration CNSS : ces outils appliquent les barèmes et taux officiels tunisiens, gratuitement et sans envoi de données."` |
+| 8 | `About.tsx` | 80 | `"Aucun frais caché. Utilisez tous nos calculateurs gratuitement, à tout moment."` | Boilerplate de page pricing SaaS | Remplacer par : `"Tous les calculateurs sont accessibles gratuitement et sans inscription."` |
 
 ---
 
-## Récapitulatif
+## Catégorie 3 — Référence juridique/institutionnelle non tunisienne
 
-| Catégorie | Nombre d'entrées |
-|---|---|
-| 1. Jargon non expliqué | 20 |
-| 2. Ton/style générique « template IA » | 8 |
-| 3. Référence juridique/institutionnelle non tunisienne | 7 |
-| 4. Incohérence de nommage | 24 |
-| **Total** | **59** |
+Références à des institutions, lois ou cadres non tunisiens, ou texte en anglais dans une application franco-tunisienne.
+
+> **Note** : Aucune référence institutionnelle non tunisienne (URSSAF, CAF, etc.) n'a été trouvée. L'application référence correctement CNSS, CNRPS et Ministère des Finances — toutes institutions tunisiennes. Les problèmes de cette catégorie concernent exclusivement du **texte en anglais** qui rompt la cohérence linguistique franco-tunisienne.
+
+| # | Fichier | Ligne(s) | Texte actuel | Problème | Suggestion |
+|---|---------|----------|--------------|----------|------------|
+| 1 | `NotFound.tsx` | 27 | `"Page Not Found"` | Texte en anglais dans une application franco-tunisienne | Remplacer par : `"Page introuvable"` |
+| 2 | `NotFound.tsx` | 31-33 | `"Sorry, the page you are looking for doesn't exist. It may have been moved or deleted."` | Message d'erreur en anglais | Remplacer par : `"Désolé, la page que vous cherchez n'existe pas. Elle a peut-être été déplacée ou supprimée."` |
+| 3 | `NotFound.tsx` | 43 | `"Go Home"` | Libellé de bouton en anglais | Remplacer par : `"Retour à l'accueil"` |
+| 4 | `ErrorBoundary.tsx` | 34, 51 | `"An unexpected error occurred."` / `"Reload Page"` | Texte d'erreur et de bouton en anglais | Remplacer par : `"Une erreur inattendue s'est produite."` / `"Recharger la page"` |
 
 ---
 
-## Priorités suggérées
+## Catégorie 4 — Incohérence de nommage
 
-### Critique (impact utilisateur immédiat)
-- **2.1** — Page 404 entièrement en anglais : corriger en priorité, c'est le premier contact en cas d'erreur de navigation.
-- **4.9 / 4.10** — « Salaire Net » vs « Net à Payer » : unifier, car c'est le résultat le plus important pour l'utilisateur.
-- **4.1 / 4.2** — « Rémunération brute » vs « Salaire Brut » : unifier pour éviter la confusion.
-- **4.19 / 4.20 / 4.21** — Incohérence « D » vs « DT » : unifier la devise.
+Nommage incohérent d'un même concept à travers les pages.
 
-### Important (crédibilité et professionnalisme)
-- **1.1** — « IRPP » non expliqué : ajouter au moins un tooltip au premier affichage.
-- **1.2** — « CSS » non expliqué : même chose.
-- **3.1 / 3.2 / 3.3 / 3.7** — Années « 2025 » obsolètes dans les références réglementaires.
-- **2.5** — Liens placeholder `href="#"` dans le footer.
-- **2.4** — Section contact sans canal de contact.
+| # | Fichier | Ligne(s) | Texte actuel | Incohérence avec | Suggestion |
+|---|---------|----------|--------------|-------------------|------------|
+| 1 | `CalculerSalaire.tsx` | 181 | `"Salaire Net"` | `GenerateurFichePaie.tsx` L762, L854 : `"Net à Payer"` | Standardiser en **« Net à Payer »** partout (terminologie officielle de la fiche de paie tunisienne) |
+| 2 | `PaieCNSS.tsx` | 228 | `"Salaire Net"` | Idem ci-dessus | Remplacer par `"Net à Payer"` |
+| 3 | `PaieCNSS.tsx` | 187 | `"Bulletin de Paie"` | `Home.tsx` L43, `GenerateurFichePaie.tsx` L185, L787 : `"Fiche de Paie"` | Standardiser en **« Fiche de Paie »** (terme utilisé dans l'accueil et le générateur) |
+| 4 | `Home.tsx` | 22 | `"Calculer un salaire"` | `About.tsx` L94, `PaieCNSS.tsx` L59 : `"Calculateur de Paie CNSS"` | Standardiser le titre de page en **« Calculateur de Paie CNSS »** (plus descriptif et cohérent avec la page À propos) |
+| 5 | `IRPP.tsx` | 240 | `"2 000 DT/an"` | `PaieCNSS.tsx` L69, `IRPP.tsx` L96, `Admin.tsx` L211+ : `"D"` ou `"(D)"` | Standardiser le symbole monétaire en **« DT »** partout (convention ISO du Dinar Tunisien) ; actuellement mélange « D » et « DT » |
+| 6 | `Home.tsx` | 78 | `"Référentiel légal"` | `ReferentielAvantages.tsx` L356 : `"Référentiel des avantages exclus de l'assiette des cotisations sociales"` | Le libellé court de navigation est correct, mais le titre de page devrait l'écho. Envisager : `"Référentiel légal — Avantages exclus (Décret 2003-1098)"` |
+| 7 | `About.tsx` | 107 | `"Calculateur de Retraite CNSS"` | `Home.tsx` L36, `RetraiteCNSS.tsx` L84, `Layout.tsx` L46 : `"Estimer sa retraite"` | Standardiser en **« Estimer sa retraite CNSS »** (orienté action, cohérent avec les autres pages) |
+| 8 | `About.tsx` | 120 | `"Calculateur IRPP"` | `Home.tsx` L30 : `"Impôt sur le revenu (IRPP)"`, `Layout.tsx` L45 : `"Impôt sur le revenu (IRPP)"` | Standardiser en **« Impôt sur le revenu (IRPP) »** comme dans l'accueil et la barre latérale |
 
-### Souhaitable (polish et cohérence)
-- **4.5 / 4.6** — « Assiette imposable nette » vs « Assiette fiscale » : unifier le vocabulaire.
-- **4.7 / 4.8** — « Déductions familiales » vs « Déductions Fiscales » : clarifier la distinction.
-- **4.11–4.14** — Boutons de calcul : adopter une convention uniforme.
-- **4.15–4.18** — Titres des cartes de résultat : adopter une convention uniforme.
-- **1.3–1.20** — Jargon technique : ajouter des tooltips progressivement.
+---
+
+## Recommandations prioritaires
+
+1. **Priorité maximale** : Corriger les textes en anglais dans `NotFound.tsx` et `ErrorBoundary.tsx` (Catégorie 3) — visibles immédiatement par tout utilisateur rencontrant une erreur.
+
+2. **Haute priorité** : Standardiser « Salaire Net » → « Net à Payer » et « Bulletin de Paie » → « Fiche de Paie » (Catégorie 4, items 1-3) — ces incohérences apparaissent sur les pages de calcul les plus utilisées et minent la crédibilité professionnelle.
+
+3. **Haute priorité** : Résoudre l'incohérence « D » vs « DT » pour la devise (Catégorie 4, item 5) — choisir une convention et l'appliquer partout.
+
+4. **Priorité moyenne** : Ajouter des infobulles ou des parenthèses explicatives pour « Assiette imposable », « SMIG », « régime 48h », « I3/I16 » (Catégorie 1) — ce sont les termes jargon les plus fréquemment rencontrés.
+
+5. **Priorité moyenne** : Réécrire le hero de l'accueil et la section POINTS_FORTS (Catégorie 2) — remplacer le boilerplate marketing SaaS par un langage de fiduciaire authentique.
+
+6. **Priorité faible** : Standardiser les titres de page entre À propos et Accueil/Navigation (Catégorie 4, items 4, 7, 8).
+
+---
+
+*Ce document est produit à titre d'audit en lecture seule. Aucun fichier source n'a été modifié. L'utilisateur doit valider les corrections avant toute réécriture.*
