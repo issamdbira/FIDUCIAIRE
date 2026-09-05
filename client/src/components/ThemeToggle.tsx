@@ -10,7 +10,7 @@ export default function ThemeToggle() {
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className="text-white/70 hover:text-white hover:bg-white/10"
+      className="text-slate-500 hover:text-primary dark:text-slate-400 dark:hover:text-primary"
     >
       {theme === "dark" ? <Sun className="size-5" /> : <Moon className="size-5" />}
       <span className="sr-only">Basculer le thème</span>

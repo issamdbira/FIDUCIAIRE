@@ -78,7 +78,7 @@ export default function IRPP() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4">
+    <div className="max-w-5xl mx-auto py-8 px-4">
       <h2
         className="text-2xl font-bold text-foreground mb-1"
         style={{ fontFamily: "Montserrat, sans-serif" }}
@@ -89,191 +89,200 @@ export default function IRPP() {
         Calculez votre impôt annuel sur le revenu selon votre situation familiale et vos déductions. Barème IRPP officiel tunisien.
       </p>
 
-      <Card className="p-6 rounded-lg shadow-sm border border-border bg-card mb-6">
-        <div className="space-y-6">
-          <div>
-            <Label className="text-base font-semibold text-foreground mb-2 block">
-              Revenu Annuel Brut (D)
-            </Label>
-            <Input
-              type="number"
-              value={revenuAnnuel}
-              onChange={(e) => setRevenuAnnuel(parseFloat(e.target.value) || 0)}
-              className="text-lg p-3"
-              min="0"
-            />
-            {erreurRevenu && <p className="text-sm text-destructive mt-2">{erreurRevenu}</p>}
-          </div>
-
-          <div className="border-t border-border pt-6">
-            <h3 className="font-semibold text-foreground mb-4" style={{ fontFamily: "Montserrat, sans-serif" }}>
-              Situation Familiale
-            </h3>
-
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Checkbox
-                  id="chef"
-                  checked={chefFamille}
-                  onCheckedChange={(checked) => setChefFamille(checked as boolean)}
-                />
-                <Label htmlFor="chef" className="cursor-pointer">
-                  Chef de famille (3600 D/an)
-                </Label>
-              </div>
-
+      <div className="grid md:grid-cols-[380px_1fr] gap-6">
+        {/* ── Inputs column ── */}
+        <div>
+          <Card className="p-6 rounded-lg border border-slate-200 dark:border-slate-700 bg-card mb-6">
+            <div className="space-y-6">
               <div>
-                <Label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Nombre d'enfants (moins de 20 ans)
-                </Label>
-                <Select value={enfants.toString()} onValueChange={(v) => setEnfants(parseInt(v))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {[0, 1, 2, 3, 4, 5].map((n) => (
-                      <SelectItem key={n} value={n.toString()}>
-                        {n} enfant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 100)})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Étudiants sans bourse
-                </Label>
-                <Select value={etudiants.toString()} onValueChange={(v) => setEtudiants(parseInt(v))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {[0, 1, 2, 3, 4].map((n) => (
-                      <SelectItem key={n} value={n.toString()}>
-                        {n} étudiant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 1000)})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Enfants handicapés
-                </Label>
-                <Select value={infirmes.toString()} onValueChange={(v) => setInfirmes(parseInt(v))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {[0, 1, 2, 3, 4].map((n) => (
-                      <SelectItem key={n} value={n.toString()}>
-                        {n} enfant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 2000)})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-border pt-6">
-            <h3 className="font-semibold text-foreground mb-4" style={{ fontFamily: "Montserrat, sans-serif" }}>
-              Déductions Supplémentaires
-            </h3>
-
-            <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Intérêts crédit immobilier (D/an, max 2000)
+                <Label className="text-base font-semibold text-foreground mb-2 block">
+                  Revenu Annuel Brut (D)
                 </Label>
                 <Input
                   type="number"
-                  value={interetsCredit}
-                  onChange={(e) => setInteretsCredit(parseFloat(e.target.value) || 0)}
-                  placeholder="0"
+                  value={revenuAnnuel}
+                  onChange={(e) => setRevenuAnnuel(parseFloat(e.target.value) || 0)}
+                  className="text-lg p-3"
                   min="0"
-                  max="2000"
                 />
+                {erreurRevenu && <p className="text-sm text-destructive mt-2">{erreurRevenu}</p>}
               </div>
 
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Cotisations syndicales (D/an, max 5% du revenu)
-                </Label>
-                <Input
-                  type="number"
-                  value={cotisationsSyndicales}
-                  onChange={(e) => setCotisationsSyndicales(parseFloat(e.target.value) || 0)}
-                  placeholder="0"
-                  min="0"
-                />
+              <div className="border-t border-border pt-6">
+                <h3 className="font-semibold text-foreground mb-4" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                  Situation Familiale
+                </h3>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      id="chef"
+                      checked={chefFamille}
+                      onCheckedChange={(checked) => setChefFamille(checked as boolean)}
+                    />
+                    <Label htmlFor="chef" className="cursor-pointer">
+                      Chef de famille (3600 D/an)
+                    </Label>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground mb-2 block">
+                      Nombre d'enfants (moins de 20 ans)
+                    </Label>
+                    <Select value={enfants.toString()} onValueChange={(v) => setEnfants(parseInt(v))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {[0, 1, 2, 3, 4, 5].map((n) => (
+                          <SelectItem key={n} value={n.toString()}>
+                            {n} enfant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 100)})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground mb-2 block">
+                      Étudiants sans bourse
+                    </Label>
+                    <Select value={etudiants.toString()} onValueChange={(v) => setEtudiants(parseInt(v))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {[0, 1, 2, 3, 4].map((n) => (
+                          <SelectItem key={n} value={n.toString()}>
+                            {n} étudiant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 1000)})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground mb-2 block">
+                      Enfants handicapés
+                    </Label>
+                    <Select value={infirmes.toString()} onValueChange={(v) => setInfirmes(parseInt(v))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {[0, 1, 2, 3, 4].map((n) => (
+                          <SelectItem key={n} value={n.toString()}>
+                            {n} enfant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 2000)})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
+
+              <div className="border-t border-border pt-6">
+                <h3 className="font-semibold text-foreground mb-4" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                  Déductions Supplémentaires
+                </h3>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground mb-2 block">
+                      Intérêts crédit immobilier (D/an, max 2000)
+                    </Label>
+                    <Input
+                      type="number"
+                      value={interetsCredit}
+                      onChange={(e) => setInteretsCredit(parseFloat(e.target.value) || 0)}
+                      placeholder="0"
+                      min="0"
+                      max="2000"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground mb-2 block">
+                      Cotisations syndicales (D/an, max 5% du revenu)
+                    </Label>
+                    <Input
+                      type="number"
+                      value={cotisationsSyndicales}
+                      onChange={(e) => setCotisationsSyndicales(parseFloat(e.target.value) || 0)}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleCalculer}
+                disabled={!!erreurRevenu}
+                className="w-full py-3 text-lg font-semibold"
+              >
+                Calculer mon IRPP
+              </Button>
             </div>
-          </div>
-
-          <Button
-            onClick={handleCalculer}
-            disabled={!!erreurRevenu}
-            className="w-full py-3 text-lg font-semibold"
-          >
-            Calculer mon IRPP
-          </Button>
+          </Card>
         </div>
-      </Card>
 
-      {result && !erreurRevenu && (
-        <Card className="p-6 rounded-lg shadow-sm border border-border bg-card">
-          <h2 className="text-xl font-bold text-foreground mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
-            Détail de l'Impôt
-          </h2>
+        {/* ── Results column ── */}
+        <div>
+          {result && !erreurRevenu && (
+            <Card className="p-6 rounded-lg border border-slate-200 dark:border-slate-700 bg-card">
+              <h2 className="text-xl font-bold text-foreground mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                Détail de l'Impôt
+              </h2>
 
-          <div className="space-y-4">
-            <div className="flex justify-between items-center py-3 border-b border-border">
-              <span className="text-muted-foreground">Revenu Annuel Brut</span>
-              <span className="font-semibold text-lg text-foreground">{formatMontantDT(result.revenuAnnuel)}</span>
-            </div>
-            <div className="flex justify-between items-center py-3 border-b border-border">
-              <span className="text-muted-foreground">Cotisations CNSS (9.68%)</span>
-              <span className="font-semibold text-destructive">{formatMontantDT(-result.cotisationsCNSS)}</span>
-            </div>
-            <div className="flex justify-between items-center py-3 border-b border-border">
-              <span className="text-muted-foreground">Revenu Imposable</span>
-              <span className="font-semibold text-foreground">{formatMontantDT(result.revenuImposable)}</span>
-            </div>
-            <div className="flex justify-between items-center py-3 border-b border-border">
-              <span className="text-muted-foreground">Abattement frais professionnels (10 %, plafond 2 000 DT/an)</span>
-              <span className="font-semibold text-success">{formatMontantDT(-result.fraisProfessionnels)}</span>
-            </div>
-            <div className="flex justify-between items-center py-3 border-b border-border">
-              <span className="text-muted-foreground">Déductions Fiscales</span>
-              <span className="font-semibold text-success">{formatMontantDT(-result.deductions)}</span>
-            </div>
-            <div className="flex justify-between items-center py-3 border-b border-border">
-              <span className="text-muted-foreground">Assiette imposable nette</span>
-              <span className="font-semibold text-foreground">{formatMontantDT(result.assietteFiscale)}</span>
-            </div>
+              <table className="w-full border-collapse">
+                <tbody>
+                  <tr className="border-b border-slate-200 dark:border-slate-700">
+                    <td className="py-3 text-sm text-slate-600 dark:text-slate-400">Revenu Annuel Brut</td>
+                    <td className="py-3 text-right tabular-nums font-medium">{formatMontantDT(result.revenuAnnuel)}</td>
+                  </tr>
+                  <tr className="border-b border-slate-200 dark:border-slate-700">
+                    <td className="py-3 text-sm text-slate-600 dark:text-slate-400">Cotisations CNSS (9.68%)</td>
+                    <td className="py-3 text-right tabular-nums font-medium text-destructive">{formatMontantDT(-result.cotisationsCNSS)}</td>
+                  </tr>
+                  <tr className="border-b border-slate-200 dark:border-slate-700">
+                    <td className="py-3 text-sm text-slate-600 dark:text-slate-400">Revenu Imposable</td>
+                    <td className="py-3 text-right tabular-nums font-medium">{formatMontantDT(result.revenuImposable)}</td>
+                  </tr>
+                  <tr className="border-b border-slate-200 dark:border-slate-700">
+                    <td className="py-3 text-sm text-slate-600 dark:text-slate-400">Abattement frais professionnels (10 %, plafond 2 000 DT/an)</td>
+                    <td className="py-3 text-right tabular-nums font-medium text-success">{formatMontantDT(-result.fraisProfessionnels)}</td>
+                  </tr>
+                  <tr className="border-b border-slate-200 dark:border-slate-700">
+                    <td className="py-3 text-sm text-slate-600 dark:text-slate-400">Déductions Fiscales</td>
+                    <td className="py-3 text-right tabular-nums font-medium text-success">{formatMontantDT(-result.deductions)}</td>
+                  </tr>
+                  <tr className="border-b border-slate-200 dark:border-slate-700">
+                    <td className="py-3 text-sm text-slate-600 dark:text-slate-400">Assiette imposable nette</td>
+                    <td className="py-3 text-right tabular-nums font-medium">{formatMontantDT(result.assietteFiscale)}</td>
+                  </tr>
 
-            <div className="flex justify-between items-center py-4 bg-primary/5 px-4 rounded-lg">
-              <span className="text-lg font-bold text-foreground">IRPP Annuel</span>
-              <span className="text-2xl font-bold text-primary">{formatMontantDT(result.irpp)}</span>
-            </div>
+                  <tr className="bg-primary/5 border-t-2 border-primary">
+                    <td className="py-4 px-4 text-lg font-bold text-foreground">IRPP Annuel</td>
+                    <td className="py-4 px-4 text-right text-lg font-bold text-primary tabular-nums">{formatMontantDT(result.irpp)}</td>
+                  </tr>
 
-            <div className="flex justify-between items-center py-3 bg-muted px-4 rounded-lg">
-              <span className="text-muted-foreground">Taux Effectif</span>
-              <span className="font-semibold text-foreground">{result.tauxEffectif.toFixed(2)}%</span>
-            </div>
+                  <tr className="bg-muted">
+                    <td className="py-3 px-4 text-sm text-slate-600 dark:text-slate-400">Taux Effectif</td>
+                    <td className="py-3 px-4 text-right tabular-nums font-medium">{result.tauxEffectif.toFixed(2)}%</td>
+                  </tr>
+                  <tr className="bg-muted">
+                    <td className="py-3 px-4 text-sm text-slate-600 dark:text-slate-400">IRPP Mensuel</td>
+                    <td className="py-3 px-4 text-right tabular-nums font-medium">{formatMontantDT(result.irpp / 12)}</td>
+                  </tr>
+                </tbody>
+              </table>
 
-            <div className="flex justify-between items-center py-3 bg-muted px-4 rounded-lg">
-              <span className="text-muted-foreground">IRPP Mensuel</span>
-              <span className="font-semibold text-foreground">{formatMontantDT(result.irpp / 12)}</span>
-            </div>
-          </div>
-
-          <div className="mt-6 p-4 bg-muted rounded-lg border border-border">
-            <p className="text-sm text-muted-foreground">
-              <strong>Note :</strong> Ce calculateur utilise le barème IRPP 2025.
-              Les crédits d'impôt pour enfants sont de 50 D/enfant/mois.
-              Consultez les autorités fiscales pour une estimation officielle.
-            </p>
-          </div>
-        </Card>
-      )}
+              <div className="mt-6 p-4 bg-muted rounded-lg border border-border">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Note :</strong> Ce calculateur utilise le barème IRPP 2025.
+                  Les crédits d'impôt pour enfants sont de 50 D/enfant/mois.
+                  Consultez les autorités fiscales pour une estimation officielle.
+                </p>
+              </div>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

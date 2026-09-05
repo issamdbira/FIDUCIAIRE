@@ -121,14 +121,12 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* ═══════════════ HEADER ═══════════════ */}
-      <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-blue-950">
+      <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
         <div className="max-w-6xl mx-auto flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-white/10">
-              <Calculator className="size-4 text-white" />
-            </div>
+            <Calculator className="size-5 text-primary" />
             <span
-              className="text-base font-bold text-white tracking-tight"
+              className="text-base font-bold text-primary tracking-tight"
               style={{ fontFamily: "Montserrat, sans-serif" }}
             >
               LE FIDUCIAIRE
@@ -137,7 +135,7 @@ export default function Home() {
           <Link href="/calculateurs/calculer-salaire">
             <Button
               size="sm"
-              className="bg-white text-blue-950 hover:bg-white/90 font-semibold"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
             >
               Commencer
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
@@ -147,7 +145,7 @@ export default function Home() {
       </header>
 
       {/* ═══════════════ HERO ═══════════════ */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-blue-950 to-background">
+      <section className="relative overflow-hidden bg-gradient-to-b from-primary to-background">
         <div className="max-w-3xl mx-auto px-4 pt-20 pb-16 text-center">
           <h1
             className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-5"
@@ -155,13 +153,13 @@ export default function Home() {
           >
             Paie et déclarations sociales tunisiennes, simplifiées.
           </h1>
-          <p className="text-blue-100/80 text-base sm:text-lg max-w-2xl mx-auto mb-8">
+          <p className="text-primary-foreground/80 text-base sm:text-lg max-w-2xl mx-auto mb-8">
             Calculez vos salaires, générez vos fiches de paie et exportez vos
             déclarations CNSS — sans erreur et en quelques clics.
           </p>
           <Button
             size="lg"
-            className="bg-white text-blue-950 hover:bg-white/90 font-semibold px-8"
+            className="bg-white text-primary hover:bg-white/90 font-semibold px-8"
             onClick={() =>
               document
                 .getElementById("outils")

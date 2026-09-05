@@ -57,7 +57,7 @@ function AdminLogin({ onAuth }: { onAuth: () => void }) {
 
   return (
     <div className="max-w-sm mx-auto py-20 px-4">
-      <Card className="p-8 rounded-lg shadow-sm border border-border bg-card">
+      <Card className="p-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-card">
         <div className="flex items-center gap-3 mb-6">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
             <Lock className="h-5 w-5 text-primary" />
@@ -173,7 +173,7 @@ function AdminPanel() {
           </div>
 
           {/* CNSS */}
-          <Card className="p-6 border-0 shadow-sm space-y-4">
+          <Card className="p-6 border border-slate-200 dark:border-slate-700 space-y-4">
             <h2 className="text-lg font-bold text-primary">Cotisations CNSS</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -196,7 +196,7 @@ function AdminPanel() {
           </Card>
 
           {/* CSS */}
-          <Card className="p-6 border-0 shadow-sm space-y-4">
+          <Card className="p-6 border border-slate-200 dark:border-slate-700 space-y-4">
             <h2 className="text-lg font-bold text-primary">Contribution Sociale de Solidarité (CSS)</h2>
             <div className="flex items-center gap-3">
               <Checkbox id="css-active" checked={config.cssActive} onCheckedChange={(c) => champ("cssActive", c as boolean)} />
@@ -215,7 +215,7 @@ function AdminPanel() {
           </Card>
 
           {/* Barème IRPP */}
-          <Card className="p-6 border-0 shadow-sm space-y-4">
+          <Card className="p-6 border border-slate-200 dark:border-slate-700 space-y-4">
             <h2 className="text-lg font-bold text-primary">Barème IRPP</h2>
             <div className="space-y-2">
               {config.baremeIRPP.map((tranche, i) => (
@@ -244,7 +244,7 @@ function AdminPanel() {
           </Card>
 
           {/* Frais professionnels */}
-          <Card className="p-6 border-0 shadow-sm space-y-4">
+          <Card className="p-6 border border-slate-200 dark:border-slate-700 space-y-4">
             <h2 className="text-lg font-bold text-primary">Frais professionnels</h2>
             <div className="grid grid-cols-3 gap-4">
               <div>
@@ -266,7 +266,7 @@ function AdminPanel() {
           </Card>
 
           {/* Déductions familiales */}
-          <Card className="p-6 border-0 shadow-sm space-y-4">
+          <Card className="p-6 border border-slate-200 dark:border-slate-700 space-y-4">
             <h2 className="text-lg font-bold text-primary">Déductions familiales (annuelles)</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -293,7 +293,7 @@ function AdminPanel() {
           </Card>
 
           {/* Parents à charge */}
-          <Card className="p-6 border-0 shadow-sm space-y-4">
+          <Card className="p-6 border border-slate-200 dark:border-slate-700 space-y-4">
             <h2 className="text-lg font-bold text-primary">Parents à charge</h2>
             <p className="text-xs text-muted-foreground">
               Applicable uniquement lors de la déclaration annuelle, pas à la retenue à la source mensuelle — désactivé par défaut pour les calculateurs de paie mensuelle.

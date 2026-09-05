@@ -48,7 +48,7 @@ export default function ActualisationSalaire() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4">
+    <div className="max-w-5xl mx-auto py-8 px-4">
       <h2
         className="text-2xl font-bold text-foreground mb-1"
         style={{ fontFamily: "Montserrat, sans-serif" }}
@@ -60,79 +60,92 @@ export default function ActualisationSalaire() {
         dernières années est plafonné à 6× le SMIG puis actualisé par un coefficient.
       </p>
 
-      <Card className="p-6 rounded-lg shadow-sm border border-border bg-card mb-6">
-        <div className="space-y-6">
-          <div>
-            <Label className="text-base font-semibold text-foreground mb-2 block">
-              Année du Salaire
-            </Label>
-            <Select value={annee.toString()} onValueChange={(v) => setAnnee(parseInt(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {anneesDisponibles.map((a) => (
-                  <SelectItem key={a} value={a.toString()}>{a}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      <div className="grid md:grid-cols-[380px_1fr] gap-6">
+        {/* ── Inputs column ── */}
+        <div>
+          <Card className="p-6 rounded-lg border border-slate-200 dark:border-slate-700 bg-card mb-6">
+            <div className="space-y-6">
+              <div>
+                <Label className="text-base font-semibold text-foreground mb-2 block">
+                  Année du Salaire
+                </Label>
+                <Select value={annee.toString()} onValueChange={(v) => setAnnee(parseInt(v))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {anneesDisponibles.map((a) => (
+                      <SelectItem key={a} value={a.toString()}>{a}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div>
-            <Label className="text-base font-semibold text-foreground mb-2 block">
-              Salaire Brut Mensuel Perçu Cette Année-là (D)
-            </Label>
-            <Input
-              type="number"
-              value={salaireBrut}
-              onChange={(e) => setSalaireBrut(parseFloat(e.target.value) || 0)}
-              className="text-lg p-3"
-              min="0"
-            />
-            {erreurSalaire && <p className="text-sm text-destructive mt-2">{erreurSalaire}</p>}
-          </div>
+              <div>
+                <Label className="text-base font-semibold text-foreground mb-2 block">
+                  Salaire Brut Mensuel Perçu Cette Année-là (D)
+                </Label>
+                <Input
+                  type="number"
+                  value={salaireBrut}
+                  onChange={(e) => setSalaireBrut(parseFloat(e.target.value) || 0)}
+                  className="text-lg p-3"
+                  min="0"
+                />
+                {erreurSalaire && <p className="text-sm text-destructive mt-2">{erreurSalaire}</p>}
+              </div>
 
-          <Button
-            onClick={handleCalculer}
-            disabled={!!erreurSalaire}
-            className="w-full py-3 text-lg font-semibold"
-          >
-            Actualiser
-          </Button>
+              <Button
+                onClick={handleCalculer}
+                disabled={!!erreurSalaire}
+                className="w-full py-3 text-lg font-semibold"
+              >
+                Actualiser
+              </Button>
+            </div>
+          </Card>
         </div>
-      </Card>
 
-      {resultat && !erreurSalaire && (
-        <Card className="p-6 rounded-lg shadow-sm border border-border bg-card">
-          <h2 className="text-xl font-bold text-foreground mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
-            Résultat
-          </h2>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center py-3 border-b border-border">
-              <span className="text-muted-foreground">Salaire Brut Saisi ({resultat.annee})</span>
-              <span className="font-semibold text-foreground">{formatMontantDT(resultat.salaireBrut)}</span>
-            </div>
-            <div className="flex justify-between items-center py-3 border-b border-border">
-              <span className="text-muted-foreground">Salaire Plafonné (6× SMIG {resultat.annee})</span>
-              <span className="font-semibold text-foreground">{formatMontantDT(resultat.salairePlafonne)}</span>
-            </div>
-            <div className="flex justify-between items-center py-3 border-b border-border">
-              <span className="text-muted-foreground">Coefficient d'Actualisation</span>
-              <span className="font-semibold text-foreground">{resultat.coefficient}</span>
-            </div>
-            <div className="flex justify-between items-center py-4 bg-primary/5 px-4 rounded-lg">
-              <span className="text-lg font-bold text-foreground">Salaire Actualisé</span>
-              <span className="text-2xl font-bold text-primary">{formatMontantDT(resultat.salaireActualise)}</span>
-            </div>
-          </div>
-          <div className="mt-6 p-4 bg-muted rounded-lg border border-border">
-            <p className="text-sm text-muted-foreground">
-              <strong>Source :</strong> coefficients publiés par le ministère des affaires
-              sociales le 19/07/2024. Répétez ce calcul pour les 10 dernières années puis faites
-              la moyenne pour obtenir le salaire de référence utilisé dans le calculateur de
-              retraite CNSS.
-            </p>
-          </div>
-        </Card>
-      )}
+        {/* ── Results column ── */}
+        <div>
+          {resultat && !erreurSalaire && (
+            <Card className="p-6 rounded-lg border border-slate-200 dark:border-slate-700 bg-card">
+              <h2 className="text-xl font-bold text-foreground mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                Résultat
+              </h2>
+
+              <table className="w-full border-collapse">
+                <tbody>
+                  <tr className="border-b border-slate-200 dark:border-slate-700">
+                    <td className="py-3 text-sm text-slate-600 dark:text-slate-400">Salaire Brut Saisi ({resultat.annee})</td>
+                    <td className="py-3 text-right tabular-nums font-medium">{formatMontantDT(resultat.salaireBrut)}</td>
+                  </tr>
+                  <tr className="border-b border-slate-200 dark:border-slate-700">
+                    <td className="py-3 text-sm text-slate-600 dark:text-slate-400">Salaire Plafonné (6× SMIG {resultat.annee})</td>
+                    <td className="py-3 text-right tabular-nums font-medium">{formatMontantDT(resultat.salairePlafonne)}</td>
+                  </tr>
+                  <tr className="border-b border-slate-200 dark:border-slate-700">
+                    <td className="py-3 text-sm text-slate-600 dark:text-slate-400">Coefficient d'Actualisation</td>
+                    <td className="py-3 text-right tabular-nums font-medium">{resultat.coefficient}</td>
+                  </tr>
+
+                  <tr className="bg-primary/5 border-t-2 border-primary">
+                    <td className="py-4 px-4 text-lg font-bold text-foreground">Salaire Actualisé</td>
+                    <td className="py-4 px-4 text-right text-lg font-bold text-primary tabular-nums">{formatMontantDT(resultat.salaireActualise)}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div className="mt-6 p-4 bg-muted rounded-lg border border-border">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Source :</strong> coefficients publiés par le ministère des affaires
+                  sociales le 19/07/2024. Répétez ce calcul pour les 10 dernières années puis faites
+                  la moyenne pour obtenir le salaire de référence utilisé dans le calculateur de
+                  retraite CNSS.
+                </p>
+              </div>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
