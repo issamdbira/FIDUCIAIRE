@@ -2,17 +2,25 @@
  * Moteur de calcul des avantages exclus de l'assiette des cotisations
  * sociales — Décret n° 2003-1098 du 19 mai 2003.
  *
- * Ne couvre que les points dont le décret fixe un plafond exprimé en
- * multiple/pourcentage du SMIG (points 1, 2, 4, 5, 7, 8, 13, 14, 20).
- * Les autres points du décret (catégoriels, conditionnés à justificatif,
- * relatifs à un montant variable...) ne sont PAS calculables ici — voir
- * la page Référentiel pour leur condition légale exacte.
+ * Les 24 points de l'article premier sont répartis en deux catégories :
+ *   - Points SMIG (9) : plafond exprimé en multiple/pourcentage du SMIG
+ *     → calcul automatique du plafond.
+ *   - Points qualitatifs (15) : exclusion catégorielle, conditionnelle
+ *     ou sans plafond SMIG fixe → montant déclaré manuellement par
+ *     l'employeur, exonéré sous réserve de respecter la condition légale.
+ *
+ * Art. 3 — Plafond global 5% : le total des avantages exclus (hors
+ * points 16, 17, 18, 19, 23, 24) ne peut dépasser 5% de l'ensemble
+ * des salaires versés par l'entreprise. Le dépassement est réintégré
+ * dans l'assiette CNSS/IRPP.
  *
  * SOURCE : note administrative (CNSS, direction des études et du contrôle
  * de gestion) détaillant les plafonds jusqu'en 2028.
  */
 
 import { getSmigPourAnnee } from "./cnss";
+
+// ─── Points SMIG (plafond calculable) ───────────────────────────────
 
 export type FormuleAvantage =
   | { type: "pourcentage_smig_mensuel"; taux: number } // ex: 30% du SMIG mensuel
@@ -38,9 +46,136 @@ export const POINTS_AVANTAGES_SMIG: PointAvantageSMIG[] = [
   { numero: 20, titre: "Salaires des collaborateurs de presse occasionnels", formule: { type: "multiple_smig_mensuel", multiple: 2 }, uniteNombre: "pigiste(s)" },
 ];
 
+// ─── Points qualitatifs (exclusion conditionnelle, pas de plafond SMIG) ─
+
+export interface PointAvantageQualitatif {
+  numero: number;
+  titre: string;
+  condition: string; // Condition légale à respecter pour l'exonération
+  horsPlafond5pct: boolean; // true = exclu du plafond global 5% (art. 3)
+}
+
+export const POINTS_AVANTAGES_QUALITATIF: PointAvantageQualitatif[] = [
+  {
+    numero: 3,
+    titre: "Prime de colonie de vacances",
+    condition: "Limite : montants octroyés par la CNSS au profit de ses affiliés pour ce type de prestation (barème CNSS en vigueur, montant variable).",
+    horsPlafond5pct: false,
+  },
+  {
+    numero: 6,
+    titre: "Cadeaux (nature ou espèces) — mise à la retraite",
+    condition: "Limite : 3 mensualités du salaire de l'agent concerné (plafond individuel, pas un multiple du SMIG).",
+    horsPlafond5pct: false,
+  },
+  {
+    numero: 9,
+    titre: "Aides exceptionnelles — événement malheureux ou décès",
+    condition: "Le décret n'indique aucun plafond chiffré pour ce point (contrairement aux points 7 et 8). Exclusion totale sous réserve de justificatif.",
+    horsPlafond5pct: false,
+  },
+  {
+    numero: 10,
+    titre: "Vêtements de travail (tenues de service ou de protection)",
+    condition: "Exclusion catégorielle à condition que les vêtements demeurent la propriété de l'employeur. Pas de plafond monétaire.",
+    horsPlafond5pct: false,
+  },
+  {
+    numero: 11,
+    titre: "Lait, savon et produits de préservation santé/sécurité",
+    condition: "Exclusion catégorielle (ou leur contre-valeur en espèces). Pas de plafond monétaire fixé par le décret.",
+    horsPlafond5pct: false,
+  },
+  {
+    numero: 12,
+    titre: "Frais de mission à l'intérieur de la République",
+    condition: "Séjour, restauration et transport des agents en mission, sous réserve de présentation d'un ordre de mission. Pas de plafond SMIG.",
+    horsPlafond5pct: false,
+  },
+  {
+    numero: 15,
+    titre: "Transport du personnel (compagnies aériennes, maritimes, terrestres)",
+    condition: "Exclusion sectorielle spécifique, sans formule SMIG ni plafond chiffré dans le décret.",
+    horsPlafond5pct: false,
+  },
+  {
+    numero: 16,
+    titre: "Indemnités liées aux actions culturelles, sportives ou de loisirs",
+    condition: "Ex : indemnités aux associations internes à l'entreprise, organisation d'excursions. Pas de plafond chiffré.",
+    horsPlafond5pct: true,
+  },
+  {
+    numero: 17,
+    titre: "Indemnités spécifiques — agents en mission à l'étranger",
+    condition: "Limité à la part dépassant le salaire habituel de leurs homologues restés en Tunisie (informatique, études, échanges d'expérience...).",
+    horsPlafond5pct: true,
+  },
+  {
+    numero: 18,
+    titre: "Primes d'assurance collective maladie ou vie (employeur)",
+    condition: "Pas de plafond chiffré dans le décret. Prise en charge par l'employeur.",
+    horsPlafond5pct: true,
+  },
+  {
+    numero: 19,
+    titre: "Contrepartie de missions temporaires (autre régime)",
+    condition: "Limite en heures : 10h/semaine (enseignement primaire/secondaire), 3h/semaine (autres secteurs). Sous réserve d'autorisation de l'employeur.",
+    horsPlafond5pct: true,
+  },
+  {
+    numero: 21,
+    titre: "Montants — étudiants/élèves pour travaux saisonniers (vacances officielles)",
+    condition: "Pas de plafond chiffré dans le décret. Réservé aux travaux saisonniers durant les vacances officielles.",
+    horsPlafond5pct: false,
+  },
+  {
+    numero: 22,
+    titre: "Montants accordés aux étudiants stagiaires (stages obligatoires)",
+    condition: "Limité aux montants octroyés aux stagiaires « homologues » bénéficiant de stages d'initiation à la vie professionnelle — référence relative.",
+    horsPlafond5pct: false,
+  },
+  {
+    numero: 23,
+    titre: "Gratifications de fin de service",
+    condition: "Uniquement la part qui DÉPASSE l'indemnité prévue par le Code du travail, sous réserve d'approbation de l'inspection du travail ou de la commission de contrôle des licenciements.",
+    horsPlafond5pct: true,
+  },
+  {
+    numero: 24,
+    titre: "Dommages et intérêts fixés judiciairement",
+    condition: "Montants octroyés en réparation d'un préjudice, fixés par décision de justice — pas de plafond administratif.",
+    horsPlafond5pct: true,
+  },
+];
+
+// ─── Registre unifié des 24 points ──────────────────────────────────
+
+/** Numéros des points exclus du plafond global 5% (art. 3 du décret). */
+export const NUMEROS_HORS_PLAFOND_5PCT = new Set(
+  POINTS_AVANTAGES_QUALITATIF.filter((p) => p.horsPlafond5pct).map((p) => p.numero)
+); // {16, 17, 18, 19, 23, 24}
+
+/** Récupère un point SMIG par numéro. */
 export function getPointAvantageSMIG(numero: number): PointAvantageSMIG | undefined {
   return POINTS_AVANTAGES_SMIG.find((p) => p.numero === numero);
 }
+
+/** Récupère un point qualitatif par numéro. */
+export function getPointAvantageQualitatif(numero: number): PointAvantageQualitatif | undefined {
+  return POINTS_AVANTAGES_QUALITATIF.find((p) => p.numero === numero);
+}
+
+/** Vérifie si un numéro correspond à un point du décret (SMIG ou qualitatif). */
+export function estPointDuDecret(numero: number): boolean {
+  return getPointAvantageSMIG(numero) !== undefined || getPointAvantageQualitatif(numero) !== undefined;
+}
+
+/** Vérifie si un point est exclu du plafond global 5% (art. 3). */
+export function estHorsPlafond5pct(numero: number): boolean {
+  return NUMEROS_HORS_PLAFOND_5PCT.has(numero);
+}
+
+// ─── Calcul des plafonds SMIG ───────────────────────────────────────
 
 /** Calcule le plafond d'exonération UNITAIRE (par bénéficiaire/repas/km) pour une date donnée. */
 export function calculerPlafondUnitaire(point: PointAvantageSMIG, dateVersement: Date): number {
@@ -57,6 +192,8 @@ export function calculerPlafondUnitaire(point: PointAvantageSMIG, dateVersement:
       return smigHoraire * point.formule.multiple;
   }
 }
+
+// ─── Simulation point par point ─────────────────────────────────────
 
 export interface ResultatSimulationAvantage {
   montantTotal: number;
@@ -100,6 +237,61 @@ export function simulerAvantage(
     ecartDeclaration: round2(ecartDeclaration),
   };
 }
+
+// ─── Plafond global 5% (Art. 3 du décret) ──────────────────────────
+
+export interface ResultatPlafondGlobal {
+  /** Total des avantages exclus soumis au plafond 5% (i.e. hors points 16,17,18,19,23,24) */
+  totalAvantagesSoumisAuCap: number;
+  /** Plafond autorisé = 5% × masseSalarialeBrute */
+  plafondAutorise: number;
+  /** Dépassement éventuel (0 si dans les clous) */
+  depassement: number;
+  /** Montant réintégré dans l'assiette CNSS/IRPP en cas de dépassement */
+  montantReintegre: number;
+  /** Détail par point : numéro → montant déclaré */
+  detail: { numero: number; montant: number; soumisAuCap: boolean }[];
+}
+
+/**
+ * Applique le plafond global 5% de l'article 3 du décret.
+ *
+ * @param avantagesDeclares - Liste des avantages exclus déclarés, avec leur
+ *        numéro de point du décret et le montant mensuel.
+ * @param masseSalarialeBrute - Masse salariale brute mensuelle de l'entreprise
+ *        (ou du salarié pour le calcul individuel).
+ * @returns Résultat du contrôle du plafond global.
+ */
+export function controlerPlafondGlobal5pct(
+  avantagesDeclares: { numero: number; montant: number }[],
+  masseSalarialeBrute: number
+): ResultatPlafondGlobal {
+  const TAUX_PLAFOND = 0.05;
+  const plafondAutorise = masseSalarialeBrute * TAUX_PLAFOND;
+
+  const detail = avantagesDeclares.map((a) => ({
+    numero: a.numero,
+    montant: a.montant,
+    soumisAuCap: !estHorsPlafond5pct(a.numero),
+  }));
+
+  const totalAvantagesSoumisAuCap = avantagesDeclares
+    .filter((a) => !estHorsPlafond5pct(a.numero))
+    .reduce((sum, a) => sum + a.montant, 0);
+
+  const depassement = Math.max(totalAvantagesSoumisAuCap - plafondAutorise, 0);
+  const montantReintegre = round2(depassement);
+
+  return {
+    totalAvantagesSoumisAuCap: round2(totalAvantagesSoumisAuCap),
+    plafondAutorise: round2(plafondAutorise),
+    depassement: round2(depassement),
+    montantReintegre,
+    detail,
+  };
+}
+
+// ─── Arrondis ───────────────────────────────────────────────────────
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;

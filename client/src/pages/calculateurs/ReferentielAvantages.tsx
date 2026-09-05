@@ -440,13 +440,15 @@ export default function ReferentielAvantages() {
             <p className="text-center text-muted-foreground py-8">Aucun avantage ne correspond à cette recherche.</p>
           )}
 
-          <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+          <div className="mt-8 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800/40">
             <p className="text-sm text-muted-foreground">
               <strong>Note :</strong> ce référentiel est fourni à titre informatif et ne remplace pas
               une vérification auprès des textes réglementaires officiels ou d'un expert en la matière.
-              Les 9 points ci-dessus dotés d'un plafond SMIG sont intégrés au calcul automatique du
-              générateur de fiche de paie (répartition exonéré/soumis). Les autres points du décret
-              restent à saisir manuellement, leur nature de limite n'étant pas un montant fixe.
+              Les 9 points dotés d'un plafond SMIG sont calculés automatiquement (répartition
+              exonéré/soumis). Les 15 points qualitatifs sont déclarés manuellement par l'employeur
+              sous réserve de respecter la condition légale. Le plafond global de 5% (art. 3) est
+              vérifié par le moteur pour l'ensemble des avantages exclus soumis au cap.
+              Voir <code>POINTS_A_CONFIRMER.md</code> pour les ambiguïtés réglementaires.
             </p>
           </div>
     </div>

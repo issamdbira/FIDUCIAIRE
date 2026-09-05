@@ -79,6 +79,8 @@ export interface PayrollInput {
   periode: PeriodePaie;
   elements: PayrollItem[];
   autresDeductionsFiscalesAnnuelles?: number; // ex: intérêts de crédit logement
+  /** Avantages exclus déclarés (point du décret + montant) pour le contrôle du plafond global 5% (art. 3). */
+  avantagesExclus?: { numero: number; montant: number }[];
 }
 
 export interface PayrollResult {
@@ -99,4 +101,11 @@ export interface PayrollResult {
   netAPayer: number;
   // Éléments dont le traitement n'a pas pu être appliqué faute de règle validée
   elementsEnAttente: PayrollItem[];
+  // Plafond global 5% des avantages exclus (art. 3 du décret 2003-1098)
+  plafondGlobalAvantages?: {
+    totalAvantagesSoumisAuCap: number;
+    plafondAutorise: number;
+    depassement: number;
+    montantReintegre: number;
+  };
 }

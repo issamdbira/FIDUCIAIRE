@@ -14,6 +14,7 @@
 import { calculerCotisationCNSS, calculerCSSAnnuelle } from "./cnss";
 import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "./irpp";
 import { getPayrollConfig } from "./config";
+import { controlerPlafondGlobal5pct } from "./avantages-exclus";
 import type { PayrollInput, PayrollItem, PayrollResult } from "./types";
 
 function estCalculable(item: PayrollItem): boolean {
@@ -60,14 +61,30 @@ function documenterElement(item: PayrollItem): PayrollItem {
 }
 
 export function runPayrollEngine(input: PayrollInput): PayrollResult {
-  const { employeur, salarie, periode, elements, autresDeductionsFiscalesAnnuelles = 0 } = input;
+  const { employeur, salarie, periode, elements, autresDeductionsFiscalesAnnuelles = 0, avantagesExclus } = input;
 
   const elementsCalculables = elements.filter(estCalculable).map(documenterElement);
   const elementsEnAttente = elements.filter((e) => !estCalculable(e)).map(documenterElement);
 
   const totalRemunerationBrute = elementsCalculables.reduce((sum, e) => sum + e.montant, 0);
 
-  const baseCNSS = elementsCalculables.reduce((sum, e) => sum + partSoumiseCNSS(e), 0);
+  let baseCNSS = elementsCalculables.reduce((sum, e) => sum + partSoumiseCNSS(e), 0);
+
+  // ── Plafond global 5% des avantages exclus (art. 3 du décret 2003-1098) ──
+  let plafondGlobalAvantages: PayrollResult["plafondGlobalAvantages"];
+  if (avantagesExclus && avantagesExclus.length > 0 && totalRemunerationBrute > 0) {
+    const resultatCap = controlerPlafondGlobal5pct(avantagesExclus, totalRemunerationBrute);
+    plafondGlobalAvantages = {
+      totalAvantagesSoumisAuCap: resultatCap.totalAvantagesSoumisAuCap,
+      plafondAutorise: resultatCap.plafondAutorise,
+      depassement: resultatCap.depassement,
+      montantReintegre: resultatCap.montantReintegre,
+    };
+    // En cas de dépassement, le montant excédentaire est réintégré dans la base CNSS
+    if (resultatCap.depassement > 0) {
+      baseCNSS += resultatCap.montantReintegre;
+    }
+  }
   const config = getPayrollConfig();
   // Secteur agricole : taux spécifique piloté par /admin. Non-agricole (défaut) :
   // taux standard, dépendant de l'année (cf. cnss.ts) sauf override admin.
@@ -122,6 +139,7 @@ export function runPayrollEngine(input: PayrollInput): PayrollResult {
     totalAutresRetenues: round2(totalAutresRetenues),
     netAPayer: round2(netAPayer),
     elementsEnAttente,
+    plafondGlobalAvantages,
   };
 }
 
