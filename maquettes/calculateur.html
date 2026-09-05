@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIDUCIAIRE — Calculateur de paie (maquette)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0B2545;
+    --navy-mid: #13415C;
+    --gold: #C5973E;
+    --gold-dim: #A07D2F;
+    --paper: #FAF9F7;
+    --ink: #0B1D35;
+    --slate: #5C6B7A;
+    --hairline: #D9DDE3;
+    --surface: #FFFFFF;
+    --success: #1A7A5C;
+    --destructive: #B91C1C;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .font-heading { font-family: 'Montserrat', 'Inter', sans-serif; }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  /* ─── NAV ─── */
+  nav {
+    background: var(--navy);
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 0 2rem;
+    height: 48px;
+    border-bottom: 2px solid var(--gold);
+  }
+  nav .logo {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  nav .logo span { color: var(--gold); }
+  nav .breadcrumb {
+    margin-left: 1.5rem;
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+  }
+  nav .breadcrumb b { color: rgba(255,255,255,0.85); font-weight: 600; }
+
+  /* ─── LAYOUT: two-column — inputs left, results right ─── */
+  .page-header {
+    max-width: 960px;
+    margin: 1.5rem auto 0;
+    padding: 0 1.5rem;
+  }
+  .page-header h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 0.25rem;
+  }
+  .page-header p {
+    font-size: 12px;
+    color: var(--slate);
+  }
+
+  .calc-grid {
+    max-width: 960px;
+    margin: 1rem auto 2rem;
+    padding: 0 1.5rem;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  /* ─── INPUTS — compact form ─── */
+  .inputs {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    padding: 1rem 1.25rem;
+  }
+  .inputs h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--navy);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--navy);
+  }
+  .field {
+    margin-bottom: 0.75rem;
+  }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--slate);
+    margin-bottom: 0.2rem;
+    letter-spacing: 0.02em;
+  }
+  .field input, .field select {
+    width: 100%;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--hairline);
+    background: white;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: var(--navy-mid);
+    box-shadow: 0 0 0 1px var(--navy-mid);
+  }
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .btn-calc {
+    width: 100%;
+    margin-top: 0.75rem;
+    background: var(--navy);
+    color: white;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.5rem 1rem;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-calc:hover { background: var(--navy-mid); }
+
+  /* ─── RESULTS — table/grid, not cards ─── */
+  .results {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+  }
+  .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 2px solid var(--navy);
+  }
+  .results-header h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--navy);
+  }
+  .results-header .regime {
+    font-size: 11px;
+    color: var(--slate);
+    font-weight: 500;
+  }
+
+  /* ─── Results table — the core of the financial document ─── */
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .result-table th {
+    text-align: left;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--slate);
+    padding: 0.4rem 1.25rem;
+    border-bottom: 1px solid var(--hairline);
+    background: rgba(11,37,69,0.02);
+  }
+  .result-table th:nth-child(2) { text-align: right; }
+  .result-table td {
+    padding: 0.45rem 1.25rem;
+    border-bottom: 1px solid #ECEEF0;
+    font-size: 13px;
+  }
+  .result-table td:nth-child(2) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+  .result-table tr:last-child td { border-bottom: none; }
+
+  /* Subtotal rows */
+  .result-table tr.subtotal td {
+    font-weight: 600;
+    border-top: 1px solid var(--hairline);
+    background: rgba(11,37,69,0.02);
+  }
+  /* Deduction rows (negative amounts) */
+  .result-table tr.deduction td:nth-child(2) { color: var(--destructive); }
+  /* Main result row — the single accent moment */
+  .result-table tr.net-payer td {
+    font-weight: 700;
+    font-size: 15px;
+    border-top: 2px solid var(--gold);
+    border-bottom: 2px solid var(--gold);
+    background: rgba(197,151,62,0.06);
+  }
+  .result-table tr.net-payer td:nth-child(2) {
+    color: var(--navy);
+    font-size: 18px;
+  }
+
+  /* ─── Avantages exclus section ─── */
+  .avantages-section {
+    margin-top: 1.5rem;
+    border: 1px solid var(--hairline);
+    background: var(--surface);
+  }
+  .avantages-section h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--navy);
+    padding: 0.5rem 1.25rem;
+    border-bottom: 1px solid var(--hairline);
+    background: rgba(11,37,69,0.02);
+  }
+  .avantages-detail {
+    padding: 0.5rem 1.25rem;
+    font-size: 12px;
+    color: var(--slate);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.25rem 1rem;
+  }
+  .avantages-detail dt { font-weight: 500; }
+  .avantages-detail dd {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+  .avantages-warning {
+    padding: 0.5rem 1.25rem;
+    font-size: 11px;
+    color: var(--destructive);
+    font-weight: 500;
+    border-top: 1px solid var(--hairline);
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">LE <span>FIDUCIAIRE</span></div>
+  <div class="breadcrumb">Outils <b>Calculateur de paie CNSS</b></div>
+</nav>
+
+<div class="page-header">
+  <h1>Calculateur de paie CNSS</h1>
+  <p>Salaire brut vers net — cotisations CNSS, CSS, IRPP mensuel — régime 40h ou 48h/semaine</p>
+</div>
+
+<div class="calc-grid">
+
+  <!-- ─── INPUTS ─── -->
+  <div class="inputs">
+    <h2>Paramètres</h2>
+    <div class="field">
+      <label>Régime horaire</label>
+      <select>
+        <option>48h/semaine (non agricole)</option>
+        <option>40h/semaine (non agricole)</option>
+        <option>Agricole</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Salaire brut mensuel (DT)</label>
+      <input type="text" value="1 800,000" class="tabular">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Chef de famille</label>
+        <select><option>Non</option><option>Oui</option></select>
+      </div>
+      <div class="field">
+        <label>Enfants à charge</label>
+        <input type="number" value="2">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Étudiants</label>
+        <input type="number" value="0">
+      </div>
+      <div class="field">
+        <label>Infirmes</label>
+        <input type="number" value="0">
+      </div>
+    </div>
+    <div class="field">
+      <label>Période</label>
+      <select><option>Juillet 2025</option></select>
+    </div>
+    <button class="btn-calc">Calculer</button>
+  </div>
+
+  <!-- ─── RESULTS ─── -->
+  <div class="results">
+    <div class="results-header">
+      <h2>Résultat</h2>
+      <span class="regime">Régime 48h — Juillet 2025</span>
+    </div>
+
+    <table class="result-table">
+      <thead>
+        <tr>
+          <th>Élément</th>
+          <th>Montant (DT)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="subtotal">
+          <td>Rémunération brute</td>
+          <td>1 800,000</td>
+        </tr>
+        <tr>
+          <td>Base CNSS</td>
+          <td>1 800,000</td>
+        </tr>
+        <tr class="deduction">
+          <td>Cotisation CNSS (9,42 %)</td>
+          <td>−169,560</td>
+        </tr>
+        <tr>
+          <td>Base fiscale mensuelle</td>
+          <td>1 630,440</td>
+        </tr>
+        <tr>
+          <td>Frais professionnels (10 %)</td>
+          <td>163,044</td>
+        </tr>
+        <tr>
+          <td>Déductions familiales (chef + 2 enf.)</td>
+          <td>300,000</td>
+        </tr>
+        <tr>
+          <td>Assiette imposable nette</td>
+          <td>1 167,396</td>
+        </tr>
+        <tr class="deduction">
+          <td>IRPP mensuel</td>
+          <td>−87,725</td>
+        </tr>
+        <tr class="deduction">
+          <td>CSS mensuelle</td>
+          <td>−23,348</td>
+        </tr>
+        <tr class="net-payer">
+          <td>Net à Payer</td>
+          <td>1 519,367</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ─── AVANTAGES EXCLUS (si applicable) ─── -->
+<div style="max-width:960px; margin: 0 auto 2rem; padding: 0 1.5rem;">
+  <div class="avantages-section">
+    <h3>Avantages exclus — Décret 2003-1098</h3>
+    <dl class="avantages-detail">
+      <dt>Prime rentrée scolaire (Pt 1)</dt><dd>80,000 DT</dd>
+      <dt>Exonéré (plafond individuel)</dt><dd>80,000 DT</dd>
+      <dt>Plafond global 5 % (art. 3)</dt><dd>90,000 DT</dd>
+    </dl>
+    <div class="avantages-warning">
+      ⚠ Réintégration Art.3 : 0,000 DT — conforme au plafond global 5 %.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

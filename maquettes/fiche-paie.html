@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIDUCIAIRE — Fiche de paie (maquette)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0B2545;
+    --navy-mid: #13415C;
+    --gold: #C5973E;
+    --gold-dim: #A07D2F;
+    --paper: #FAF9F7;
+    --ink: #0B1D35;
+    --slate: #5C6B7A;
+    --hairline: #D9DDE3;
+    --surface: #FFFFFF;
+    --success: #1A7A5C;
+    --destructive: #B91C1C;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  /* ─── NAV ─── */
+  nav {
+    background: var(--navy);
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 0 2rem;
+    height: 48px;
+    border-bottom: 2px solid var(--gold);
+  }
+  nav .logo {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  nav .logo span { color: var(--gold); }
+  nav .breadcrumb {
+    margin-left: 1.5rem;
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+  }
+  nav .breadcrumb b { color: rgba(255,255,255,0.85); font-weight: 600; }
+  nav .actions {
+    margin-left: auto;
+    display: flex;
+    gap: 0.5rem;
+  }
+  nav .actions button {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.75rem;
+    border: 1px solid rgba(255,255,255,0.3);
+    background: transparent;
+    color: white;
+    cursor: pointer;
+  }
+  nav .actions button:hover { border-color: var(--gold); color: var(--gold); }
+  nav .actions button.primary {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--navy);
+  }
+
+  /* ─── FICHE DE PAIE — A4 document style ─── */
+  .fiche {
+    max-width: 780px;
+    margin: 1.5rem auto;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    /* Subtle shadow for "document on desk" feel */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  /* ─── Document header ─── */
+  .fiche-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0 1.5rem;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 2px solid var(--navy);
+  }
+  .fiche-header .employer {
+    font-size: 12px;
+  }
+  .fiche-header .employer h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 0.25rem;
+  }
+  .fiche-header .employer .meta {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.15rem 0.5rem;
+    font-size: 11px;
+    color: var(--slate);
+  }
+  .fiche-header .employer .meta dt { font-weight: 500; }
+  .fiche-header .employer .meta dd { font-weight: 400; }
+
+  .fiche-header .doc-title {
+    text-align: right;
+  }
+  .fiche-header .doc-title h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--navy);
+  }
+  .fiche-header .doc-title .period {
+    font-size: 12px;
+    color: var(--slate);
+    font-weight: 500;
+  }
+
+  /* ─── Salarie info strip ─── */
+  .salarie-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border-bottom: 1px solid var(--hairline);
+    font-size: 11px;
+  }
+  .salarie-strip > div {
+    padding: 0.5rem 1.5rem;
+    border-right: 1px solid var(--hairline);
+  }
+  .salarie-strip > div:last-child { border-right: none; }
+  .salarie-strip .label {
+    font-weight: 600;
+    color: var(--slate);
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.1rem;
+  }
+  .salarie-strip .value {
+    font-weight: 500;
+  }
+
+  /* ─── Body: two-column gains/deductions ─── */
+  .fiche-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .fiche-body .col {
+    /* No card, no shadow — just a column */
+  }
+  .fiche-body .col:first-child {
+    border-right: 1px solid var(--hairline);
+  }
+  .col-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: white;
+    background: var(--navy);
+    padding: 0.35rem 1.25rem;
+  }
+  .col:first-child .col-title {
+    background: var(--navy);
+  }
+  .col:last-child .col-title {
+    background: var(--navy-mid);
+  }
+
+  .fiche-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .fiche-table th {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--slate);
+    padding: 0.35rem 1.25rem;
+    border-bottom: 1px solid var(--hairline);
+    text-align: left;
+  }
+  .fiche-table th:nth-child(2),
+  .fiche-table th:nth-child(3) { text-align: right; }
+  .fiche-table td {
+    padding: 0.35rem 1.25rem;
+    border-bottom: 1px solid #ECEEF0;
+  }
+  .fiche-table td:nth-child(2),
+  .fiche-table td:nth-child(3) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .fiche-table tr:last-child td { border-bottom: none; }
+  .fiche-table .subtotal td {
+    font-weight: 600;
+    border-top: 1px solid var(--hairline);
+    background: rgba(11,37,69,0.02);
+  }
+  .fiche-table .exonere td:nth-child(2) {
+    color: var(--success);
+    font-weight: 500;
+  }
+  .fiche-table .soumis td:nth-child(3) {
+    font-weight: 600;
+  }
+
+  /* ─── Net à Payer — the single accent moment ─── */
+  .net-payer-bar {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 1rem;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 2px solid var(--gold);
+    background: rgba(197,151,62,0.06);
+    align-items: baseline;
+  }
+  .net-payer-bar .label {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--navy);
+  }
+  .net-payer-bar .amount {
+    font-family: 'Inter', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy);
+    font-variant-numeric: tabular-nums;
+  }
+  .net-payer-bar .unit {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gold-dim);
+  }
+
+  /* ─── Avantages exclus strip ─── */
+  .avantages-strip {
+    padding: 0.5rem 1.5rem;
+    border-bottom: 1px solid var(--hairline);
+    font-size: 11px;
+  }
+  .avantages-strip h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--navy);
+    margin-bottom: 0.25rem;
+  }
+  .avantages-strip table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  .avantages-strip th {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--slate);
+    text-align: left;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .avantages-strip th:nth-child(2),
+  .avantages-strip th:nth-child(3) { text-align: right; }
+  .avantages-strip td {
+    padding: 0.25rem 0;
+    border-bottom: 1px solid #ECEEF0;
+  }
+  .avantages-strip td:nth-child(2),
+  .avantages-strip td:nth-child(3) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ─── Footer mentions ─── */
+  .fiche-footer {
+    padding: 0.5rem 1.5rem;
+    font-size: 10px;
+    color: var(--slate);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .fiche-footer .mentions {
+    border-top: 1px solid var(--hairline);
+    padding-top: 0.35rem;
+  }
+
+  /* ─── Signature zone ─── */
+  .signatures {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    padding: 1.5rem;
+    font-size: 11px;
+    color: var(--slate);
+  }
+  .signatures > div {
+    text-align: center;
+  }
+  .signatures .line {
+    border-top: 1px solid var(--hairline);
+    margin-top: 2rem;
+    padding-top: 0.25rem;
+    font-size: 10px;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">LE <span>FIDUCIAIRE</span></div>
+  <div class="breadcrumb">Outils <b>Fiche de paie</b></div>
+  <div class="actions">
+    <button>Modifier</button>
+    <button class="primary">Télécharger PDF</button>
+  </div>
+</nav>
+
+<div class="fiche">
+
+  <!-- ─── HEADER ─── -->
+  <div class="fiche-header">
+    <div class="employer">
+      <h1>SOCIÉTÉ TUNISIENNE DE CONSEIL SARL</h1>
+      <dl class="meta">
+        <dt>Adresse</dt><dd>12, rue Hédi Nouira, 1000 Tunis</dd>
+        <dt>MF</dt><dd>123456789/A/M/100</dd>
+        <dt>CNSS</dt><dd>200500/004</dd>
+        <dt>RC</dt><dd>B1234567</dd>
+      </dl>
+    </div>
+    <div class="doc-title">
+      <h2>Fiche de paie</h2>
+      <span class="period">Juillet 2025</span>
+    </div>
+  </div>
+
+  <!-- ─── SALARIE ─── -->
+  <div class="salarie-strip">
+    <div>
+      <span class="label">Salarié</span>
+      <span class="value">BEN AHMED Mohamed</span>
+    </div>
+    <div>
+      <span class="label">Poste</span>
+      <span class="value">Comptable senior</span>
+    </div>
+    <div>
+      <span class="label">Catégorie</span>
+      <span class="value">Cadre</span>
+    </div>
+    <div>
+      <span class="label">Embauche</span>
+      <span class="value">01/03/2022</span>
+    </div>
+  </div>
+
+  <!-- ─── BODY: GAINS / DEDUCTIONS ─── -->
+  <div class="fiche-body">
+
+    <!-- GAINS -->
+    <div class="col">
+      <div class="col-title">Gains et exonérations</div>
+      <table class="fiche-table">
+        <thead>
+          <tr>
+            <th>Élément</th>
+            <th>Exonéré</th>
+            <th>Soumis</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Salaire de base</td>
+            <td></td>
+            <td>1 800,000</td>
+          </tr>
+          <tr class="exonere">
+            <td>Prime rentrée scolaire (Pt 1)</td>
+            <td>80,000</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Prime ancienneté</td>
+            <td></td>
+            <td>90,000</td>
+          </tr>
+          <tr>
+            <td>Heures supplémentaires</td>
+            <td></td>
+            <td>54,000</td>
+          </tr>
+          <tr class="subtotal">
+            <td>Total gains</td>
+            <td>80,000</td>
+            <td>1 944,000</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- DEDUCTIONS -->
+    <div class="col">
+      <div class="col-title">Retenues et cotisations</div>
+      <table class="fiche-table">
+        <thead>
+          <tr>
+            <th>Élément</th>
+            <th>Base</th>
+            <th>Montant</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CNSS salariale (9,42 %)</td>
+            <td>1 944,000</td>
+            <td>183,125</td>
+          </tr>
+          <tr>
+            <td>IRPP mensuel</td>
+            <td></td>
+            <td>115,780</td>
+          </tr>
+          <tr>
+            <td>CSS</td>
+            <td></td>
+            <td>28,945</td>
+          </tr>
+          <tr>
+            <td>Retenue avances</td>
+            <td></td>
+            <td>200,000</td>
+          </tr>
+          <tr class="subtotal">
+            <td>Total retenues</td>
+            <td></td>
+            <td>527,850</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ─── NET À PAYER ─── -->
+  <div class="net-payer-bar">
+    <span class="label">Net à Payer</span>
+    <span class="amount tabular">1 496,150</span>
+    <span class="unit">DT</span>
+  </div>
+
+  <!-- ─── AVANTAGES EXCLUS ─── -->
+  <div class="avantages-strip">
+    <h3>Avantages exclus — Décret 2003-1098</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Point</th>
+          <th>Montant déclaré</th>
+          <th>Exonéré</th>
+          <th>Soumis</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1 — Prime rentrée scolaire</td>
+          <td>80,000</td>
+          <td>80,000</td>
+          <td>0,000</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:0.35rem; color: var(--success); font-weight: 500;">
+      Plafond global 5 % (art. 3) : 97,200 DT — conforme
+    </div>
+  </div>
+
+  <!-- ─── MENTIONS LÉGALES ─── -->
+  <div class="fiche-footer">
+    <div class="mentions">
+      <strong>CNSS patronale</strong> : 16,57 % × 1 944,000 = 322,241 DT
+      &nbsp;&nbsp;|&nbsp;&nbsp;
+      <strong>CSS</strong> : 28,945 DT
+    </div>
+    <div class="mentions" style="text-align:right">
+      Mode de paiement : Virement bancaire — BIAT, RIB 0201 0123 4567 890
+    </div>
+  </div>
+
+  <!-- ─── SIGNATURES ─── -->
+  <div class="signatures">
+    <div>
+      <strong>Employeur</strong>
+      <div class="line">Signature et cachet</div>
+    </div>
+    <div>
+      <strong>Salarié</strong>
+      <div class="line">Lu et approuvé</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

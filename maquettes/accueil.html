@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIDUCIAIRE — Accueil (maquette)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0B2545;
+    --navy-mid: #13415C;
+    --gold: #C5973E;
+    --gold-dim: #A07D2F;
+    --paper: #FAF9F7;
+    --ink: #0B1D35;
+    --slate: #5C6B7A;
+    --hairline: #D9DDE3;
+    --surface: #FFFFFF;
+    --success: #1A7A5C;
+    --destructive: #B91C1C;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .font-heading {
+    font-family: 'Montserrat', 'Inter', sans-serif;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    background: var(--navy);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    height: 48px;
+    border-bottom: 2px solid var(--gold);
+  }
+  nav .logo {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  nav .logo span { color: var(--gold); }
+  nav .links {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  nav .links a {
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 1px;
+  }
+  nav .links a:hover {
+    color: white;
+    border-bottom-color: var(--gold);
+  }
+
+  /* ─── HERO — compact, not a marketing SaaS splash ─── */
+  .hero {
+    background: var(--navy);
+    color: white;
+    padding: 2.5rem 2rem 2rem;
+    border-bottom: 2px solid var(--gold);
+  }
+  .hero-inner {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .hero h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.5rem;
+  }
+  .hero h1 .gold { color: var(--gold); }
+  .hero p {
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+    max-width: 540px;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+  }
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--gold);
+    color: var(--navy);
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.5rem 1.25rem;
+    border: none;
+    cursor: pointer;
+  }
+  .hero-cta:hover { background: #D4A84A; }
+
+  /* ─── TOOLS — table, not cards ─── */
+  .section {
+    max-width: 720px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+  }
+  .section-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--navy);
+  }
+
+  .tools-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .tools-table th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--slate);
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .tools-table th:last-child { text-align: right; }
+  .tools-table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--hairline);
+    vertical-align: top;
+  }
+  .tools-table tr:last-child td { border-bottom: none; }
+  .tools-table td.tool-name {
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .tools-table td.tool-desc {
+    color: var(--slate);
+    font-size: 12px;
+  }
+  .tools-table td.tool-tag {
+    text-align: right;
+  }
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.4rem;
+    border: 1px solid var(--hairline);
+    color: var(--slate);
+    background: white;
+  }
+  .tag--gold {
+    border-color: var(--gold-dim);
+    color: var(--gold-dim);
+    background: rgba(197,151,62,0.06);
+  }
+  .tag--navy {
+    border-color: var(--navy-mid);
+    color: var(--navy-mid);
+    background: rgba(11,37,69,0.05);
+  }
+
+  .tools-table tr:hover td { background: rgba(11,37,69,0.02); }
+  .tools-table a {
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .tools-table a:hover .tool-name { color: var(--navy-mid); }
+
+  /* ─── BARÈME — dense data strip ─── */
+  .bareme-strip {
+    max-width: 720px;
+    margin: 1.5rem auto 0;
+    padding: 0 2rem;
+  }
+  .bareme-inner {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    padding: 1rem 1.25rem;
+  }
+  .bareme-inner h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--navy);
+    margin-bottom: 0.5rem;
+  }
+  .bareme-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.75rem;
+    font-size: 11px;
+  }
+  .bareme-grid dt {
+    color: var(--slate);
+    font-weight: 500;
+  }
+  .bareme-grid dd {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+
+  /* ─── FOOTER ─── */
+  footer {
+    max-width: 720px;
+    margin: 3rem auto 0;
+    padding: 0 2rem 2rem;
+    font-size: 11px;
+    color: var(--slate);
+    border-top: 1px solid var(--hairline);
+    padding-top: 1rem;
+  }
+  footer a { color: var(--navy-mid); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">LE <span>FIDUCIAIRE</span></div>
+  <div class="links">
+    <a href="#">Calcul salaire</a>
+    <a href="#">Fiche de paie</a>
+    <a href="#">IRPP</a>
+    <a href="#">Déclarations CNSS</a>
+    <a href="#">Référentiel</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <h1>Calculs de paie <span class="gold">&amp;</span> déclarations sociales tunisiennes</h1>
+    <p>Applique les barèmes CNSS, IRPP et CSS officiels. Produit les fiches de paie, déclarations néant, états I3/I16 et fichiers TXT 122 caractères — conformément à la réglementation tunisienne en vigueur.</p>
+    <button class="hero-cta">Ouvrir les outils</button>
+  </div>
+</section>
+
+<section class="section">
+  <h2 class="section-title">Outils de calcul</h2>
+  <table class="tools-table">
+    <thead>
+      <tr>
+        <th style="width:28%">Outil</th>
+        <th style="width:47%">Description</th>
+        <th style="width:25%">Catégorie</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="tool-name"><a href="calculateur.html">Calculateur de paie CNSS</a></td>
+        <td class="tool-desc">Salaire brut → net. Cotisations CNSS, CSS, IRPP mensuel. Régime 40h/48h.</td>
+        <td class="tool-tag"><span class="tag tag--navy">Paie</span></td>
+      </tr>
+      <tr>
+        <td class="tool-name"><a href="fiche-paie.html">Générateur de fiche de paie</a></td>
+        <td class="tool-desc">Fiche complète avec ventilations exonéré/soumis, avantages exclus (Décret 2003-1098), export PDF.</td>
+        <td class="tool-tag"><span class="tag tag--navy">Paie</span></td>
+      </tr>
+      <tr>
+        <td class="tool-name">Impôt sur le revenu (IRPP)</a></td>
+        <td class="tool-desc">Barème progressif 2025. Tranches, déductions familiales, frais professionnels.</td>
+        <td class="tool-tag"><span class="tag tag--gold">Fiscal</span></td>
+      </tr>
+      <tr>
+        <td class="tool-name">Estimer sa retraite CNSS</td>
+        <td class="tool-desc">Pension de retraite selon salaires actualisés, durée de cotisation et taux de remplacement.</td>
+        <td class="tool-tag"><span class="tag tag--gold">Social</span></td>
+      </tr>
+      <tr>
+        <td class="tool-name">Déclarations CNSS (I3 + I16)</td>
+        <td class="tool-desc">Génération des états I3 et bordereaux I16, import/export CSV, fichier TXT 122 caractères.</td>
+        <td class="tool-tag"><span class="tag">Déclaration</span></td>
+      </tr>
+      <tr>
+        <td class="tool-name">Référentiel légal (Décret 2003-1098)</td>
+        <td class="tool-desc">Les 24 points d'avantages exclus de l'assiette CNSS. Plafonds SMIG, conditions, simulateur.</td>
+        <td class="tool-tag"><span class="tag">Référentiel</span></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="bareme-strip">
+  <div class="bareme-inner">
+    <h3>Barèmes en vigueur — 2025/2026</h3>
+    <dl class="bareme-grid">
+      <div><dt>SMIG 48h</dt><dd>554,736 DT</dd></div>
+      <div><dt>SMIG 40h</dt><dd>461,947 DT</dd></div>
+      <div><dt>Taux CNSS</dt><dd>9,42 %</dd></div>
+      <div><dt>Plafond CNSS</dt><dd>6 × SMIG</dd></div>
+      <div><dt>IRPP min</dt><dd>5 000 DT/an</dd></div>
+    </dl>
+  </div>
+</section>
+
+<footer>
+  Outil gratuit, sans inscription, sans envoi de données. Barèmes sourcés du Journal Officiel de la République Tunisienne. — <a href="#">Mentions</a>
+</footer>
+
+</body>
+</html>
