@@ -437,7 +437,7 @@ export default function GenerateurFichePaie() {
 
               <div className="space-y-3">
                 {elements.map((el) => (
-                  <div key={el.id} className="flex items-end gap-2 p-3 bg-gray-50 rounded-lg">
+                  <div key={el.id} className="flex items-end gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                     <div className="w-40">
                       <Label className="text-xs mb-1 block">Type</Label>
                       <Select value={el.type} onValueChange={(v) => modifierElement(el.id, { type: v as PayrollItemType })}>
@@ -534,7 +534,7 @@ export default function GenerateurFichePaie() {
                 </Button>
               </div>
 
-              <div className="p-4 bg-gray-50 rounded-lg space-y-3">
+              <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase">Ajouts rapides</p>
                 <div className="flex flex-wrap gap-2">
                   <Button

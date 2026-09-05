@@ -225,7 +225,7 @@ export default function About() {
               Pour toute question ou suggestion concernant LE FIDUCIAIRE, n'hésitez pas à nous contacter.
             </p>
             <Link href="/">
-              <Button className=" text-white font-semibold py-3 px-8">
+              <Button className="font-semibold py-3 px-8">
                 Retour aux Calculateurs
               </Button>
             </Link>
