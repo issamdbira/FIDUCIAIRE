@@ -14,12 +14,15 @@
 import { calculerCotisationCNSS, calculerCSSAnnuelle } from "./cnss";
 import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "./irpp";
 import { getPayrollConfig } from "./config";
-import { controlerPlafondGlobal5pct } from "./avantages-exclus";
+import { controlerPlafondGlobal5pct, traiterAvantageDeclare, estPointDuDecret } from "./avantages-exclus";
 import type { PayrollInput, PayrollItem, PayrollResult } from "./types";
 
 function estCalculable(item: PayrollItem): boolean {
   return item.traitement !== "en_attente_de_regle";
 }
+
+/** Alias local pour lisibilité dans le corps du moteur. */
+const estPointDuDecretLocal = estPointDuDecret;
 
 /**
  * Détermine la part d'un élément soumise à la base CNSS.
@@ -72,17 +75,25 @@ export function runPayrollEngine(input: PayrollInput): PayrollResult {
 
   // ── Plafond global 5% des avantages exclus (art. 3 du décret 2003-1098) ──
   let plafondGlobalAvantages: PayrollResult["plafondGlobalAvantages"];
-  if (avantagesExclus && avantagesExclus.length > 0 && totalRemunerationBrute > 0) {
-    const resultatCap = controlerPlafondGlobal5pct(avantagesExclus, totalRemunerationBrute);
-    plafondGlobalAvantages = {
-      totalAvantagesSoumisAuCap: resultatCap.totalAvantagesSoumisAuCap,
-      plafondAutorise: resultatCap.plafondAutorise,
-      depassement: resultatCap.depassement,
-      montantReintegre: resultatCap.montantReintegre,
-    };
-    // En cas de dépassement, le montant excédentaire est réintégré dans la base CNSS
-    if (resultatCap.depassement > 0) {
-      baseCNSS += resultatCap.montantReintegre;
+  let avantagesExclusDetail: PayrollResult["avantagesExclusDetail"] = [];
+  if (avantagesExclus && avantagesExclus.length > 0) {
+    // Traiter chaque avantage déclaré : validation du numéro de point
+    avantagesExclusDetail = avantagesExclus.map(traiterAvantageDeclare);
+
+    // Ne contrôler le plafond 5% que sur les avantages à numéro valide
+    const avantagesValides = avantagesExclus.filter((a) => estPointDuDecretLocal(a.numero));
+    if (avantagesValides.length > 0 && totalRemunerationBrute > 0) {
+      const resultatCap = controlerPlafondGlobal5pct(avantagesValides, totalRemunerationBrute);
+      plafondGlobalAvantages = {
+        totalAvantagesSoumisAuCap: resultatCap.totalAvantagesSoumisAuCap,
+        plafondAutorise: resultatCap.plafondAutorise,
+        depassement: resultatCap.depassement,
+        montantReintegre: resultatCap.montantReintegre,
+      };
+      // En cas de dépassement, le montant excédentaire est réintégré dans la base CNSS
+      if (resultatCap.depassement > 0) {
+        baseCNSS += resultatCap.montantReintegre;
+      }
     }
   }
   const config = getPayrollConfig();
@@ -140,6 +151,7 @@ export function runPayrollEngine(input: PayrollInput): PayrollResult {
     netAPayer: round2(netAPayer),
     elementsEnAttente,
     plafondGlobalAvantages,
+    avantagesExclusDetail,
   };
 }
 

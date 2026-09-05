@@ -22,7 +22,7 @@
  * formule calculable.
  */
 
-import { POINTS_AVANTAGES_SMIG, calculerPlafondUnitaire } from "./avantages-exclus";
+import { POINTS_AVANTAGES_SMIG, POINTS_AVANTAGES_QUALITATIF, calculerPlafondUnitaire } from "./avantages-exclus";
 
 export interface BenefitRule {
   /** Identifiant unique, ex: "voiture_fonction" */
@@ -43,31 +43,52 @@ export interface BenefitRule {
 
 /**
  * Registre des règles d'avantages validées.
- * Les 9 entrées "avantage_point_N" sont plafonnées (pas une exonération à
+ * Les 9 entrées "avantage_point_N" (SMIG) sont plafonnées (pas une exonération à
  * taux fixe) — leur calcul exact (part exonérée vs soumise selon le nombre
  * de bénéficiaires et la date) doit passer par `simulerAvantage()` dans
  * avantages-exclus.ts, pas par ce `valoriser()` simplifié. Ce registre sert
  * ici surtout à documenter QUELS points sont validés (source citée), la
  * page /referentiel-avantages-exclus et le générateur de fiche de paie
  * utilisent directement le moteur dédié pour le calcul réel.
+ *
+ * Les 15 entrées "avantage_qualitatif_N" correspondent aux points du décret
+ * dont l'exclusion est conditionnelle (pas de plafond SMIG calculable).
+ * L'employeur déclare le montant manuellement, l'exonération est totale
+ * sous réserve que la condition légale soit respectée.
  */
-export const BENEFIT_RULES: Record<string, BenefitRule> = Object.fromEntries(
-  POINTS_AVANTAGES_SMIG.map((point) => [
-    `avantage_point_${point.numero}`,
-    {
-      id: `avantage_point_${point.numero}`,
-      label: point.titre,
-      donneesRequises: ["nombre", "montantUnitaire", "dateVersement"],
-      // Valorisation simplifiée (plafond unitaire à la date du jour) — pour le calcul
-      // exact avec le nombre de bénéficiaires et la répartition exonéré/soumis,
-      // utiliser simulerAvantage() de avantages-exclus.ts.
-      valoriser: () => calculerPlafondUnitaire(point, new Date()),
-      tauxSoumisCNSS: 0, // non pertinent ici : la part soumise dépend du dépassement du plafond, pas d'un taux fixe
-      tauxSoumisIRPP: 0,
-      source: "Décret n° 2003-1098 du 19 mai 2003, point " + point.numero + " — plafonds datés (note administrative CNSS)",
-    } satisfies BenefitRule,
-  ])
-);
+export const BENEFIT_RULES: Record<string, BenefitRule> = {
+  ...Object.fromEntries(
+    POINTS_AVANTAGES_SMIG.map((point) => [
+      `avantage_point_${point.numero}`,
+      {
+        id: `avantage_point_${point.numero}`,
+        label: point.titre,
+        donneesRequises: ["nombre", "montantUnitaire", "dateVersement"],
+        // Valorisation simplifiée (plafond unitaire à la date du jour) — pour le calcul
+        // exact avec le nombre de bénéficiaires et la répartition exonéré/soumis,
+        // utiliser simulerAvantage() de avantages-exclus.ts.
+        valoriser: () => calculerPlafondUnitaire(point, new Date()),
+        tauxSoumisCNSS: 0, // non pertinent ici : la part soumise dépend du dépassement du plafond, pas d'un taux fixe
+        tauxSoumisIRPP: 0,
+        source: "Décret n° 2003-1098 du 19 mai 2003, point " + point.numero + " — plafonds datés (note administrative CNSS)",
+      } satisfies BenefitRule,
+    ])
+  ),
+  ...Object.fromEntries(
+    POINTS_AVANTAGES_QUALITATIF.map((point) => [
+      `avantage_qualitatif_${point.numero}`,
+      {
+        id: `avantage_qualitatif_${point.numero}`,
+        label: point.titre,
+        donneesRequises: ["montantDeclare", "conditionConfirmee"],
+        valoriser: (donnees: Record<string, number>) => donnees["montantDeclare"] ?? 0,
+        tauxSoumisCNSS: 0, // Exonéré sous réserve de respect de la condition légale
+        tauxSoumisIRPP: 0,
+        source: "Décret n° 2003-1098 du 19 mai 2003, point " + point.numero + " — exclusion conditionnelle (" + (point.horsPlafond5pct ? "hors" : "soumis") + " plafond 5%)",
+      } satisfies BenefitRule,
+    ])
+  ),
+};
 
 export function getRuleForBenefitType(id: string): BenefitRule | undefined {
   return BENEFIT_RULES[id];

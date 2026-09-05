@@ -108,4 +108,14 @@ export interface PayrollResult {
     depassement: number;
     montantReintegre: number;
   };
+  // Détail de chaque avantage exclu déclaré (type, validité, condition)
+  avantagesExclusDetail?: {
+    numero: number;
+    montantDeclare: number;
+    type: "smig" | "qualitatif" | "inconnu";
+    titre?: string;
+    condition?: string;
+    horsPlafond5pct: boolean;
+    valide: boolean;
+  }[];
 }

@@ -175,6 +175,70 @@ export function estHorsPlafond5pct(numero: number): boolean {
   return NUMEROS_HORS_PLAFOND_5PCT.has(numero);
 }
 
+// ─── Traitement unifié des avantages déclarés ──────────────────────
+
+export type TypeAvantage = "smig" | "qualitatif" | "inconnu";
+
+export interface ResultatAvantageDeclare {
+  /** Numéro du point du décret */
+  numero: number;
+  /** Montant déclaré par l'employeur */
+  montantDeclare: number;
+  /** Type détecté : SMIG (plafond calculable), qualitatif (condition), inconnu */
+  type: TypeAvantage;
+  /** Titre du point (undefined si inconnu) */
+  titre?: string;
+  /** Condition légale à respecter (uniquement pour les points qualitatifs) */
+  condition?: string;
+  /** true si ce point est exclu du plafond global 5% (art. 3) */
+  horsPlafond5pct: boolean;
+  /** true si le numéro correspond à un point valide du décret */
+  valide: boolean;
+}
+
+/**
+ * Traite un avantage exclu déclaré par l'employeur.
+ * Identifie le type (SMIG / qualitatif / inconnu), vérifie la validité
+ * du numéro de point, et retourne les informations nécessaires au moteur.
+ */
+export function traiterAvantageDeclare(
+  avantage: { numero: number; montant: number }
+): ResultatAvantageDeclare {
+  const pointSMIG = getPointAvantageSMIG(avantage.numero);
+  if (pointSMIG) {
+    return {
+      numero: avantage.numero,
+      montantDeclare: avantage.montant,
+      type: "smig",
+      titre: pointSMIG.titre,
+      horsPlafond5pct: false, // Les points SMIG sont tous soumis au plafond 5%
+      valide: true,
+    };
+  }
+
+  const pointQualitatif = getPointAvantageQualitatif(avantage.numero);
+  if (pointQualitatif) {
+    return {
+      numero: avantage.numero,
+      montantDeclare: avantage.montant,
+      type: "qualitatif",
+      titre: pointQualitatif.titre,
+      condition: pointQualitatif.condition,
+      horsPlafond5pct: pointQualitatif.horsPlafond5pct,
+      valide: true,
+    };
+  }
+
+  // Numéro inconnu — n'appartient à aucun des 24 points du décret
+  return {
+    numero: avantage.numero,
+    montantDeclare: avantage.montant,
+    type: "inconnu",
+    horsPlafond5pct: false,
+    valide: false,
+  };
+}
+
 // ─── Calcul des plafonds SMIG ───────────────────────────────────────
 
 /** Calcule le plafond d'exonération UNITAIRE (par bénéficiaire/repas/km) pour une date donnée. */
