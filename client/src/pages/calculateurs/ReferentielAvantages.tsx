@@ -11,6 +11,7 @@ import { ArrowLeft, Calculator, Search } from "lucide-react";
 import { Link } from "wouter";
 import { getPointAvantageSMIG, simulerAvantage } from "@/lib/payroll/avantages-exclus";
 import { formatMontantDT } from "@/lib/utils";
+import BackToTools from "@/components/BackToTools";
 
 /**
  * Référentiel des avantages exclus de l'assiette des cotisations sociales
@@ -350,6 +351,7 @@ export default function ReferentielAvantages() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
+          <BackToTools />
           <h2
             className="text-2xl font-bold text-foreground mb-1"
             style={{ fontFamily: "Montserrat, sans-serif" }}

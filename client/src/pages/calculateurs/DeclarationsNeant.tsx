@@ -30,6 +30,7 @@ import {
   degrees,
 } from "pdf-lib";
 import type { PDFFont } from "pdf-lib";
+import BackToTools from "@/components/BackToTools";
 
 // ── Zod Schema ──
 const neantItemSchema = z.object({
@@ -351,6 +352,7 @@ export default function DeclarationsNeant() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
+      <BackToTools />
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-foreground mb-1" style={{ fontFamily: "Montserrat, sans-serif" }}>

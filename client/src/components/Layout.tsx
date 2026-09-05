@@ -77,7 +77,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen overflow-x-hidden max-w-[100vw]">
       {/* ─── Top Navbar ─── */}
       <nav className="sticky top-0 z-50 h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto flex h-full items-center justify-between px-4">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeftRight } from "lucide-react";
+import BackToTools from "@/components/BackToTools";
 import { runPayrollEngine } from "@/lib/payroll/engine";
 import { trouverBrutPourNet } from "@/lib/payroll/netToBrut";
 import type { PayrollResult } from "@/lib/payroll/types";
@@ -55,8 +56,15 @@ export default function CalculerSalaire() {
     }
   };
 
+  // Calcul automatique au chargement avec les valeurs par défaut
+  useEffect(() => {
+    calculer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="max-w-5xl mx-auto py-8 px-4">
+      <BackToTools />
       <h2
         className="text-2xl font-bold text-foreground mb-1"
         style={{ fontFamily: "Montserrat, sans-serif" }}

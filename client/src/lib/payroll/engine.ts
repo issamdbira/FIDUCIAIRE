@@ -48,7 +48,7 @@ function documenterElement(item: PayrollItem): PayrollItem {
       inclusDansBrut: false,
       inclusBaseCNSS: false,
       inclusBaseFiscale: false,
-      regleAppliquee: "aucune (en attente de validation)",
+      regleAppliquee: "non applicable (traitement en attente)",
     };
   }
   const inclusCNSS = item.traitement === "standard";

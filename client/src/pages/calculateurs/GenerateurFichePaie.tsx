@@ -17,6 +17,7 @@ import { POINTS_AVANTAGES_SMIG, POINTS_AVANTAGES_QUALITATIF, simulerAvantage, es
 import type { Employeur, PayrollItem, PayrollItemType, PayrollResult, Salarie } from "@/lib/payroll/types";
 import { formatMontantDT } from "@/lib/utils";
 import { validerMontantSalaire } from "@/lib/validation-salaire";
+import BackToTools from "@/components/BackToTools";
 
 /**
  * Générateur de fiche de paie — MVP (couches 2 et 3).
@@ -183,6 +184,7 @@ export default function GenerateurFichePaie() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
+          <BackToTools />
           <h2
             className="text-2xl font-bold text-foreground mb-1"
             style={{ fontFamily: "Montserrat, sans-serif" }}
@@ -683,7 +685,6 @@ export default function GenerateurFichePaie() {
                     {elements.map((e) => (
                       <li key={e.id}>
                         {e.label} — {e.type === "absence" || e.type === "retenue" ? "-" : ""}{e.montant} D
-                        {e.type === "avantage" && <span className="text-warning"> (en attente de règle validée)</span>}
                       </li>
                     ))}
                   </ul>
@@ -802,7 +803,7 @@ export default function GenerateurFichePaie() {
 
               {resultat.elementsEnAttente.length > 0 && (
                 <div className="p-4 bg-warning/10 border border-warning/25 rounded-lg text-sm">
-                  <strong>Éléments non calculés (règle en attente de validation) :</strong>
+                  <strong>Éléments non calculés (traitement en attente) :</strong>
                   <ul className="list-disc list-inside mt-1">
                     {resultat.elementsEnAttente.map((e) => (
                       <li key={e.id}>

@@ -9,6 +9,7 @@ import { construireNomFichier, telechargerTexte } from "@/lib/cnss-declarations/
 import { importerCSV, importerExcel, regenererApercu } from "@/lib/cnss-declarations/import";
 import { telechargerZipDeclarations } from "@/lib/cnss-declarations/zip";
 import type { DeclarationCNSS, EmployeurCNSS, SalarieCNSS } from "@/lib/cnss-declarations/types";
+import BackToTools from "@/components/BackToTools";
 
 /**
  * Générateur de déclarations CNSS trimestrielles (fichiers TXT 122 caractères).
@@ -126,6 +127,7 @@ export default function DeclarationsCNSS() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
+      <BackToTools />
       <div className="flex justify-between items-start mb-6">
         <div>
           <h2

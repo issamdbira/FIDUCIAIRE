@@ -6,6 +6,7 @@ import { Link } from "wouter";
 import { testerFichierTXT } from "@/lib/cnss-declarations/tester";
 import type { TesteurResult } from "@/lib/cnss-declarations/types";
 import { formatMontantDT } from "@/lib/utils";
+import BackToTools from "@/components/BackToTools";
 
 /**
  * Testeur de fichiers TXT CNSS (validation du format 122 caractères/ligne).
@@ -27,6 +28,7 @@ export default function TesteurTXT() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
+      <BackToTools />
       <h2
         className="text-2xl font-bold text-foreground mb-1"
         style={{ fontFamily: "Montserrat, sans-serif" }}

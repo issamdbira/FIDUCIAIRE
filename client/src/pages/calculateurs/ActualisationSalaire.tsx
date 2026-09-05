@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { getSmigPourAnnee } from "@/lib/payroll/cnss";
 import { COEFFICIENTS_ACTUALISATION, getCoefficientActualisation } from "@/lib/payroll/coefficients-actualisation";
 import { formatMontantDT } from "@/lib/utils";
 import { validerMontantSalaire } from "@/lib/validation-salaire";
+import BackToTools from "@/components/BackToTools";
 
 /**
  * Calculateur d'actualisation des salaires CNSS
@@ -47,8 +48,15 @@ export default function ActualisationSalaire() {
     });
   };
 
+  // Calcul automatique au chargement avec les valeurs par défaut
+  useEffect(() => {
+    handleCalculer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="max-w-5xl mx-auto py-8 px-4">
+      <BackToTools />
       <h2
         className="text-2xl font-bold text-foreground mb-1"
         style={{ fontFamily: "Montserrat, sans-serif" }}

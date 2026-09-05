@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Search, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import { useState, useMemo } from "react";
+import BackToTools from "@/components/BackToTools";
 
 /* ─── Types & Data ─── */
 
@@ -135,6 +136,7 @@ export default function FormulairesCNSS() {
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
+      <BackToTools />
       {/* ─── H1 SEO ─── */}
       <h1
         className="text-2xl font-bold text-foreground mb-1"

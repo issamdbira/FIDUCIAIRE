@@ -19,7 +19,7 @@ import { CONFIG_PAR_DEFAUT, getPayrollConfig, reinitialiserPayrollConfig, setPay
  * dans sessionStorage pour éviter de re-saisir le mot de passe à chaque
  * navigation. ATTENTION : cette protection est côté client uniquement —
  * le code source et le mot de passe sont accessibles dans le navigateur.
- * Ce mécanisme empê che l'accès accidentel, pas un attaquant déterminé.
+ * Ce mécanisme empêche l'accès accidentel, pas un attaquant déterminé.
  */
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "fiduciaire2026";
@@ -146,7 +146,7 @@ function AdminPanel() {
           <Link href="/">
             <Button variant="ghost" className="gap-2 text-primary">
               <ArrowLeft className="w-4 h-4" />
-              Retour
+              Retour aux outils
             </Button>
           </Link>
           <div className="flex gap-2">
