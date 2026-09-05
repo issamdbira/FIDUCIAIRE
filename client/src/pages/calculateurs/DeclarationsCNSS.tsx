@@ -207,7 +207,7 @@ export default function DeclarationsCNSS() {
             <div className="flex gap-4">
               <div>
                 <Label className="text-xs mb-1 block">Trimestre</Label>
-                <select className="border rounded px-3 py-2 text-sm" value={trimestre} onChange={(e) => setTrimestre(e.target.value)}>
+                <select className="border border-border rounded px-3 py-2 text-sm bg-background text-foreground" value={trimestre} onChange={(e) => setTrimestre(e.target.value)}>
                   <option value="1">T1</option>
                   <option value="2">T2</option>
                   <option value="3">T3</option>
@@ -304,7 +304,7 @@ export default function DeclarationsCNSS() {
                           {decl.errorsList.map((e, i) => <div key={i}>{e}</div>)}
                         </div>
                       )}
-                      <pre className="bg-muted text-success text-xs p-3 rounded overflow-x-auto">{decl.txtPreview}</pre>
+                      <pre className="bg-muted text-foreground text-xs p-3 rounded overflow-x-auto">{decl.txtPreview}</pre>
                       <div className="flex gap-2">
                         <Button size="sm" onClick={() => telechargerTexte(decl.txtPreview, decl.generatedFilename)}>Télécharger TXT</Button>
                         <Button size="sm" variant="ghost" className="text-destructive" onClick={() => supprimerDeclaration(idx)}>Supprimer</Button>

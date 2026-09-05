@@ -758,7 +758,7 @@ export default function GenerateurFichePaie() {
                 </div>
               )}
 
-              <div className="flex justify-between items-center py-4 bg-gradient-to-r  px-4 rounded-lg">
+              <div className="flex justify-between items-center py-4 bg-primary/5 px-4 rounded-lg">
                 <span className="text-lg font-bold text-foreground">Net à Payer</span>
                 <span className="text-2xl font-bold text-primary">{formatMontantDT(resultat.netAPayer)}</span>
               </div>
