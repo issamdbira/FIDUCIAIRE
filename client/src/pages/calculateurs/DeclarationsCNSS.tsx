@@ -304,7 +304,7 @@ export default function DeclarationsCNSS() {
                           {decl.errorsList.map((e, i) => <div key={i}>{e}</div>)}
                         </div>
                       )}
-                      <pre className="bg-gray-900 text-green-400 text-xs p-3 rounded overflow-x-auto">{decl.txtPreview}</pre>
+                      <pre className="bg-gray-900 dark:bg-gray-950 text-green-400 dark:text-green-300 text-xs p-3 rounded overflow-x-auto">{decl.txtPreview}</pre>
                       <div className="flex gap-2">
                         <Button size="sm" onClick={() => telechargerTexte(decl.txtPreview, decl.generatedFilename)}>Télécharger TXT</Button>
                         <Button size="sm" variant="ghost" className="text-destructive" onClick={() => supprimerDeclaration(idx)}>Supprimer</Button>

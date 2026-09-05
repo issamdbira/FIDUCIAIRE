@@ -234,20 +234,20 @@ export default function About() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-blue-900 text-white py-8 mt-12">
+      <footer className="bg-blue-900 dark:bg-blue-950 text-white py-8 mt-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-blue-100">
+            <p className="text-blue-100 dark:text-blue-200">
               © 2026 LE FIDUCIAIRE. Tous droits réservés.
             </p>
             <div className="flex gap-6 mt-4 md:mt-0">
-              <a href="#" className="text-blue-100 hover:text-white transition-colors">
+              <a href="#" className="text-blue-100 dark:text-blue-200 hover:text-white transition-colors">
                 Mentions légales
               </a>
-              <a href="#" className="text-blue-100 hover:text-white transition-colors">
+              <a href="#" className="text-blue-100 dark:text-blue-200 hover:text-white transition-colors">
                 Confidentialité
               </a>
-              <a href="#" className="text-blue-100 hover:text-white transition-colors">
+              <a href="#" className="text-blue-100 dark:text-blue-200 hover:text-white transition-colors">
                 Contact
               </a>
             </div>
