@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Lock, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
 import { Link } from "wouter";
 import { CONFIG_PAR_DEFAUT, getPayrollConfig, reinitialiserPayrollConfig, setPayrollConfig, type PayrollConfig } from "@/lib/payroll/config";
 
@@ -14,11 +14,94 @@ import { CONFIG_PAR_DEFAUT, getPayrollConfig, reinitialiserPayrollConfig, setPay
  * paie, PaieCNSS, IRPP) lisent leurs taux/barèmes/déductions depuis cette
  * configuration unique (lib/payroll/config.ts), stockée localement.
  *
- * ATTENTION : accessible sans authentification pour le MVP (traitement
- * 100% local, pas de compte utilisateur) — à protéger si le site évolue
- * vers un usage multi-utilisateurs.
+ * Sécurité client-side : l'accès est protégé par un mot de passe configurable
+ * via VITE_ADMIN_PASSWORD (variable d'environnement). La session est conservée
+ * dans sessionStorage pour éviter de re-saisir le mot de passe à chaque
+ * navigation. ATTENTION : cette protection est côté client uniquement —
+ * le code source et le mot de passe sont accessibles dans le navigateur.
+ * Ce mécanisme empê che l'accès accidentel, pas un attaquant déterminé.
  */
+
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "fiduciaire2026";
+const SESSION_KEY = "fiduciaire_admin_auth";
+
+function isAdminAuthenticated(): boolean {
+  try {
+    return sessionStorage.getItem(SESSION_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function authenticateAdmin(): void {
+  try {
+    sessionStorage.setItem(SESSION_KEY, "true");
+  } catch {
+    // sessionStorage indisponible
+  }
+}
+
+function AdminLogin({ onAuth }: { onAuth: () => void }) {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === ADMIN_PASSWORD) {
+      authenticateAdmin();
+      onAuth();
+    } else {
+      setError(true);
+    }
+  };
+
+  return (
+    <div className="max-w-sm mx-auto py-20 px-4">
+      <Card className="p-8 rounded-lg shadow-sm border border-border bg-card">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <Lock className="h-5 w-5 text-primary" />
+          </div>
+          <h1 className="text-xl font-bold text-primary" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            Accès administrateur
+          </h1>
+        </div>
+        <p className="text-sm text-muted-foreground mb-6">
+          Ce panneau permet de modifier les paramètres du moteur de paie.
+          L'accès est restreint pour éviter les modifications accidentelles.
+        </p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="admin-pwd">Mot de passe</Label>
+            <Input
+              id="admin-pwd"
+              type="password"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setError(false); }}
+              placeholder="Entrez le mot de passe"
+              className="mt-1"
+            />
+            {error && <p className="text-xs text-destructive mt-1">Mot de passe incorrect</p>}
+          </div>
+          <Button type="submit" className="w-full gap-2">
+            <Lock className="w-4 h-4" /> Connexion
+          </Button>
+        </form>
+      </Card>
+    </div>
+  );
+}
 export default function Admin() {
+  const [authed, setAuthed] = useState(isAdminAuthenticated);
+
+  if (!authed) {
+    return <AdminLogin onAuth={() => setAuthed(true)} />;
+  }
+
+  return <AdminPanel />;
+}
+
+function AdminPanel() {
   const [config, setConfig] = useState<PayrollConfig>(CONFIG_PAR_DEFAUT);
   const [sauvegarde, setSauvegarde] = useState(false);
 

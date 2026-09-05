@@ -131,6 +131,16 @@ NEVER use external map libraries or request API keys from users - the Manus prox
 - [ ] UI layout and navigation structure correct, all image src valid.
 - [ ] Success + error paths verified in the browser
 
+## 🔐 Variables d'environnement
+
+| Variable | Description | Défaut |
+|----------|-------------|--------|
+| `VITE_ADMIN_PASSWORD` | Mot de passe d'accès au panneau `/admin` | `fiduciaire2026` |
+
+> **Note de sécurité** : la protection du panneau admin est côté client uniquement
+> (sessionStorage). Le mot de passe est lisible dans le code source du navigateur.
+> Ce mécanisme empêche l'accès accidentel, pas un attaquant déterminé.
+
 ---
 
 ## Core File References
