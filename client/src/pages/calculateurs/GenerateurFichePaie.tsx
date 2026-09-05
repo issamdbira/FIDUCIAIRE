@@ -197,8 +197,8 @@ export default function GenerateurFichePaie() {
                   i === etape
                     ? "bg-primary text-primary-foreground"
                     : i < etape
-                    ? "bg-blue-100 text-blue-700"
-                    : "bg-muted text-gray-400"
+                    ? "bg-primary/10 text-primary"
+                    : "bg-muted text-muted-foreground"
                 }`}
               >
                 {i + 1}. {label}
@@ -269,7 +269,7 @@ export default function GenerateurFichePaie() {
                   {employeur.logoDataUrl && (
                     <img src={employeur.logoDataUrl} alt="Logo" className="h-16 w-16 object-contain border border-border rounded" />
                   )}
-                  <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-blue-300 rounded-lg cursor-pointer text-blue-700 hover:bg-primary/5">
+                  <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-primary/30 rounded-lg cursor-pointer text-primary hover:bg-primary/5">
                     <Upload className="w-4 h-4" />
                     {employeur.logoDataUrl ? "Changer le logo" : "Ajouter un logo"}
                     <input
@@ -280,7 +280,7 @@ export default function GenerateurFichePaie() {
                     />
                   </label>
                 </div>
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   Le logo reste dans votre navigateur (aucun envoi vers un serveur) et sera inclus dans la fiche PDF.
                 </p>
               </div>
@@ -457,10 +457,10 @@ export default function GenerateurFichePaie() {
                       <Label className="text-xs mb-1 block">Montant (D)</Label>
                       <Input type="number" value={el.montant} onChange={(e) => modifierElement(el.id, { montant: parseFloat(e.target.value) || 0 })} />
                       {el.type === "salaire_base" && validerMontantSalaire(el.montant) && (
-                        <p className="text-xs text-red-600 mt-1">{validerMontantSalaire(el.montant)}</p>
+                        <p className="text-xs text-red-600 dark:text-red-400 mt-1">{validerMontantSalaire(el.montant)}</p>
                       )}
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => supprimerElement(el.id)} className="text-red-500 hover:text-red-700 mb-1">
+                    <Button variant="ghost" size="icon" onClick={() => supprimerElement(el.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 mb-1">
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -477,7 +477,7 @@ export default function GenerateurFichePaie() {
               )}
 
               <div className="p-4 bg-primary/5 rounded-lg space-y-3">
-                <p className="text-xs font-semibold text-blue-700 uppercase">Avantage exclu de cotisations (décret 1098-2003)</p>
+                <p className="text-xs font-semibold text-primary uppercase">Avantage exclu de cotisations (décret 1098-2003)</p>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                   <div className="md:col-span-2">
                     <Label className="text-xs mb-1 block">Point du décret</Label>
@@ -506,8 +506,8 @@ export default function GenerateurFichePaie() {
                   const sim = simulerAvantage(point, dateReference, nombreAvantage, montantUnitaireAvantage, 0);
                   return (
                     <p className="text-xs text-muted-foreground">
-                      Sur {formatMontantDT(sim.montantTotal)} : <strong className="text-green-700">{formatMontantDT(sim.montantExonere)} exonéré</strong>
-                      {" "}et <strong className="text-red-700">{formatMontantDT(sim.montantSoumis)} soumis</strong> (plafond {formatMontantDT(sim.plafondUnitaire)}/{point.uniteNombre.split(" ")[0]}, période {mois}/{annee}).
+                      Sur {formatMontantDT(sim.montantTotal)} : <strong className="text-green-700 dark:text-green-300">{formatMontantDT(sim.montantExonere)} exonéré</strong>
+                      {" "}et <strong className="text-red-700 dark:text-red-300">{formatMontantDT(sim.montantSoumis)} soumis</strong> (plafond {formatMontantDT(sim.plafondUnitaire)}/{point.uniteNombre.split(" ")[0]}, période {mois}/{annee}).
                       {" "}<Link href="/referentiel-avantages-exclus" className="underline">Détail du point {point.numero} →</Link>
                     </p>
                   );
@@ -591,7 +591,7 @@ export default function GenerateurFichePaie() {
                 </div>
               </div>
 
-              <Button variant="outline" onClick={ajouterElement} className="gap-2 border-blue-300 text-blue-700">
+              <Button variant="outline" onClick={ajouterElement} className="gap-2 border-primary/30 text-primary">
                 <Plus className="w-4 h-4" /> Ajouter un élément vide
               </Button>
 
@@ -709,34 +709,34 @@ export default function GenerateurFichePaie() {
                   <span>Base CNSS</span>
                   <span>{formatMontantDT(resultat.baseCNSS)}</span>
                 </div>
-                <div className="flex justify-between text-red-600">
+                <div className="flex justify-between text-red-600 dark:text-red-400">
                   <span>Cotisation CNSS (salarié)</span>
                   <span>{formatMontantDT(-resultat.cotisationCNSS)}</span>
                 </div>
-                <div className="flex justify-between text-gray-400 text-xs">
+                <div className="flex justify-between text-muted-foreground text-xs">
                   <span>Cotisation patronale (à la charge de l'employeur, n'affecte pas le net)</span>
                   <span>{formatMontantDT(resultat.cotisationPatronale)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Abattement frais professionnels (10 %, plafond 2 000 DT/an)</span>
-                  <span className="text-green-600">{formatMontantDT(-resultat.fraisProfessionnelsMensuel)}</span>
+                  <span className="text-green-600 dark:text-green-400">{formatMontantDT(-resultat.fraisProfessionnelsMensuel)}</span>
                 </div>
                 {resultat.deductionsFamilialesMensuelles > 0 && (
                   <div className="flex justify-between text-muted-foreground">
                     <span>Déductions familiales</span>
-                    <span className="text-green-600">{formatMontantDT(-resultat.deductionsFamilialesMensuelles)}</span>
+                    <span className="text-green-600 dark:text-green-400">{formatMontantDT(-resultat.deductionsFamilialesMensuelles)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-muted-foreground">
                   <span>Assiette imposable nette</span>
                   <span>{formatMontantDT(resultat.assietteImposableNetteMensuelle)}</span>
                 </div>
-                <div className="flex justify-between text-red-600">
+                <div className="flex justify-between text-red-600 dark:text-red-400">
                   <span>IRPP</span>
                   <span>{formatMontantDT(-resultat.irppMensuel)}</span>
                 </div>
                 {resultat.css > 0 && (
-                  <div className="flex justify-between text-red-600">
+                  <div className="flex justify-between text-red-600 dark:text-red-400">
                     <span>CSS</span>
                     <span>{formatMontantDT(-resultat.css)}</span>
                   </div>
@@ -760,7 +760,7 @@ export default function GenerateurFichePaie() {
 
               <div className="flex justify-between items-center py-4 bg-gradient-to-r  px-4 rounded-lg">
                 <span className="text-lg font-bold text-foreground">Net à Payer</span>
-                <span className="text-2xl font-bold text-blue-700">{formatMontantDT(resultat.netAPayer)}</span>
+                <span className="text-2xl font-bold text-primary">{formatMontantDT(resultat.netAPayer)}</span>
               </div>
 
               <div className="flex justify-between pt-2">
@@ -776,8 +776,8 @@ export default function GenerateurFichePaie() {
           {etape === 6 && resultat && (
             <>
               <div ref={ficheRef}>
-              <Card className="p-10 rounded-lg shadow-sm border border-border bg-card bg-white">
-                <div className="flex justify-between items-start border-b-2 border-blue-900 pb-4 mb-6">
+              <Card className="p-10 rounded-lg shadow-sm border border-border bg-card">
+                <div className="flex justify-between items-start border-b-2 border-primary pb-4 mb-6">
                   <div className="flex items-center gap-4">
                     {employeur.logoDataUrl && (
                       <img src={employeur.logoDataUrl} alt="Logo" className="h-14 w-14 object-contain" />
@@ -787,8 +787,8 @@ export default function GenerateurFichePaie() {
                         Fiche de Paie
                       </h2>
                       <p className="text-sm text-muted-foreground font-medium">{employeur.nom}</p>
-                      {employeur.adresse && <p className="text-xs text-gray-400">{employeur.adresse}</p>}
-                      <p className="text-xs text-gray-400">
+                      {employeur.adresse && <p className="text-xs text-muted-foreground">{employeur.adresse}</p>}
+                      <p className="text-xs text-muted-foreground">
                         {employeur.matriculeCNSS && `CNSS : ${employeur.matriculeCNSS}`}
                         {champsAffiches.matriculeFiscal && employeur.matriculeFiscal && ` — MF : ${employeur.matriculeFiscal}`}
                         {champsAffiches.registreCommerce && employeur.registreCommerce && ` — RC : ${employeur.registreCommerce}`}
@@ -805,7 +805,7 @@ export default function GenerateurFichePaie() {
                         {champsAffiches.categorieProfessionnelle && salarie.categorieProfessionnelle && ` — ${salarie.categorieProfessionnelle}`}
                       </p>
                     )}
-                    {champsAffiches.dateEmbauche && salarie.dateEmbauche && <p className="text-xs text-gray-400">Embauché(e) le {new Date(salarie.dateEmbauche).toLocaleDateString("fr-TN")}</p>}
+                    {champsAffiches.dateEmbauche && salarie.dateEmbauche && <p className="text-xs text-muted-foreground">Embauché(e) le {new Date(salarie.dateEmbauche).toLocaleDateString("fr-TN")}</p>}
                   </div>
                 </div>
 
@@ -823,26 +823,26 @@ export default function GenerateurFichePaie() {
                         <td className="text-right py-2">{formatMontantDT(e.montant)}</td>
                       </tr>
                     ))}
-                    <tr className="border-b border-gray-100 font-semibold">
+                    <tr className="border-b border-gray-100 dark:border-gray-800 font-semibold">
                       <td className="py-2">Rémunération brute</td>
                       <td className="text-right py-2">{formatMontantDT(resultat.totalRemunerationBrute)}</td>
                     </tr>
-                    <tr className="border-b border-gray-100 text-red-600">
+                    <tr className="border-b border-gray-100 dark:border-gray-800 text-red-600 dark:text-red-400">
                       <td className="py-2">Cotisation CNSS (salariale, {resultat.cotisationCNSS > 0 ? ((resultat.cotisationCNSS / resultat.baseCNSS) * 100).toFixed(2) : "0"}%)</td>
                       <td className="text-right py-2">{formatMontantDT(-resultat.cotisationCNSS)}</td>
                     </tr>
                     {champsAffiches.cotisationPatronale && (
-                      <tr className="border-b border-gray-100 text-gray-400 text-xs">
+                      <tr className="border-b border-border text-muted-foreground text-xs">
                         <td className="py-2">Cotisation CNSS patronale</td>
                         <td className="text-right py-2">{formatMontantDT(resultat.cotisationPatronale)}</td>
                       </tr>
                     )}
-                    <tr className="border-b border-gray-100 text-red-600">
+                    <tr className="border-b border-gray-100 dark:border-gray-800 text-red-600 dark:text-red-400">
                       <td className="py-2">IRPP</td>
                       <td className="text-right py-2">{formatMontantDT(-resultat.irppMensuel)}</td>
                     </tr>
                     {resultat.css > 0 && (
-                      <tr className="border-b border-gray-100 text-red-600">
+                      <tr className="border-b border-gray-100 dark:border-gray-800 text-red-600 dark:text-red-400">
                         <td className="py-2">CSS</td>
                         <td className="text-right py-2">{formatMontantDT(-resultat.css)}</td>
                       </tr>
@@ -863,7 +863,7 @@ export default function GenerateurFichePaie() {
                   </div>
                 )}
 
-                <p className="text-xs text-gray-400 mt-6">
+                <p className="text-xs text-muted-foreground mt-6">
                   Document généré par Le Fiduciaire le {new Date().toLocaleDateString("fr-TN")}.
                   Cette fiche couvre une période unique — les cumuls annuels (brut cumulé, assiette
                   CNSS/IRPP cumulée) nécessaires à la déclaration annuelle ne sont pas encore gérés

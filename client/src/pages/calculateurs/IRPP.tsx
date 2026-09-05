@@ -238,11 +238,11 @@ export default function IRPP() {
             </div>
             <div className="flex justify-between items-center py-3 border-b border-border">
               <span className="text-muted-foreground">Abattement frais professionnels (10 %, plafond 2 000 DT/an)</span>
-              <span className="font-semibold text-green-600">{formatMontantDT(-result.fraisProfessionnels)}</span>
+              <span className="font-semibold text-green-600 dark:text-green-400">{formatMontantDT(-result.fraisProfessionnels)}</span>
             </div>
             <div className="flex justify-between items-center py-3 border-b border-border">
               <span className="text-muted-foreground">Déductions Fiscales</span>
-              <span className="font-semibold text-green-600">{formatMontantDT(-result.deductions)}</span>
+              <span className="font-semibold text-green-600 dark:text-green-400">{formatMontantDT(-result.deductions)}</span>
             </div>
             <div className="flex justify-between items-center py-3 border-b border-border">
               <span className="text-muted-foreground">Assiette imposable nette</span>

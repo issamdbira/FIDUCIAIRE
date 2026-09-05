@@ -277,8 +277,8 @@ function SimulateurPoint({ numero }: { numero: number }) {
   const resultat = simulerAvantage(point, new Date(dateVersement), nombre, montantUnitaire, montantDeclare);
 
   return (
-    <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-blue-100">
-      <p className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+    <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/10">
+      <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
         <Calculator className="w-4 h-4" /> Simulateur — {point.uniteNombre}
       </p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -314,19 +314,19 @@ function SimulateurPoint({ numero }: { numero: number }) {
             <TableCell className="text-muted-foreground">Plafond total (nombre × plafond unitaire)</TableCell>
             <TableCell className="text-right font-mono">{formatMontantDT(resultat.plafondTotal)}</TableCell>
           </TableRow>
-          <TableRow className="bg-green-50">
-            <TableCell className="text-green-700 font-medium">Montant exonéré</TableCell>
-            <TableCell className="text-right font-mono text-green-700 font-medium">{formatMontantDT(resultat.montantExonere)}</TableCell>
+          <TableRow className="bg-green-50 dark:bg-green-900/20">
+            <TableCell className="text-green-700 dark:text-green-300 font-medium">Montant exonéré</TableCell>
+            <TableCell className="text-right font-mono text-green-700 dark:text-green-300 font-medium">{formatMontantDT(resultat.montantExonere)}</TableCell>
           </TableRow>
-          <TableRow className="bg-red-50">
-            <TableCell className="text-red-700 font-medium">Montant soumis (CNSS + IRPP)</TableCell>
-            <TableCell className="text-right font-mono text-red-700 font-medium">{formatMontantDT(resultat.montantSoumis)}</TableCell>
+          <TableRow className="bg-red-50 dark:bg-red-900/20">
+            <TableCell className="text-red-700 dark:text-red-300 font-medium">Montant soumis (CNSS + IRPP)</TableCell>
+            <TableCell className="text-right font-mono text-red-700 dark:text-red-300 font-medium">{formatMontantDT(resultat.montantSoumis)}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell className={resultat.ecartDeclaration !== 0 ? "text-amber-700 font-medium" : "text-muted-foreground"}>
+            <TableCell className={resultat.ecartDeclaration !== 0 ? "text-amber-700 dark:text-amber-400 font-medium" : "text-muted-foreground"}>
               Écart de déclaration (soumis − déclaré)
             </TableCell>
-            <TableCell className={`text-right font-mono ${resultat.ecartDeclaration !== 0 ? "text-amber-700 font-medium" : ""}`}>
+            <TableCell className={`text-right font-mono ${resultat.ecartDeclaration !== 0 ? "text-amber-700 dark:text-amber-400 font-medium" : ""}`}>
               {formatMontantDT(resultat.ecartDeclaration)}
             </TableCell>
           </TableRow>
@@ -391,7 +391,7 @@ export default function ReferentielAvantages() {
                 <Card className="rounded-lg shadow-sm border border-border bg-card overflow-hidden">
                   <AccordionTrigger className="px-6 py-4 hover:no-underline">
                     <div className="flex items-center gap-3 text-left flex-wrap">
-                      <Badge variant="secondary" className="bg-blue-100 text-primary shrink-0">
+                      <Badge variant="secondary" className="bg-primary/10 text-primary shrink-0">
                         Point {a.numero}
                       </Badge>
                       {a.horsPlafond5pct && (
@@ -399,7 +399,7 @@ export default function ReferentielAvantages() {
                           Hors plafond 5%
                         </Badge>
                       )}
-                      <span className="font-semibold text-blue-900">{a.titre}</span>
+                      <span className="font-semibold text-foreground">{a.titre}</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="px-6 pb-6">
@@ -440,7 +440,7 @@ export default function ReferentielAvantages() {
             <p className="text-center text-muted-foreground py-8">Aucun avantage ne correspond à cette recherche.</p>
           )}
 
-          <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+          <div className="mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-700">
             <p className="text-sm text-muted-foreground">
               <strong>Note :</strong> ce référentiel est fourni à titre informatif et ne remplace pas
               une vérification auprès des textes réglementaires officiels ou d'un expert en la matière.
