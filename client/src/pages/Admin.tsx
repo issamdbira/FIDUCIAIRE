@@ -4,9 +4,34 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Lock, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
 import { Link } from "wouter";
 import { CONFIG_PAR_DEFAUT, getPayrollConfig, reinitialiserPayrollConfig, setPayrollConfig, type PayrollConfig } from "@/lib/payroll/config";
+
+// ── Client-side admin protection ──
+// Password read from VITE_ADMIN_PASSWORD env var (set at build time).
+// If not set, defaults to 'fiduciaire2026'.
+// On correct password, a session token is stored in sessionStorage
+// so the user doesn't have to re-enter it on every navigation.
+
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "fiduciaire2026";
+const SESSION_KEY = "fiduciaire_admin_auth";
+
+function isAdminAuthenticated(): boolean {
+  return sessionStorage.getItem(SESSION_KEY) === "ok";
+}
+
+function authenticateAdmin(password: string): boolean {
+  if (password === ADMIN_PASSWORD) {
+    sessionStorage.setItem(SESSION_KEY, "ok");
+    return true;
+  }
+  return false;
+}
+
+function deauthenticateAdmin(): void {
+  sessionStorage.removeItem(SESSION_KEY);
+}
 
 /**
  * Panneau d'administration — paramétrage centralisé du moteur de paie.
@@ -14,11 +39,67 @@ import { CONFIG_PAR_DEFAUT, getPayrollConfig, reinitialiserPayrollConfig, setPay
  * paie, PaieCNSS, IRPP) lisent leurs taux/barèmes/déductions depuis cette
  * configuration unique (lib/payroll/config.ts), stockée localement.
  *
- * ATTENTION : accessible sans authentification pour le MVP (traitement
- * 100% local, pas de compte utilisateur) — à protéger si le site évolue
- * vers un usage multi-utilisateurs.
+ * Protection côté client : mot de passe via VITE_ADMIN_PASSWORD
+ * (défaut : fiduciaire2026), session mémorisée en sessionStorage.
+ * ATTENTION : protection côté client uniquement — ne remplace pas une
+ * authentification serveur en production.
  */
 export default function Admin() {
+  const [authenticated, setAuthenticated] = useState(isAdminAuthenticated());
+  const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState(false);
+
+  const handleLogin = () => {
+    if (authenticateAdmin(password)) {
+      setAuthenticated(true);
+      setPasswordError(false);
+    } else {
+      setPasswordError(true);
+    }
+  };
+
+  const handleLogout = () => {
+    deauthenticateAdmin();
+    setAuthenticated(false);
+    setPassword("");
+  };
+
+  // ── Login screen ──
+  if (!authenticated) {
+    return (
+      <div className="max-w-sm mx-auto py-16 px-4">
+        <Card className="p-8 rounded-lg shadow-sm border border-border bg-card text-center space-y-4">
+          <div className="flex justify-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <Lock className="size-6 text-primary" />
+            </div>
+          </div>
+          <h2 className="text-xl font-bold text-foreground" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            Accès restreint
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Ce panneau est réservé à l'administration. Saisissez le mot de passe pour continuer.
+          </p>
+          <div className="space-y-2">
+            <Input
+              type="password"
+              placeholder="Mot de passe"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setPasswordError(false); }}
+              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+              className="text-center"
+            />
+            {passwordError && (
+              <p className="text-sm text-destructive">Mot de passe incorrect</p>
+            )}
+          </div>
+          <Button onClick={handleLogin} className="w-full">
+            Se connecter
+          </Button>
+        </Card>
+      </div>
+    );
+  }
   const [config, setConfig] = useState<PayrollConfig>(CONFIG_PAR_DEFAUT);
   const [sauvegarde, setSauvegarde] = useState(false);
 
@@ -67,6 +148,9 @@ export default function Admin() {
             </Button>
           </Link>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={handleLogout} className="gap-2">
+              <Lock className="w-4 h-4" /> Verrouiller
+            </Button>
             <Button variant="outline" onClick={reinitialiser} className="gap-2 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800">
               <RotateCcw className="w-4 h-4" /> Réinitialiser
             </Button>
