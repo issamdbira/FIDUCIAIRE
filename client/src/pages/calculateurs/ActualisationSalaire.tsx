@@ -120,7 +120,8 @@ export default function ActualisationSalaire() {
                 Résultat
               </h2>
 
-              <table className="w-full border-collapse">
+              <div className="overflow-x-auto">
+              <table className="w-full border-collapse min-w-[320px]">
                 <tbody>
                   <tr className="border-b border-slate-200 dark:border-slate-700">
                     <td className="py-3 text-sm text-slate-600 dark:text-slate-400">Salaire Brut Saisi ({resultat.annee})</td>
@@ -141,6 +142,7 @@ export default function ActualisationSalaire() {
                   </tr>
                 </tbody>
               </table>
+              </div>
 
               <div className="mt-6 p-4 bg-muted rounded-lg border border-border">
                 <p className="text-sm text-muted-foreground">

@@ -150,7 +150,8 @@ export default function CalculerSalaire() {
                 Détail du calcul
               </h2>
 
-              <table className="w-full border-collapse">
+              <div className="overflow-x-auto">
+              <table className="w-full border-collapse min-w-[320px]">
                 <tbody>
                   {mode === "net-vers-brut" && brutTrouve !== null && (
                     <tr className="bg-primary/5 border-t-2 border-primary">
@@ -198,6 +199,7 @@ export default function CalculerSalaire() {
                   </tr>
                 </tbody>
               </table>
+              </div>
             </Card>
           )}
         </div>

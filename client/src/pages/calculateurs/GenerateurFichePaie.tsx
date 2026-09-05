@@ -17,6 +17,7 @@ import { POINTS_AVANTAGES_SMIG, POINTS_AVANTAGES_QUALITATIF, simulerAvantage, es
 import type { Employeur, PayrollItem, PayrollItemType, PayrollResult, Salarie } from "@/lib/payroll/types";
 import { formatMontantDT } from "@/lib/utils";
 import { validerMontantSalaire } from "@/lib/validation-salaire";
+import { toast } from "sonner";
 import BackToTools from "@/components/BackToTools";
 
 /**
@@ -155,21 +156,34 @@ export default function GenerateurFichePaie() {
     setEtape(5);
   };
 
+  // QA-008 : Nom de fichier dynamique et unique pour l'export PDF
+  const MOIS_NOMS = ["Janvier", "Fevrier", "Mars", "Avril", "Mai", "Juin", "Juillet", "Aout", "Septembre", "Octobre", "Novembre", "Decembre"];
+
+  const sanitizerNomFichier = (s: string): string =>
+    s.trim().replace(/[^a-zA-Z0-9\u00C0-\u024F\u1E00-\u1EFF_\- ]/g, "").replace(/\s+/g, "_").slice(0, 40);
+
   const exporterPDF = async () => {
     if (!ficheRef.current) return;
     setExportEnCours(true);
     try {
       const html2pdf = (await import("html2pdf.js")).default;
+      const nom = sanitizerNomFichier(salarie.nom);
+      const prenom = sanitizerNomFichier(salarie.prenom);
+      const moisNom = MOIS_NOMS[mois - 1] || String(mois);
+      const filename = `Fiche_Paie_${nom || "Salarie"}${prenom ? "_" + prenom : ""}_${moisNom}_${annee}.pdf`;
       await html2pdf()
         .set({
           margin: 10,
-          filename: `fiche_paie_${salarie.nom || "salarie"}_${mois}-${annee}.pdf`,
+          filename,
           image: { type: "jpeg", quality: 0.98 },
           html2canvas: { scale: 2 },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         })
         .from(ficheRef.current)
         .save();
+      toast.success(`PDF exporte : ${filename}`);
+    } catch (err) {
+      toast.error("Erreur lors de l'export PDF");
     } finally {
       setExportEnCours(false);
     }
@@ -886,7 +900,8 @@ export default function GenerateurFichePaie() {
                   </div>
                 </div>
 
-                <table className="w-full text-sm mb-6 border-collapse print:border-collapse">
+                <div className="overflow-x-auto">
+                <table className="w-full text-sm mb-6 border-collapse print:border-collapse min-w-[320px]">
                   <thead>
                     <tr className="border-b border-border text-muted-foreground">
                       <th className="text-left py-2">Désignation</th>
@@ -926,6 +941,7 @@ export default function GenerateurFichePaie() {
                     )}
                   </tbody>
                 </table>
+                </div>
 
                 <div className="flex justify-between items-center py-4 bg-primary text-primary-foreground px-6 rounded-lg">
                   <span className="text-lg font-bold">Net à Payer</span>

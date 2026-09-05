@@ -173,7 +173,8 @@ export default function RetraiteCNSS() {
                 Estimation de Pension
               </h2>
 
-              <table className="w-full border-collapse">
+              <div className="overflow-x-auto">
+              <table className="w-full border-collapse min-w-[320px]">
                 <tbody>
                   <tr className="border-b border-slate-200 dark:border-slate-700">
                     <td className="py-3 text-sm text-slate-600 dark:text-slate-400">Salaire de Référence Actualisé</td>
@@ -194,6 +195,7 @@ export default function RetraiteCNSS() {
                   </tr>
                 </tbody>
               </table>
+              </div>
 
               {result.pensionRetenue && (
                 <p className="text-sm text-muted-foreground mt-4">
