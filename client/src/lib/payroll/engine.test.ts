@@ -116,4 +116,60 @@ describe("runPayrollEngine", () => {
     check2Decimals(result.netAPayer);
     check2Decimals(result.irppMensuel);
   });
+
+  it("remplit avantagesExclusDetail avec type et validité pour chaque avantage", () => {
+    const input = makeInput({
+      avantagesExclus: [
+        { numero: 1, montant: 50 },  // SMIG
+        { numero: 10, montant: 30 }, // qualitatif
+        { numero: 99, montant: 20 }, // inconnu
+      ],
+    });
+    const result = runPayrollEngine(input);
+    expect(result.avantagesExclusDetail).toHaveLength(3);
+    const d = result.avantagesExclusDetail!;
+    expect(d[0].type).toBe("smig");
+    expect(d[0].valide).toBe(true);
+    expect(d[0].titre).toContain("rentrée");
+    expect(d[1].type).toBe("qualitatif");
+    expect(d[1].valide).toBe(true);
+    expect(d[1].condition).toBeDefined();
+    expect(d[2].type).toBe("inconnu");
+    expect(d[2].valide).toBe(false);
+  });
+
+  it("exclut les avantages à numéro invalide du contrôle du plafond 5%", () => {
+    const input = makeInput({
+      avantagesExclus: [
+        { numero: 99, montant: 200 }, // inconnu → ignoré du cap
+      ],
+    });
+    const result = runPayrollEngine(input);
+    // Pas de plafond calculé car aucun avantage valide
+    expect(result.plafondGlobalAvantages).toBeUndefined();
+    expect(result.baseCNSS).toBe(1000); // pas de réintégration
+  });
+
+  it("calcule correctement avec chef de famille et enfants", () => {
+    const input = makeInput({
+      salarie: { nom: "Doe", prenom: "John", chefFamille: true, enfants: 3, etudiants: 0, infirmes: 0 },
+    });
+    const result = runPayrollEngine(input);
+    expect(result.deductionsFamilialesMensuelles).toBeGreaterThan(0);
+    // Plus de déductions → IRPP plus bas → net plus élevé
+    const resultCelibataire = runPayrollEngine(makeInput());
+    expect(result.irppMensuel).toBeLessThanOrEqual(resultCelibataire.irppMensuel);
+  });
+
+  it("gère un salaire de 0 sans erreur", () => {
+    const input = makeInput({
+      elements: [
+        { id: "1", type: "salaire_base", label: "Salaire", montant: 0, traitement: "standard" },
+      ],
+    });
+    const result = runPayrollEngine(input);
+    expect(result.totalRemunerationBrute).toBe(0);
+    expect(result.cotisationCNSS).toBe(0);
+    expect(result.netAPayer).toBe(0);
+  });
 });

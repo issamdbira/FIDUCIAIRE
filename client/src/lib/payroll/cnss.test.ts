@@ -81,4 +81,22 @@ describe("CNSS — calculs", () => {
       expect(calculerCSSAnnuelle(assiette)).toBeCloseTo(expected, 4);
     });
   });
+
+  describe("Edge cases", () => {
+    it("calculerCotisationCNSS retourne 0 pour un salaire négatif", () => {
+      expect(calculerCotisationCNSS(-100, 2025)).toBeLessThanOrEqual(0);
+    });
+
+    it("getSmigPourAnnee retourne des valeurs cohérentes (croissance)", () => {
+      const smig2024 = getSmigPourAnnee(2024, 48);
+      const smig2025 = getSmigPourAnnee(2025, 48);
+      const smig2026 = getSmigPourAnnee(2026, 48);
+      expect(smig2025).toBeGreaterThan(smig2024);
+      expect(smig2026).toBeGreaterThan(smig2025);
+    });
+
+    it("SMIG 40h est inférieur au SMIG 48h pour la même année", () => {
+      expect(getSmigPourAnnee(2026, 40)).toBeLessThan(getSmigPourAnnee(2026, 48));
+    });
+  });
 });

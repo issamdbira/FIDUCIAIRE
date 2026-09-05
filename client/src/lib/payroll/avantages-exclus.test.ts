@@ -9,6 +9,7 @@ import {
   calculerPlafondUnitaire,
   simulerAvantage,
   controlerPlafondGlobal5pct,
+  traiterAvantageDeclare,
 } from "@/lib/payroll/avantages-exclus";
 
 describe("Avantages exclus — Décret 2003-1098", () => {
@@ -127,12 +128,52 @@ describe("Avantages exclus — Décret 2003-1098", () => {
       const result = controlerPlafondGlobal5pct(
         [
           { numero: 1, montant: 30 },
-          { numero: 16, montant: 500 }, // hors plafond → ignoré
+          { numero: 16, montant: 500 }, // hors plaf/ond → ignoré
         ],
         1000
       );
       expect(result.totalAvantagesSoumisAuCap).toBe(30); // seul le point 1 compte
       expect(result.depassement).toBe(0); // 30 < 50
+    });
+  });
+
+  describe("traiterAvantageDeclare", () => {
+    it("identifie un point SMIG (point 1)", () => {
+      const result = traiterAvantageDeclare({ numero: 1, montant: 100 });
+      expect(result.type).toBe("smig");
+      expect(result.valide).toBe(true);
+      expect(result.titre).toContain("rentrée");
+      expect(result.horsPlafond5pct).toBe(false);
+      expect(result.montantDeclare).toBe(100);
+    });
+
+    it("identifie un point qualitatif (point 10)", () => {
+      const result = traiterAvantageDeclare({ numero: 10, montant: 50 });
+      expect(result.type).toBe("qualitatif");
+      expect(result.valide).toBe(true);
+      expect(result.condition).toBeDefined();
+      expect(result.horsPlafond5pct).toBe(false);
+    });
+
+    it("identifie un point qualitatif hors plafond 5% (point 16)", () => {
+      const result = traiterAvantageDeclare({ numero: 16, montant: 200 });
+      expect(result.type).toBe("qualitatif");
+      expect(result.horsPlafond5pct).toBe(true);
+    });
+
+    it("marque un numéro inconnu comme invalide", () => {
+      const result = traiterAvantageDeclare({ numero: 99, montant: 100 });
+      expect(result.type).toBe("inconnu");
+      expect(result.valide).toBe(false);
+      expect(result.titre).toBeUndefined();
+    });
+
+    it("fonctionne pour tous les 24 points du décret", () => {
+      for (let i = 1; i <= 24; i++) {
+        const result = traiterAvantageDeclare({ numero: i, montant: 0 });
+        expect(result.valide).toBe(true);
+        expect(result.type).not.toBe("inconnu");
+      }
     });
   });
 });

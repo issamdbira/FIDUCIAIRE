@@ -101,4 +101,28 @@ describe("IRPP — calculs", () => {
       expect(result).toBe(5 * config.deductionInfirme);
     });
   });
+
+  describe("Edge cases", () => {
+    it("IRPP est monotone : assiette plus élevée → IRPP plus élevé", () => {
+      const irpp1 = calculerIRPPAnnuel(10000, 0);
+      const irpp2 = calculerIRPPAnnuel(20000, 0);
+      const irpp3 = calculerIRPPAnnuel(50000, 0);
+      expect(irpp2).toBeGreaterThan(irpp1);
+      expect(irpp3).toBeGreaterThan(irpp2);
+    });
+
+    it("frais professionnels sont nuls pour un revenu nul", () => {
+      expect(calculerFraisProfessionnels(0)).toBe(0);
+    });
+
+    it("autres déductions annuelles sont ajoutées", () => {
+      const sansAutres = calculerDeductionsAnnuelles({
+        chefFamille: true, enfants: 0, etudiants: 0, infirmes: 0, autresDeductionsAnnuelles: 0,
+      });
+      const avecAutres = calculerDeductionsAnnuelles({
+        chefFamille: true, enfants: 0, etudiants: 0, infirmes: 0, autresDeductionsAnnuelles: 1000,
+      });
+      expect(avecAutres - sansAutres).toBe(1000);
+    });
+  });
 });

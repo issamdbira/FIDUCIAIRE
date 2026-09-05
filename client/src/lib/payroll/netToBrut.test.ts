@@ -49,4 +49,18 @@ describe("trouverBrutPourNet (round-trip)", () => {
     const { resultat } = trouverBrutPourNet(netSouhaite, makeInputSansMontant());
     expect(resultat.netAPayer).toBeCloseTo(netSouhaite, 1);
   });
+
+  it("gère un net très proche du SMIG (net = 350 DT)", () => {
+    const netSouhaite = 350;
+    const { brut, resultat } = trouverBrutPourNet(netSouhaite, makeInputSansMontant());
+    expect(brut).toBeGreaterThan(0);
+    expect(resultat.netAPayer).toBeCloseTo(netSouhaite, 0);
+  });
+
+  it("le brut trouvé est toujours supérieur au net (cotisations positives)", () => {
+    for (const net of [500, 1000, 2000, 4000]) {
+      const { brut, resultat } = trouverBrutPourNet(net, makeInputSansMontant());
+      expect(brut).toBeGreaterThan(resultat.netAPayer);
+    }
+  });
 });
