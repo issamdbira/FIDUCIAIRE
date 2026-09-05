@@ -13,7 +13,7 @@ import {
   PRIME_TRANSPORT_DEFAUT,
   calculerMontantHeuresSupplementaires,
 } from "@/lib/payroll/constantes-complementaires";
-import { POINTS_AVANTAGES_SMIG, simulerAvantage } from "@/lib/payroll/avantages-exclus";
+import { POINTS_AVANTAGES_SMIG, POINTS_AVANTAGES_QUALITATIF, simulerAvantage, estPointDuDecret } from "@/lib/payroll/avantages-exclus";
 import type { Employeur, PayrollItem, PayrollItemType, PayrollResult, Salarie } from "@/lib/payroll/types";
 import { formatMontantDT } from "@/lib/utils";
 import { validerMontantSalaire } from "@/lib/validation-salaire";
@@ -65,6 +65,10 @@ export default function GenerateurFichePaie() {
   const [pointAvantage, setPointAvantage] = useState<number>(POINTS_AVANTAGES_SMIG[0].numero);
   const [nombreAvantage, setNombreAvantage] = useState(1);
   const [montantUnitaireAvantage, setMontantUnitaireAvantage] = useState(0);
+  const [pointQualitatif, setPointQualitatif] = useState<number>(POINTS_AVANTAGES_QUALITATIF[0].numero);
+  const [montantQualitatif, setMontantQualitatif] = useState(0);
+  // Avantages exclus déclarés pour le contrôle du plafond global 5% (art. 3)
+  const [avantagesExclusDeclares, setAvantagesExclusDeclares] = useState<{ numero: number; montant: number }[]>([]);
 
   const [salarie, setSalarie] = useState<Salarie>({
     nom: "",
@@ -144,6 +148,7 @@ export default function GenerateurFichePaie() {
           montant: e.type === "absence" || e.type === "retenue" ? -Math.abs(e.montant) : e.montant,
         };
       }),
+      avantagesExclus: avantagesExclusDeclares.length > 0 ? avantagesExclusDeclares : undefined,
     });
     setResultat(res);
     setEtape(5);
@@ -527,10 +532,62 @@ export default function GenerateurFichePaie() {
                       nouveaux.push({ id: nextId(), type: "prime", label: `${point.titre} — part soumise`, montant: sim.montantSoumis, traitement: "standard" });
                     }
                     setElements([...elements, ...nouveaux]);
+                    setAvantagesExclusDeclares([...avantagesExclusDeclares, { numero: point.numero, montant: sim.montantTotal }]);
                     setMontantUnitaireAvantage(0);
                   }}
                 >
                   Ajouter (calcul automatique exonéré/soumis)
+                </Button>
+              </div>
+
+              {/* Avantage qualitatif (15 points sans plafond SMIG) */}
+              <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase">Avantage qualitatif (exclusion conditionnelle, décret 1098-2003)</p>
+                <p className="text-xs text-muted-foreground">
+                  Ces 15 points n'ont pas de plafond SMIG calculable. L'employeur déclare le montant sous réserve de respecter la condition légale.
+                  {avantagesExclusDeclares.length > 0 && (
+                    <> — <strong>{avantagesExclusDeclares.length} avantage(s) exclus déclaré(s)</strong> pour le contrôle du plafond 5% (art. 3)</>
+                  )}
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <div className="md:col-span-2">
+                    <Label className="text-xs mb-1 block">Point du décret (qualitatif)</Label>
+                    <Select value={pointQualitatif.toString()} onValueChange={(v) => setPointQualitatif(parseInt(v))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {POINTS_AVANTAGES_QUALITATIF.map((p) => (
+                          <SelectItem key={p.numero} value={p.numero.toString()}>Point {p.numero} — {p.titre}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs mb-1 block">Montant mensuel (D)</Label>
+                    <Input type="number" min="0" step="0.01" value={montantQualitatif} onChange={(e) => setMontantQualitatif(parseFloat(e.target.value) || 0)} />
+                  </div>
+                </div>
+                {(() => {
+                  const pq = POINTS_AVANTAGES_QUALITATIF.find((p) => p.numero === pointQualitatif);
+                  if (!pq) return null;
+                  return (
+                    <p className="text-xs text-muted-foreground">
+                      <strong>Condition :</strong> {pq.condition}
+                      {pq.horsPlafond5pct && " — Ce point est exclu du plafond global 5% (art. 3)."}
+                    </p>
+                  );
+                })()}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const pq = POINTS_AVANTAGES_QUALITATIF.find((p) => p.numero === pointQualitatif);
+                    if (!pq || montantQualitatif <= 0) return;
+                    setElements([...elements, { id: nextId(), type: "avantage", label: `${pq.titre} (qualitatif, exonéré)`, montant: montantQualitatif, traitement: "exonere_total" }]);
+                    setAvantagesExclusDeclares([...avantagesExclusDeclares, { numero: pq.numero, montant: montantQualitatif }]);
+                    setMontantQualitatif(0);
+                  }}
+                >
+                  Ajouter (exonéré sous réserve de condition légale)
                 </Button>
               </div>
 
@@ -755,6 +812,31 @@ export default function GenerateurFichePaie() {
                       </li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {/* Plafond global 5% (art. 3 du décret 2003-1098) */}
+              {resultat.plafondGlobalAvantages && (
+                <div className={`p-4 rounded-lg border text-sm ${resultat.plafondGlobalAvantages.depassement > 0 ? "bg-destructive/10 border-destructive/25" : "bg-success/10 border-success/25"}`}>
+                  <strong>Plafond global 5% (art. 3 du décret 2003-1098) :</strong>
+                  <div className="mt-1 space-y-1">
+                    <p>Avantages exclus soumis au cap : <strong>{formatMontantDT(resultat.plafondGlobalAvantages.totalAvantagesSoumisAuCap)}</strong></p>
+                    <p>Plafond autorisé (5% × brut) : <strong>{formatMontantDT(resultat.plafondGlobalAvantages.plafondAutorise)}</strong></p>
+                    {resultat.plafondGlobalAvantages.depassement > 0 ? (
+                      <p className="text-destructive">
+                        Dépassement de <strong>{formatMontantDT(resultat.plafondGlobalAvantages.depassement)}</strong> — ce montant est réintégré dans l'assiette CNSS/IRPP.
+                      </p>
+                    ) : (
+                      <p className="text-success">Conforme — aucun dépassement.</p>
+                    )}
+                  </div>
+                  {resultat.avantagesExclusDetail && resultat.avantagesExclusDetail.length > 0 && (
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      Détail : {resultat.avantagesExclusDetail.map((a, i) => (
+                        <span key={i}>{i > 0 ? " · " : ""}Pt {a.numero} ({a.type}) {formatMontantDT(a.montantDeclare)}{a.horsPlafond5pct ? " hors cap" : ""}</span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
