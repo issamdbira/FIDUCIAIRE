@@ -10,7 +10,7 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 
 export default function About() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border">
         <div className="container mx-auto px-4 py-4">
@@ -27,16 +27,16 @@ export default function About() {
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-3xl mx-auto">
           {/* Titre */}
-          <h1 className="text-5xl font-bold text-blue-900 mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
+          <h1 className="text-5xl font-bold text-primary mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
             À Propos de LE FIDUCIAIRE
           </h1>
 
           {/* Mission */}
-          <Card className="p-8 border-0 shadow-sm mb-8 bg-gradient-to-br from-blue-50 to-blue-100">
-            <h2 className="text-2xl font-bold text-blue-900 mb-4" style={{ fontFamily: "Montserrat, sans-serif" }}>
+          <Card className="p-8 border-0 shadow-sm mb-8 bg-primary/5">
+            <h2 className="text-2xl font-bold text-primary mb-4" style={{ fontFamily: "Montserrat, sans-serif" }}>
               Notre Mission
             </h2>
-            <p className="text-gray-700 leading-relaxed text-lg">
+            <p className="text-foreground leading-relaxed text-lg">
               LE FIDUCIAIRE est une plateforme gratuite et transparente dédiée à simplifier les calculs sociaux et fiscaux 
               pour les citoyens tunisiens. Notre objectif est de rendre accessible à tous les informations complexes relatives 
               à la paie, la retraite et l'impôt sur le revenu.
@@ -46,37 +46,37 @@ export default function About() {
           {/* Valeurs */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             <Card className="p-6 border-0 shadow-sm">
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <span className="text-2xl">🔒</span>
               </div>
-              <h3 className="text-lg font-bold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
+              <h3 className="text-lg font-bold text-primary mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Sécurité
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Vos données ne sont jamais stockées. Tous les calculs se font localement sur votre appareil.
               </p>
             </Card>
 
             <Card className="p-6 border-0 shadow-sm">
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <span className="text-2xl">📊</span>
               </div>
-              <h3 className="text-lg font-bold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
+              <h3 className="text-lg font-bold text-primary mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Transparence
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Tous les calculs sont basés sur les réglementations officielles tunisiennes actualisées.
               </p>
             </Card>
 
             <Card className="p-6 border-0 shadow-sm">
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <span className="text-2xl">💰</span>
               </div>
-              <h3 className="text-lg font-bold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
+              <h3 className="text-lg font-bold text-primary mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
                 Gratuit
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Aucun frais caché. Utilisez tous nos calculateurs gratuitement, à tout moment.
               </p>
             </Card>
@@ -84,59 +84,59 @@ export default function About() {
 
           {/* Calculateurs */}
           <div className="mb-12">
-            <h2 className="text-3xl font-bold text-blue-900 mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            <h2 className="text-3xl font-bold text-primary mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
               Nos Calculateurs
             </h2>
 
             <div className="space-y-4">
               <Card className="p-6 border-0 shadow-sm hover:shadow-md transition-shadow">
-                <h3 className="text-xl font-bold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                <h3 className="text-xl font-bold text-primary mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
                   Calculateur de Paie CNSS
                 </h3>
-                <p className="text-gray-600 mb-3">
+                <p className="text-muted-foreground mb-3">
                   Calcule votre salaire net à partir du brut pour les salariés du secteur privé. 
                   Prend en compte les cotisations CNSS, l'IRPP et la CSS selon votre situation familiale.
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   <strong>Basé sur:</strong> Réglementation CNSS 2025
                 </p>
               </Card>
 
               <Card className="p-6 border-0 shadow-sm hover:shadow-md transition-shadow">
-                <h3 className="text-xl font-bold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                <h3 className="text-xl font-bold text-primary mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
                   Calculateur de Retraite CNSS
                 </h3>
-                <p className="text-gray-600 mb-3">
+                <p className="text-muted-foreground mb-3">
                   Estime votre pension de retraite en fonction de votre salaire moyen et votre durée de cotisation. 
                   Applique les indices d'actualisation et le barème de taux de pension.
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   <strong>Basé sur:</strong> Réglementation CNSS 2025
                 </p>
               </Card>
 
               <Card className="p-6 border-0 shadow-sm hover:shadow-md transition-shadow">
-                <h3 className="text-xl font-bold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                <h3 className="text-xl font-bold text-primary mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
                   Calculateur IRPP
                 </h3>
-                <p className="text-gray-600 mb-3">
+                <p className="text-muted-foreground mb-3">
                   Calcule votre impôt annuel sur le revenu avec le barème progressif 2025. 
                   Gère les déductions fiscales et les crédits d'impôt selon votre situation.
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   <strong>Basé sur:</strong> Barème IRPP 2025 - Ministère des Finances
                 </p>
               </Card>
 
               <Card className="p-6 border-0 shadow-sm hover:shadow-md transition-shadow">
-                <h3 className="text-xl font-bold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                <h3 className="text-xl font-bold text-primary mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
                   Calculateur de Paie CNRPS
                 </h3>
-                <p className="text-gray-600 mb-3">
+                <p className="text-muted-foreground mb-3">
                   Calcule le salaire net des fonctionnaires publics affiliés à la CNRPS. 
                   Applique le taux de cotisation CNRPS (8.5%) et les déductions fiscales.
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   <strong>Basé sur:</strong> Réglementation CNRPS 2025
                 </p>
               </Card>
@@ -145,16 +145,16 @@ export default function About() {
 
           {/* Sources Réglementaires */}
           <div className="mb-12">
-            <h2 className="text-3xl font-bold text-blue-900 mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            <h2 className="text-3xl font-bold text-primary mb-6" style={{ fontFamily: "Montserrat, sans-serif" }}>
               Sources Réglementaires
             </h2>
 
             <div className="space-y-4">
               <Card className="p-6 border-0 shadow-sm">
-                <h3 className="text-lg font-bold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                <h3 className="text-lg font-bold text-primary mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
                   CNSS (Caisse Nationale de Sécurité Sociale)
                 </h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   Organisme responsable de la couverture sociale des salariés du secteur privé en Tunisie.
                 </p>
                 <a
@@ -168,10 +168,10 @@ export default function About() {
               </Card>
 
               <Card className="p-6 border-0 shadow-sm">
-                <h3 className="text-lg font-bold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                <h3 className="text-lg font-bold text-primary mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
                   CNRPS (Caisse Nationale de Retraite et de Prévoyance Sociale)
                 </h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   Organisme responsable de la retraite et de la prévoyance sociale des fonctionnaires publics.
                 </p>
                 <a
@@ -185,10 +185,10 @@ export default function About() {
               </Card>
 
               <Card className="p-6 border-0 shadow-sm">
-                <h3 className="text-lg font-bold text-blue-900 mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                <h3 className="text-lg font-bold text-primary mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
                   Ministère des Finances
                 </h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   Source officielle pour la fiscalité, les barèmes IRPP et les réglementations fiscales.
                 </p>
                 <a
@@ -204,11 +204,11 @@ export default function About() {
           </div>
 
           {/* Disclaimer */}
-          <Card className="p-8 border-0 shadow-sm bg-yellow-50 border border-yellow-200">
-            <h2 className="text-xl font-bold text-yellow-900 mb-4" style={{ fontFamily: "Montserrat, sans-serif" }}>
+          <Card className="p-8 border-0 shadow-sm bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40">
+            <h2 className="text-xl font-bold text-amber-800 dark:text-amber-300 mb-4" style={{ fontFamily: "Montserrat, sans-serif" }}>
               ⚠️ Avis Important
             </h2>
-            <p className="text-yellow-900 leading-relaxed">
+            <p className="text-amber-800 dark:text-amber-300 leading-relaxed">
               LE FIDUCIAIRE fournit des estimations basées sur les réglementations officielles. 
               Ces calculs sont fournis à titre informatif uniquement et ne constituent pas des conseils fiscaux ou sociaux. 
               Pour des décisions importantes concernant votre paie, votre retraite ou vos impôts, 
@@ -218,10 +218,10 @@ export default function About() {
 
           {/* Contact */}
           <div className="mt-12 text-center">
-            <h2 className="text-2xl font-bold text-blue-900 mb-4" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            <h2 className="text-2xl font-bold text-primary mb-4" style={{ fontFamily: "Montserrat, sans-serif" }}>
               Besoin d'aide ?
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-muted-foreground mb-6">
               Pour toute question ou suggestion concernant LE FIDUCIAIRE, n'hésitez pas à nous contacter.
             </p>
             <Link href="/">

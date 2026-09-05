@@ -146,7 +146,7 @@ export default function DeclarationsCNSS() {
       </div>
 
       {notification && (
-        <div className={`px-4 py-2 text-sm text-center ${notification.type === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
+        <div className={`px-4 py-2 text-sm text-center ${notification.type === "error" ? "bg-red-50 dark:bg-red-950/30 text-destructive" : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400"}`}>
           {notification.message}
         </div>
       )}
@@ -241,7 +241,7 @@ export default function DeclarationsCNSS() {
                       <td className="py-1 pr-2"><Input value={l.cin} onChange={(e) => modifierLigne(idx, { cin: e.target.value })} /></td>
                       <td className="py-1 pr-2"><Input value={l.salaire} onChange={(e) => modifierLigne(idx, { salaire: e.target.value })} /></td>
                       <td>
-                        <Button variant="ghost" size="icon" onClick={() => supprimerLigne(idx)} className="text-red-500">
+                        <Button variant="ghost" size="icon" onClick={() => supprimerLigne(idx)} className="text-destructive">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </td>
@@ -273,7 +273,7 @@ export default function DeclarationsCNSS() {
                 >
                   <Download className="w-4 h-4" /> ZIP (toutes)
                 </Button>
-                <Button variant="ghost" className="text-red-600" onClick={toutEffacer}>Réinitialiser tout</Button>
+                <Button variant="ghost" className="text-destructive" onClick={toutEffacer}>Réinitialiser tout</Button>
               </div>
             </div>
 
@@ -300,14 +300,14 @@ export default function DeclarationsCNSS() {
                   {estOuverte && (
                     <div className="p-4 space-y-3">
                       {!valide && (
-                        <div className="text-xs text-red-600">
+                        <div className="text-xs text-destructive">
                           {decl.errorsList.map((e, i) => <div key={i}>{e}</div>)}
                         </div>
                       )}
                       <pre className="bg-gray-900 text-green-400 text-xs p-3 rounded overflow-x-auto">{decl.txtPreview}</pre>
                       <div className="flex gap-2">
                         <Button size="sm" onClick={() => telechargerTexte(decl.txtPreview, decl.generatedFilename)}>Télécharger TXT</Button>
-                        <Button size="sm" variant="ghost" className="text-red-600" onClick={() => supprimerDeclaration(idx)}>Supprimer</Button>
+                        <Button size="sm" variant="ghost" className="text-destructive" onClick={() => supprimerDeclaration(idx)}>Supprimer</Button>
                       </div>
                     </div>
                   )}

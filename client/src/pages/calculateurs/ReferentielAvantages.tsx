@@ -277,8 +277,8 @@ function SimulateurPoint({ numero }: { numero: number }) {
   const resultat = simulerAvantage(point, new Date(dateVersement), nombre, montantUnitaire, montantDeclare);
 
   return (
-    <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-blue-100">
-      <p className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+    <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
+      <p className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
         <Calculator className="w-4 h-4" /> Simulateur — {point.uniteNombre}
       </p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -314,19 +314,19 @@ function SimulateurPoint({ numero }: { numero: number }) {
             <TableCell className="text-muted-foreground">Plafond total (nombre × plafond unitaire)</TableCell>
             <TableCell className="text-right font-mono">{formatMontantDT(resultat.plafondTotal)}</TableCell>
           </TableRow>
-          <TableRow className="bg-green-50">
-            <TableCell className="text-green-700 font-medium">Montant exonéré</TableCell>
-            <TableCell className="text-right font-mono text-green-700 font-medium">{formatMontantDT(resultat.montantExonere)}</TableCell>
+          <TableRow className="bg-emerald-50 dark:bg-emerald-950/30">
+            <TableCell className="text-emerald-600 dark:text-emerald-400 font-medium">Montant exonéré</TableCell>
+            <TableCell className="text-right font-mono text-emerald-600 dark:text-emerald-400 font-medium">{formatMontantDT(resultat.montantExonere)}</TableCell>
           </TableRow>
-          <TableRow className="bg-red-50">
-            <TableCell className="text-red-700 font-medium">Montant soumis (CNSS + IRPP)</TableCell>
-            <TableCell className="text-right font-mono text-red-700 font-medium">{formatMontantDT(resultat.montantSoumis)}</TableCell>
+          <TableRow className="bg-red-50 dark:bg-red-950/30">
+            <TableCell className="text-destructive font-medium">Montant soumis (CNSS + IRPP)</TableCell>
+            <TableCell className="text-right font-mono text-destructive font-medium">{formatMontantDT(resultat.montantSoumis)}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell className={resultat.ecartDeclaration !== 0 ? "text-amber-700 font-medium" : "text-muted-foreground"}>
+            <TableCell className={resultat.ecartDeclaration !== 0 ? "text-amber-600 dark:text-amber-400 font-medium" : "text-muted-foreground"}>
               Écart de déclaration (soumis − déclaré)
             </TableCell>
-            <TableCell className={`text-right font-mono ${resultat.ecartDeclaration !== 0 ? "text-amber-700 font-medium" : ""}`}>
+            <TableCell className={`text-right font-mono ${resultat.ecartDeclaration !== 0 ? "text-amber-600 dark:text-amber-400 font-medium" : ""}`}>
               {formatMontantDT(resultat.ecartDeclaration)}
             </TableCell>
           </TableRow>
@@ -391,15 +391,15 @@ export default function ReferentielAvantages() {
                 <Card className="rounded-lg shadow-sm border border-border bg-card overflow-hidden">
                   <AccordionTrigger className="px-6 py-4 hover:no-underline">
                     <div className="flex items-center gap-3 text-left flex-wrap">
-                      <Badge variant="secondary" className="bg-blue-100 text-primary shrink-0">
+                      <Badge variant="secondary" className="bg-primary/10 text-primary shrink-0">
                         Point {a.numero}
                       </Badge>
                       {a.horsPlafond5pct && (
-                        <Badge variant="outline" className="text-amber-700 border-amber-300 shrink-0">
+                        <Badge variant="outline" className="text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 shrink-0">
                           Hors plafond 5%
                         </Badge>
                       )}
-                      <span className="font-semibold text-blue-900">{a.titre}</span>
+                      <span className="font-semibold text-primary">{a.titre}</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="px-6 pb-6">
@@ -420,7 +420,7 @@ export default function ReferentielAvantages() {
                               <TableRow key={p.periode}>
                                 <TableCell className="flex items-center gap-2">
                                   {p.periode}
-                                  {p.actuel && <Badge className="bg-green-100 text-green-700">Actuel</Badge>}
+                                  {p.actuel && <Badge className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">Actuel</Badge>}
                                 </TableCell>
                                 <TableCell className="text-right font-mono">{formatMontantDT(p.montant)}</TableCell>
                               </TableRow>

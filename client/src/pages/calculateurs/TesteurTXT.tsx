@@ -77,7 +77,7 @@ export default function TesteurTXT() {
               <p className="font-semibold text-foreground">📄 {r.fileName}</p>
               {r.valid ? (
                 <>
-                  <p className="text-sm text-green-700 mt-1">
+                  <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">
                     ✅ Valide — 👥 {r.totalSalaries} salarié(s) — 💰 {formatMontantDT(r.totalSalaireDT)}
                   </p>
                   {r.errors.length > 0 && (
@@ -110,7 +110,7 @@ export default function TesteurTXT() {
                               <td className="py-1 pr-2">{e.nom}</td>
                               <td className="py-1 pr-2 font-mono">{e.cin}</td>
                               <td className="py-1 pr-2 font-mono">{formatMontantDT(e.salaireDT)}</td>
-                              <td className={`py-1 pr-2 font-mono ${e.zoneOk ? "text-green-600" : "text-destructive"}`}>{e.zoneVierge}</td>
+                              <td className={`py-1 pr-2 font-mono ${e.zoneOk ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>{e.zoneVierge}</td>
                             </tr>
                           ))}
                         </tbody>
