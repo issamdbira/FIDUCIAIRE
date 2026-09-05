@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { runPayrollEngine } from "@/lib/payroll/engine";
 import { getPayrollConfig } from "@/lib/payroll/config";
+import { getTauxCotisationCNSS } from "@/lib/payroll/cnss";
 import { formatMontantDT } from "@/lib/utils";
 import { validerMontantSalaire } from "@/lib/validation-salaire";
 import type { PayrollResult } from "@/lib/payroll/types";
@@ -46,8 +47,8 @@ export default function PaieCNSS() {
     setResult(resultat);
   };
 
-  // Taux CNSS effectif pour l'affichage
-  const tauxCNSS = annee < 2025 ? 9.18 : (config.cnssSalarialNonAgricole * 100);
+  // Taux CNSS effectif pour l'affichage (via la fonction centralisée du moteur)
+  const tauxCNSS = getTauxCotisationCNSS(annee) * 100;
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
