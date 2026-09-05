@@ -16,6 +16,7 @@ import {
   Upload,
   FileDown,
   ArrowRight,
+  Mail,
 } from "lucide-react";
 
 /**
@@ -215,6 +216,30 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ═══════════════ RESSOURCES ═══════════════ */}
+      <section className="max-w-5xl mx-auto px-4 pb-10">
+        <h2
+          className="text-lg font-semibold text-foreground mb-4"
+          style={{ fontFamily: "Montserrat, sans-serif" }}
+        >
+          Ressources
+        </h2>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/guides">
+            <Button variant="outline" size="sm" className="gap-2">
+              <BookOpen className="h-4 w-4" />
+              Guides
+            </Button>
+          </Link>
+          <Link href="/contact">
+            <Button variant="outline" size="sm" className="gap-2">
+              <Mail className="h-4 w-4" />
+              Contact
+            </Button>
+          </Link>
+        </div>
+      </section>
+
       {/* ═══════════════ FOOTER ═══════════════ */}
       <footer className="border-t border-border py-8">
         <div className="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -222,6 +247,16 @@ export default function Home() {
             Le Fiduciaire — Plateforme de gestion de paie et conformité sociale tunisienne.
           </p>
           <div className="flex items-center gap-4">
+            <Link href="/guides">
+              <span className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                Guides
+              </span>
+            </Link>
+            <Link href="/contact">
+              <span className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                Contact
+              </span>
+            </Link>
             <Link href="/formulaires-cnss">
               <span className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
                 Formulaires CNSS

@@ -7,6 +7,12 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import About from "./pages/About";
+import Contact from "./pages/Contact";
+import GuidesIndex from "./pages/guides/GuidesIndex";
+import GuideCalculerSalaire from "./pages/guides/GuideCalculerSalaire";
+import GuideIRPP from "./pages/guides/GuideIRPP";
+import GuideFichierTXT from "./pages/guides/GuideFichierTXT";
+import GuideCotisationsCNSS from "./pages/guides/GuideCotisationsCNSS";
 import RetraiteCNSS from "./pages/calculateurs/RetraiteCNSS";
 import IRPP from "./pages/calculateurs/IRPP";
 import ActualisationSalaire from "./pages/calculateurs/ActualisationSalaire";
@@ -24,6 +30,12 @@ function AppRoutes() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/about" component={About} />
+      <Route path="/contact" component={Contact} />
+      <Route path="/guides" component={GuidesIndex} />
+      <Route path="/guides/calculer-salaire-brut-net-tunisie" component={GuideCalculerSalaire} />
+      <Route path="/guides/comprendre-calculer-irpp-tunisie" component={GuideIRPP} />
+      <Route path="/guides/controle-fichier-declaration-cnss-txt" component={GuideFichierTXT} />
+      <Route path="/guides/cotisations-cnss-taux-salariaux-patronaux" component={GuideCotisationsCNSS} />
       <Route path="/admin" component={Admin} />
       <Route path="/calculateurs/calculer-salaire" component={CalculerSalaire} />
       <Route path="/referentiel-avantages-exclus" component={ReferentielAvantages} />
