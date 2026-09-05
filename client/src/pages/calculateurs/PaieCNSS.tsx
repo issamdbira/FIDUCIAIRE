@@ -5,30 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { calculerCotisationCNSS, calculerCSSAnnuelle } from "@/lib/payroll/cnss";
-import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "@/lib/payroll/irpp";
+import { runPayrollEngine } from "@/lib/payroll/engine";
+import { getPayrollConfig } from "@/lib/payroll/config";
 import { formatMontantDT } from "@/lib/utils";
 import { validerMontantSalaire } from "@/lib/validation-salaire";
+import type { PayrollResult } from "@/lib/payroll/types";
 
 /**
  * Calculateur de Paie CNSS (Salariés du secteur privé)
  *
- * Les formules (CNSS, CSS, IRPP) sont centralisées dans src/lib/payroll/
- * pour être réutilisées par le futur moteur de paie (PayrollEngine) sans
- * duplication.
+ * Utilise le moteur central runPayrollEngine() — aucune formule
+ * dupliquée ici. Les taux/barèmes/règles métier restent définis
+ * exclusivement dans lib/payroll/.
  */
-
-interface PayeResult {
-  salaireBrut: number;
-  cotisationsCNSS: number;
-  salaireImposable: number;
-  fraisProfessionnels: number;
-  deductionsFamiliales: number;
-  assietteImposableNette: number;
-  irpp: number;
-  css: number;
-  salaireNet: number;
-}
 
 export default function PaieCNSS() {
   const [salaireBrut, setSalaireBrut] = useState<number>(1000);
@@ -38,40 +27,27 @@ export default function PaieCNSS() {
   const [etudiants, setEtudiants] = useState(0);
   const [infirmes, setInfirmes] = useState(0);
   const [autresDeductions, setAutresDeductions] = useState(0);
-  const [result, setResult] = useState<PayeResult | null>(null);
+  const [result, setResult] = useState<PayrollResult | null>(null);
 
   const erreurSalaire = validerMontantSalaire(salaireBrut);
 
+  const config = getPayrollConfig();
+
   const handleCalculer = () => {
-    const cotisationsCNSS = calculerCotisationCNSS(salaireBrut, annee);
-    const salaireImposable = salaireBrut - cotisationsCNSS;
-
-    const deductions = calculerDeductionsAnnuelles({
-      chefFamille,
-      enfants,
-      etudiants,
-      infirmes,
-      autresDeductionsAnnuelles: autresDeductions,
+    const resultat = runPayrollEngine({
+      employeur: { nom: "", secteur: "non_agricole" },
+      salarie: { nom: "", prenom: "", chefFamille, enfants, etudiants, infirmes },
+      periode: { mois: 1, annee: annee },
+      elements: [
+        { id: "salaire_base", type: "salaire_base", label: "Salaire de base", montant: salaireBrut, traitement: "standard" },
+      ],
+      autresDeductionsFiscalesAnnuelles: autresDeductions,
     });
-    const fraisPro = calculerFraisProfessionnels(salaireImposable * 12);
-    const irpp = calculerIRPPAnnuel(salaireImposable * 12, deductions + fraisPro) / 12;
-
-    const assietteFiscaleAnnuelle = Math.max(salaireImposable * 12 - deductions - fraisPro, 0);
-    const css = calculerCSSAnnuelle(assietteFiscaleAnnuelle) / 12;
-    const salaireNet = salaireBrut - cotisationsCNSS - irpp - css;
-
-    setResult({
-      salaireBrut: Math.round(salaireBrut * 100) / 100,
-      cotisationsCNSS: Math.round(cotisationsCNSS * 100) / 100,
-      salaireImposable: Math.round(salaireImposable * 100) / 100,
-      fraisProfessionnels: Math.round((fraisPro / 12) * 100) / 100,
-      deductionsFamiliales: Math.round((deductions / 12) * 100) / 100,
-      assietteImposableNette: Math.round((assietteFiscaleAnnuelle / 12) * 100) / 100,
-      irpp: Math.round(irpp * 100) / 100,
-      css: Math.round(css * 100) / 100,
-      salaireNet: Math.round(salaireNet * 100) / 100
-    });
+    setResult(resultat);
   };
+
+  // Taux CNSS effectif pour l'affichage
+  const tauxCNSS = annee < 2025 ? 9.18 : (config.cnssSalarialNonAgricole * 100);
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
@@ -127,7 +103,7 @@ export default function PaieCNSS() {
                   onCheckedChange={(checked) => setChefFamille(checked as boolean)}
                 />
                 <Label htmlFor="chef" className="cursor-pointer">
-                  Chef de famille (300 D)
+                  Chef de famille ({formatMontantDT(config.deductionChefFamille)})
                 </Label>
               </div>
 
@@ -140,7 +116,7 @@ export default function PaieCNSS() {
                   <SelectContent>
                     {[0, 1, 2, 3, 4].map((n) => (
                       <SelectItem key={n} value={n.toString()}>
-                        {n} enfant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 100)})
+                        {n} enfant{n !== 1 ? "s" : ""} ({formatMontantDT(n * config.deductionEnfant)})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -156,7 +132,7 @@ export default function PaieCNSS() {
                   <SelectContent>
                     {[0, 1, 2, 3, 4].map((n) => (
                       <SelectItem key={n} value={n.toString()}>
-                        {n} étudiant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 1000)})
+                        {n} étudiant{n !== 1 ? "s" : ""} ({formatMontantDT(n * config.deductionEtudiant)})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -172,7 +148,7 @@ export default function PaieCNSS() {
                   <SelectContent>
                     {[0, 1, 2, 3, 4].map((n) => (
                       <SelectItem key={n} value={n.toString()}>
-                        {n} enfant{n !== 1 ? "s" : ""} ({formatMontantDT(n * 2000)})
+                        {n} enfant{n !== 1 ? "s" : ""} ({formatMontantDT(n * config.deductionInfirme)})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -213,50 +189,50 @@ export default function PaieCNSS() {
           <div className="space-y-4">
             <div className="flex justify-between items-center py-3 border-b border-border">
               <span className="text-muted-foreground">Salaire Brut</span>
-              <span className="font-semibold text-lg text-foreground">{formatMontantDT(result.salaireBrut)}</span>
+              <span className="font-semibold text-lg text-foreground">{formatMontantDT(result.totalRemunerationBrute)}</span>
             </div>
             <div className="flex justify-between items-center py-3 border-b border-border">
-              <span className="text-muted-foreground">Cotisations CNSS (9.68%)</span>
-              <span className="font-semibold text-destructive">{formatMontantDT(-result.cotisationsCNSS)}</span>
+              <span className="text-muted-foreground">Cotisations CNSS ({tauxCNSS.toFixed(2)}%)</span>
+              <span className="font-semibold text-destructive">{formatMontantDT(-result.cotisationCNSS)}</span>
             </div>
             <div className="flex justify-between items-center py-3 border-b border-border">
               <span className="text-muted-foreground">Salaire Imposable</span>
-              <span className="font-semibold text-foreground">{formatMontantDT(result.salaireImposable)}</span>
+              <span className="font-semibold text-foreground">{formatMontantDT(result.baseFiscaleMensuelle)}</span>
             </div>
             <div className="flex justify-between items-center py-3 border-b border-border">
-              <span className="text-muted-foreground">Abattement frais professionnels (10 %, plafond 2 000 DT/an)</span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatMontantDT(-result.fraisProfessionnels)}</span>
+              <span className="text-muted-foreground">Abattement frais professionnels ({(config.fraisProTauxActifs * 100).toFixed(0)} %, plafond {formatMontantDT(config.fraisProPlafondActifsAnnuel)}/an)</span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatMontantDT(-result.fraisProfessionnelsMensuel)}</span>
             </div>
-            {result.deductionsFamiliales > 0 && (
+            {result.deductionsFamilialesMensuelles > 0 && (
               <div className="flex justify-between items-center py-3 border-b border-border">
                 <span className="text-muted-foreground">Déductions familiales</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatMontantDT(-result.deductionsFamiliales)}</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatMontantDT(-result.deductionsFamilialesMensuelles)}</span>
               </div>
             )}
             <div className="flex justify-between items-center py-3 border-b border-border">
               <span className="text-muted-foreground">Assiette imposable nette</span>
-              <span className="font-semibold text-foreground">{formatMontantDT(result.assietteImposableNette)}</span>
+              <span className="font-semibold text-foreground">{formatMontantDT(result.assietteImposableNetteMensuelle)}</span>
             </div>
             <div className="flex justify-between items-center py-3 border-b border-border">
               <span className="text-muted-foreground">IRPP</span>
-              <span className="font-semibold text-destructive">{formatMontantDT(-result.irpp)}</span>
+              <span className="font-semibold text-destructive">{formatMontantDT(-result.irppMensuel)}</span>
             </div>
             {result.css > 0 && (
               <div className="flex justify-between items-center py-3 border-b border-border">
-                <span className="text-muted-foreground">CSS (0.5%)</span>
+                <span className="text-muted-foreground">CSS ({(config.cssTaux * 100).toFixed(1)}%)</span>
                 <span className="font-semibold text-destructive">{formatMontantDT(-result.css)}</span>
               </div>
             )}
             <div className="flex justify-between items-center py-4 bg-primary/5 px-4 rounded-lg">
               <span className="text-lg font-bold text-foreground">Salaire Net</span>
-              <span className="text-2xl font-bold text-primary">{formatMontantDT(result.salaireNet)}</span>
+              <span className="text-2xl font-bold text-primary">{formatMontantDT(result.netAPayer)}</span>
             </div>
           </div>
           <div className="mt-6 p-4 bg-muted rounded-lg border border-border">
             <p className="text-sm text-muted-foreground">
               <strong>Note :</strong> La CSS (0.5%) s'applique de 2023 à 2026 inclus (loi de
               finances 2026, article 87 — mesure exceptionnelle prolongée), avec exonération
-              totale si le revenu net imposable annuel ne dépasse pas 5000 D.
+              totale si le revenu net imposable annuel ne dépasse pas {formatMontantDT(config.cssSeuilExonerationAnnuel)}.
             </p>
           </div>
         </Card>
