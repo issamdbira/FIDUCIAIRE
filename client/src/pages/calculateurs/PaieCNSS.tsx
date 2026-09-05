@@ -202,12 +202,12 @@ export default function PaieCNSS() {
             </div>
             <div className="flex justify-between items-center py-3 border-b border-border">
               <span className="text-muted-foreground">Abattement frais professionnels ({(config.fraisProTauxActifs * 100).toFixed(0)} %, plafond {formatMontantDT(config.fraisProPlafondActifsAnnuel)}/an)</span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatMontantDT(-result.fraisProfessionnelsMensuel)}</span>
+              <span className="font-semibold text-success">{formatMontantDT(-result.fraisProfessionnelsMensuel)}</span>
             </div>
             {result.deductionsFamilialesMensuelles > 0 && (
               <div className="flex justify-between items-center py-3 border-b border-border">
                 <span className="text-muted-foreground">Déductions familiales</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatMontantDT(-result.deductionsFamilialesMensuelles)}</span>
+                <span className="font-semibold text-success">{formatMontantDT(-result.deductionsFamilialesMensuelles)}</span>
               </div>
             )}
             <div className="flex justify-between items-center py-3 border-b border-border">

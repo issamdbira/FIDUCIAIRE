@@ -437,7 +437,7 @@ export default function GenerateurFichePaie() {
 
               <div className="space-y-3">
                 {elements.map((el) => (
-                  <div key={el.id} className="flex items-end gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                  <div key={el.id} className="flex items-end gap-2 p-3 bg-muted/50 rounded-lg">
                     <div className="w-40">
                       <Label className="text-xs mb-1 block">Type</Label>
                       <Select value={el.type} onValueChange={(v) => modifierElement(el.id, { type: v as PayrollItemType })}>
@@ -468,7 +468,7 @@ export default function GenerateurFichePaie() {
               </div>
 
               {elements.some((e) => e.type === "avantage") && (
-                <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-lg text-sm text-muted-foreground">
+                <div className="p-4 bg-warning/10 border border-warning/25 rounded-lg text-sm text-muted-foreground">
                   <strong>Avantages en nature :</strong> pour les 9 points du décret n° 1098-2003
                   dont le plafond est validé (voir liste ci-dessous), le montant exonéré/soumis est
                   calculé automatiquement. Pour tout autre avantage, le montant saisi est exclu du
@@ -506,7 +506,7 @@ export default function GenerateurFichePaie() {
                   const sim = simulerAvantage(point, dateReference, nombreAvantage, montantUnitaireAvantage, 0);
                   return (
                     <p className="text-xs text-muted-foreground">
-                      Sur {formatMontantDT(sim.montantTotal)} : <strong className="text-emerald-600 dark:text-emerald-400">{formatMontantDT(sim.montantExonere)} exonéré</strong>
+                      Sur {formatMontantDT(sim.montantTotal)} : <strong className="text-success">{formatMontantDT(sim.montantExonere)} exonéré</strong>
                       {" "}et <strong className="text-destructive">{formatMontantDT(sim.montantSoumis)} soumis</strong> (plafond {formatMontantDT(sim.plafondUnitaire)}/{point.uniteNombre.split(" ")[0]}, période {mois}/{annee}).
                       {" "}<Link href="/referentiel-avantages-exclus" className="underline">Détail du point {point.numero} →</Link>
                     </p>
@@ -534,7 +534,7 @@ export default function GenerateurFichePaie() {
                 </Button>
               </div>
 
-              <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg space-y-3">
+              <div className="p-4 bg-muted/50 rounded-lg space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase">Ajouts rapides</p>
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -626,7 +626,7 @@ export default function GenerateurFichePaie() {
                     {elements.map((e) => (
                       <li key={e.id}>
                         {e.label} — {e.type === "absence" || e.type === "retenue" ? "-" : ""}{e.montant} D
-                        {e.type === "avantage" && <span className="text-amber-600 dark:text-amber-400"> (en attente de règle validée)</span>}
+                        {e.type === "avantage" && <span className="text-warning"> (en attente de règle validée)</span>}
                       </li>
                     ))}
                   </ul>
@@ -719,12 +719,12 @@ export default function GenerateurFichePaie() {
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Abattement frais professionnels (10 %, plafond 2 000 DT/an)</span>
-                  <span className="text-emerald-600 dark:text-emerald-400">{formatMontantDT(-resultat.fraisProfessionnelsMensuel)}</span>
+                  <span className="text-success">{formatMontantDT(-resultat.fraisProfessionnelsMensuel)}</span>
                 </div>
                 {resultat.deductionsFamilialesMensuelles > 0 && (
                   <div className="flex justify-between text-muted-foreground">
                     <span>Déductions familiales</span>
-                    <span className="text-emerald-600 dark:text-emerald-400">{formatMontantDT(-resultat.deductionsFamilialesMensuelles)}</span>
+                    <span className="text-success">{formatMontantDT(-resultat.deductionsFamilialesMensuelles)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-muted-foreground">
@@ -744,7 +744,7 @@ export default function GenerateurFichePaie() {
               </div>
 
               {resultat.elementsEnAttente.length > 0 && (
-                <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-lg text-sm">
+                <div className="p-4 bg-warning/10 border border-warning/25 rounded-lg text-sm">
                   <strong>Éléments non calculés (règle en attente de validation) :</strong>
                   <ul className="list-disc list-inside mt-1">
                     {resultat.elementsEnAttente.map((e) => (

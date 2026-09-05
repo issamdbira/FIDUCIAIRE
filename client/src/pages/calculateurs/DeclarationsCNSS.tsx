@@ -146,7 +146,7 @@ export default function DeclarationsCNSS() {
       </div>
 
       {notification && (
-        <div className={`px-4 py-2 text-sm text-center ${notification.type === "error" ? "bg-red-50 dark:bg-red-950/30 text-destructive" : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400"}`}>
+        <div className={`px-4 py-2 text-sm text-center ${notification.type === "error" ? "bg-destructive/10 text-destructive" : "bg-success/10 text-success"}`}>
           {notification.message}
         </div>
       )}
@@ -304,7 +304,7 @@ export default function DeclarationsCNSS() {
                           {decl.errorsList.map((e, i) => <div key={i}>{e}</div>)}
                         </div>
                       )}
-                      <pre className="bg-gray-900 dark:bg-gray-950 text-green-400 dark:text-green-300 text-xs p-3 rounded overflow-x-auto">{decl.txtPreview}</pre>
+                      <pre className="bg-muted text-success text-xs p-3 rounded overflow-x-auto">{decl.txtPreview}</pre>
                       <div className="flex gap-2">
                         <Button size="sm" onClick={() => telechargerTexte(decl.txtPreview, decl.generatedFilename)}>Télécharger TXT</Button>
                         <Button size="sm" variant="ghost" className="text-destructive" onClick={() => supprimerDeclaration(idx)}>Supprimer</Button>

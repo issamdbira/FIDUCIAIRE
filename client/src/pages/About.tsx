@@ -204,11 +204,11 @@ export default function About() {
           </div>
 
           {/* Disclaimer */}
-          <Card className="p-8 border-0 shadow-sm bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40">
-            <h2 className="text-xl font-bold text-amber-800 dark:text-amber-300 mb-4" style={{ fontFamily: "Montserrat, sans-serif" }}>
+          <Card className="p-8 border-0 shadow-sm bg-warning/10 border border-warning/25">
+            <h2 className="text-xl font-bold text-warning-foreground mb-4" style={{ fontFamily: "Montserrat, sans-serif" }}>
               ⚠️ Avis Important
             </h2>
-            <p className="text-amber-800 dark:text-amber-300 leading-relaxed">
+            <p className="text-warning-foreground leading-relaxed">
               LE FIDUCIAIRE fournit des estimations basées sur les réglementations officielles. 
               Ces calculs sont fournis à titre informatif uniquement et ne constituent pas des conseils fiscaux ou sociaux. 
               Pour des décisions importantes concernant votre paie, votre retraite ou vos impôts, 
@@ -234,20 +234,20 @@ export default function About() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-blue-900 dark:bg-blue-950 text-white py-8 mt-12">
+      <footer className="bg-primary text-primary-foreground py-8 mt-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-blue-100 dark:text-blue-200">
+            <p className="text-primary-foreground/70">
               © 2026 LE FIDUCIAIRE. Tous droits réservés.
             </p>
             <div className="flex gap-6 mt-4 md:mt-0">
-              <a href="#" className="text-blue-100 dark:text-blue-200 hover:text-white transition-colors">
+              <a href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
                 Mentions légales
               </a>
-              <a href="#" className="text-blue-100 dark:text-blue-200 hover:text-white transition-colors">
+              <a href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
                 Confidentialité
               </a>
-              <a href="#" className="text-blue-100 dark:text-blue-200 hover:text-white transition-colors">
+              <a href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
                 Contact
               </a>
             </div>

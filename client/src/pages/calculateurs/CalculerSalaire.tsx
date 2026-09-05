@@ -154,12 +154,12 @@ export default function CalculerSalaire() {
             </div>
             <div className="flex justify-between items-center py-3 border-b border-border">
               <span className="text-muted-foreground">Abattement frais professionnels (10 %, plafond 2 000 DT/an)</span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatMontantDT(-resultat.fraisProfessionnelsMensuel)}</span>
+              <span className="font-semibold text-success">{formatMontantDT(-resultat.fraisProfessionnelsMensuel)}</span>
             </div>
             {resultat.deductionsFamilialesMensuelles > 0 && (
               <div className="flex justify-between items-center py-3 border-b border-border">
                 <span className="text-muted-foreground">Déductions familiales</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatMontantDT(-resultat.deductionsFamilialesMensuelles)}</span>
+                <span className="font-semibold text-success">{formatMontantDT(-resultat.deductionsFamilialesMensuelles)}</span>
               </div>
             )}
             <div className="flex justify-between items-center py-3 border-b border-border">

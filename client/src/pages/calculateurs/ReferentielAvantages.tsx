@@ -314,19 +314,19 @@ function SimulateurPoint({ numero }: { numero: number }) {
             <TableCell className="text-muted-foreground">Plafond total (nombre × plafond unitaire)</TableCell>
             <TableCell className="text-right font-mono">{formatMontantDT(resultat.plafondTotal)}</TableCell>
           </TableRow>
-          <TableRow className="bg-emerald-50 dark:bg-emerald-950/30">
-            <TableCell className="text-emerald-600 dark:text-emerald-400 font-medium">Montant exonéré</TableCell>
-            <TableCell className="text-right font-mono text-emerald-600 dark:text-emerald-400 font-medium">{formatMontantDT(resultat.montantExonere)}</TableCell>
+          <TableRow className="bg-success/10">
+            <TableCell className="text-success font-medium">Montant exonéré</TableCell>
+            <TableCell className="text-right font-mono text-success font-medium">{formatMontantDT(resultat.montantExonere)}</TableCell>
           </TableRow>
           <TableRow className="bg-red-50 dark:bg-red-950/30">
             <TableCell className="text-destructive font-medium">Montant soumis (CNSS + IRPP)</TableCell>
             <TableCell className="text-right font-mono text-destructive font-medium">{formatMontantDT(resultat.montantSoumis)}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell className={resultat.ecartDeclaration !== 0 ? "text-amber-600 dark:text-amber-400 font-medium" : "text-muted-foreground"}>
+            <TableCell className={resultat.ecartDeclaration !== 0 ? "text-warning font-medium" : "text-muted-foreground"}>
               Écart de déclaration (soumis − déclaré)
             </TableCell>
-            <TableCell className={`text-right font-mono ${resultat.ecartDeclaration !== 0 ? "text-amber-600 dark:text-amber-400 font-medium" : ""}`}>
+            <TableCell className={`text-right font-mono ${resultat.ecartDeclaration !== 0 ? "text-warning font-medium" : ""}`}>
               {formatMontantDT(resultat.ecartDeclaration)}
             </TableCell>
           </TableRow>
@@ -395,7 +395,7 @@ export default function ReferentielAvantages() {
                         Point {a.numero}
                       </Badge>
                       {a.horsPlafond5pct && (
-                        <Badge variant="outline" className="text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 shrink-0">
+                        <Badge variant="outline" className="text-warning border-warning/40 shrink-0">
                           Hors plafond 5%
                         </Badge>
                       )}
@@ -420,7 +420,7 @@ export default function ReferentielAvantages() {
                               <TableRow key={p.periode}>
                                 <TableCell className="flex items-center gap-2">
                                   {p.periode}
-                                  {p.actuel && <Badge className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">Actuel</Badge>}
+                                  {p.actuel && <Badge className="bg-success/15 text-success">Actuel</Badge>}
                                 </TableCell>
                                 <TableCell className="text-right font-mono">{formatMontantDT(p.montant)}</TableCell>
                               </TableRow>
@@ -440,7 +440,7 @@ export default function ReferentielAvantages() {
             <p className="text-center text-muted-foreground py-8">Aucun avantage ne correspond à cette recherche.</p>
           )}
 
-          <div className="mt-8 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800/40">
+          <div className="mt-8 p-4 bg-warning/10 rounded-lg border border-warning/25">
             <p className="text-sm text-muted-foreground">
               <strong>Note :</strong> ce référentiel est fourni à titre informatif et ne remplace pas
               une vérification auprès des textes réglementaires officiels ou d'un expert en la matière.
