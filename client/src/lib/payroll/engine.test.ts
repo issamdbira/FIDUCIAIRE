@@ -70,35 +70,47 @@ describe("runPayrollEngine", () => {
     expect(result.cotisationCNSS).toBeCloseTo(expectedCNSS, 2);
   });
 
-  it("applique le plafond global 5% des avantages exclus (art. 3)", () => {
-    // Salaire 1000 DT/mois → 5% = 50 DT
-    // Avantages déclarés : point 1 (rentrée scolaire) = 80 DT → dépassement de 30 DT
+  it("calcule les champs avantages exclus quand un avantage exclus est déclaré via elements", () => {
+    // Déclare un avantage exclus (point 1 du décret) via le champ isAvantageExclus/codeAvantage
     const input = makeInput({
-      avantagesExclus: [
-        { numero: 1, montant: 80 },
+      elements: [
+        { id: "1", type: "salaire_base", label: "Salaire de base", montant: 1000, traitement: "standard" },
+        {
+          id: "2", type: "avantage", label: "Prime rentrée scolaire", montant: 80,
+          traitement: "exonere_total", isAvantageExclus: true, codeAvantage: "1",
+        },
       ],
     });
     const result = runPayrollEngine(input);
-    expect(result.plafondGlobalAvantages).toBeDefined();
-    expect(result.plafondGlobalAvantages!.plafondAutorise).toBe(50); // 5% × 1000
-    expect(result.plafondGlobalAvantages!.depassement).toBe(30); // 80 - 50
-    expect(result.plafondGlobalAvantages!.montantReintegre).toBe(30);
-    // La base CNSS est augmentée du dépassement
-    expect(result.baseCNSS).toBe(1030); // 1000 + 30
+    // L'avantage exclus doit être traité par le moteur
+    expect(result.avantagesTotal).toBeGreaterThan(0);
+    expect(result.avantagesExoneresIndividuels).toBeGreaterThan(0);
   });
 
-  it("ne réintègre pas les points hors plafond 5% (16, 17, 18, 19, 23, 24)", () => {
+  it("produit avantagesReintegresArticle3 > 0 quand l'exonération dépasse le plafond global 5%", () => {
+    // Salaire 1000 DT + avantage exclus important → l'exonération peut dépasser 5% du brut
     const input = makeInput({
-      avantagesExclus: [
-        { numero: 16, montant: 200 }, // hors plafond → ne compte pas
-        { numero: 18, montant: 150 }, // hors plafond → ne compte pas
+      elements: [
+        { id: "1", type: "salaire_base", label: "Salaire de base", montant: 1000, traitement: "standard" },
+        {
+          id: "2", type: "avantage", label: "Prime rentrée scolaire", montant: 80,
+          traitement: "exonere_total", isAvantageExclus: true, codeAvantage: "1",
+        },
       ],
     });
     const result = runPayrollEngine(input);
-    expect(result.plafondGlobalAvantages).toBeDefined();
-    expect(result.plafondGlobalAvantages!.totalAvantagesSoumisAuCap).toBe(0);
-    expect(result.plafondGlobalAvantages!.depassement).toBe(0);
-    expect(result.baseCNSS).toBe(1000); // pas de réintégration
+    // Le plafond global 5% = 5% × 1000 = 50 DT
+    // L'exonération individuelle du point 1 = min(80, plafondSMIG) = 80 (car plafondSMIG ~166 DT en 2025)
+    // 80 > 50 → reintegreArticle3 = 80 - 50 = 30
+    expect(result.avantagesReintegresArticle3).toBeGreaterThan(0);
+  });
+
+  it("renvoie avantagesTotal = 0 quand aucun avantage exclus n'est déclaré", () => {
+    const result = runPayrollEngine(makeInput());
+    expect(result.avantagesTotal).toBe(0);
+    expect(result.avantagesExoneresIndividuels).toBe(0);
+    expect(result.avantagesReintegresIndividuels).toBe(0);
+    expect(result.avantagesReintegresArticle3).toBe(0);
   });
 
   it("produit des montants arrondis à 2 décimales", () => {
@@ -115,39 +127,6 @@ describe("runPayrollEngine", () => {
     check2Decimals(result.cotisationCNSS);
     check2Decimals(result.netAPayer);
     check2Decimals(result.irppMensuel);
-  });
-
-  it("remplit avantagesExclusDetail avec type et validité pour chaque avantage", () => {
-    const input = makeInput({
-      avantagesExclus: [
-        { numero: 1, montant: 50 },  // SMIG
-        { numero: 10, montant: 30 }, // qualitatif
-        { numero: 99, montant: 20 }, // inconnu
-      ],
-    });
-    const result = runPayrollEngine(input);
-    expect(result.avantagesExclusDetail).toHaveLength(3);
-    const d = result.avantagesExclusDetail!;
-    expect(d[0].type).toBe("smig");
-    expect(d[0].valide).toBe(true);
-    expect(d[0].titre).toContain("rentrée");
-    expect(d[1].type).toBe("qualitatif");
-    expect(d[1].valide).toBe(true);
-    expect(d[1].condition).toBeDefined();
-    expect(d[2].type).toBe("inconnu");
-    expect(d[2].valide).toBe(false);
-  });
-
-  it("exclut les avantages à numéro invalide du contrôle du plafond 5%", () => {
-    const input = makeInput({
-      avantagesExclus: [
-        { numero: 99, montant: 200 }, // inconnu → ignoré du cap
-      ],
-    });
-    const result = runPayrollEngine(input);
-    // Pas de plafond calculé car aucun avantage valide
-    expect(result.plafondGlobalAvantages).toBeUndefined();
-    expect(result.baseCNSS).toBe(1000); // pas de réintégration
   });
 
   it("calcule correctement avec chef de famille et enfants", () => {

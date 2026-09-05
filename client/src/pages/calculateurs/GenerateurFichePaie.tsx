@@ -816,27 +816,21 @@ export default function GenerateurFichePaie() {
               )}
 
               {/* Plafond global 5% (art. 3 du décret 2003-1098) */}
-              {resultat.plafondGlobalAvantages && (
-                <div className={`p-4 rounded-lg border text-sm ${resultat.plafondGlobalAvantages.depassement > 0 ? "bg-destructive/10 border-destructive/25" : "bg-success/10 border-success/25"}`}>
+              {resultat.avantagesTotal > 0 && (
+                <div className={`p-4 rounded-lg border text-sm ${resultat.avantagesReintegresArticle3 > 0 ? "bg-destructive/10 border-destructive/25" : "bg-success/10 border-success/25"}`}>
                   <strong>Plafond global 5% (art. 3 du décret 2003-1098) :</strong>
                   <div className="mt-1 space-y-1">
-                    <p>Avantages exclus soumis au cap : <strong>{formatMontantDT(resultat.plafondGlobalAvantages.totalAvantagesSoumisAuCap)}</strong></p>
-                    <p>Plafond autorisé (5% × brut) : <strong>{formatMontantDT(resultat.plafondGlobalAvantages.plafondAutorise)}</strong></p>
-                    {resultat.plafondGlobalAvantages.depassement > 0 ? (
+                    <p>Total avantages exclus : <strong>{formatMontantDT(resultat.avantagesTotal)}</strong></p>
+                    <p>Exonérés (plafonds individuels) : <strong>{formatMontantDT(resultat.avantagesExoneresIndividuels)}</strong></p>
+                    <p>Réintégrés (dépassement individuel) : <strong>{formatMontantDT(resultat.avantagesReintegresIndividuels)}</strong></p>
+                    {resultat.avantagesReintegresArticle3 > 0 ? (
                       <p className="text-destructive">
-                        Dépassement de <strong>{formatMontantDT(resultat.plafondGlobalAvantages.depassement)}</strong> — ce montant est réintégré dans l'assiette CNSS/IRPP.
+                        Réintégration Art.3 : <strong>{formatMontantDT(resultat.avantagesReintegresArticle3)}</strong> — ce montant dépasse le plafond global 5% et est réintégré dans l'assiette CNSS/IRPP.
                       </p>
                     ) : (
-                      <p className="text-success">Conforme — aucun dépassement.</p>
+                      <p className="text-success">Conforme — aucun dépassement du plafond global 5%.</p>
                     )}
                   </div>
-                  {resultat.avantagesExclusDetail && resultat.avantagesExclusDetail.length > 0 && (
-                    <div className="mt-2 text-xs text-muted-foreground">
-                      Détail : {resultat.avantagesExclusDetail.map((a, i) => (
-                        <span key={i}>{i > 0 ? " · " : ""}Pt {a.numero} ({a.type}) {formatMontantDT(a.montantDeclare)}{a.horsPlafond5pct ? " hors cap" : ""}</span>
-                      ))}
-                    </div>
-                  )}
                 </div>
               )}
 
