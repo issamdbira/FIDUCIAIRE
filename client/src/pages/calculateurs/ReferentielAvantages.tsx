@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Calculator, Search } from "lucide-react";
@@ -385,60 +386,134 @@ export default function ReferentielAvantages() {
             />
           </div>
 
-          <Accordion type="single" collapsible className="space-y-3">
-            {avantagesFiltres.map((a) => (
-              <AccordionItem key={a.numero} value={`item-${a.numero}`} className="border-0">
-                <Card className="rounded-lg shadow-sm border border-border bg-card overflow-hidden">
-                  <AccordionTrigger className="px-6 py-4 hover:no-underline">
-                    <div className="flex items-center gap-3 text-left flex-wrap">
+          <Tabs defaultValue="fr" className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="fr">Français</TabsTrigger>
+              <TabsTrigger value="ar">العربية</TabsTrigger>
+            </TabsList>
+
+            {/* ─── Onglet Français ─── */}
+            <TabsContent value="fr">
+              <Accordion type="single" collapsible className="space-y-3">
+                {avantagesFiltres.map((a) => (
+                  <AccordionItem key={a.numero} value={`item-${a.numero}`} className="border-0">
+                    <Card className="rounded-lg shadow-sm border border-border bg-card overflow-hidden">
+                      <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                        <div className="flex items-center gap-3 text-left flex-wrap">
+                          <Badge variant="secondary" className="bg-primary/10 text-primary shrink-0">
+                            Point {a.numero}
+                          </Badge>
+                          {a.horsPlafond5pct && (
+                            <Badge variant="outline" className="text-warning border-warning/40 shrink-0">
+                              Hors plafond 5%
+                            </Badge>
+                          )}
+                          <span className="font-semibold text-primary">{a.titre}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-6 pb-6">
+                        <p className="text-sm text-muted-foreground mb-4">
+                          <strong>Base de calcul / condition :</strong> {a.base}
+                        </p>
+                        {a.type === "smig" && a.plafonds && (
+                          <>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Période</TableHead>
+                                  <TableHead className="text-right">Montant maximal</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {a.plafonds.map((p) => (
+                                  <TableRow key={p.periode}>
+                                    <TableCell className="flex items-center gap-2">
+                                      {p.periode}
+                                      {p.actuel && <Badge className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300">Actuel</Badge>}
+                                    </TableCell>
+                                    <TableCell className="text-right font-mono">{formatMontantDT(p.montant)}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                            <SimulateurPoint numero={a.numero} />
+                          </>
+                        )}
+                      </AccordionContent>
+                    </Card>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+              {avantagesFiltres.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">Aucun avantage ne correspond à cette recherche.</p>
+              )}
+            </TabsContent>
+
+            {/* ─── Onglet Bilingue (split-view FR / AR) ─── */}
+            <TabsContent value="ar">
+              <div className="space-y-4">
+                {avantagesFiltres.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">لا توجد نتائج.</p>
+                )}
+                {avantagesFiltres.map((a) => (
+                  <Card key={a.numero} className="rounded-lg shadow-sm border border-border bg-card overflow-hidden">
+                    {/* En-tête bilingue */}
+                    <div className="px-6 py-4 border-b border-border flex items-center gap-3 flex-wrap">
                       <Badge variant="secondary" className="bg-primary/10 text-primary shrink-0">
-                        Point {a.numero}
+                        {a.numero}
                       </Badge>
                       {a.horsPlafond5pct && (
                         <Badge variant="outline" className="text-warning border-warning/40 shrink-0">
-                          Hors plafond 5%
+                          Hors plafond 5% / خارج السقف 5%
                         </Badge>
                       )}
-                      <span className="font-semibold text-primary">{a.titre}</span>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="px-6 pb-6">
-                    <p className="text-sm text-muted-foreground mb-4">
-                      <strong>Base de calcul / condition :</strong> {a.base}
-                    </p>
-                    {a.type === "smig" && a.plafonds && (
-                      <>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Période</TableHead>
-                              <TableHead className="text-right">Montant maximal</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {a.plafonds.map((p) => (
-                              <TableRow key={p.periode}>
-                                <TableCell className="flex items-center gap-2">
-                                  {p.periode}
-                                  {p.actuel && <Badge className="bg-success/15 text-success">Actuel</Badge>}
-                                </TableCell>
-                                <TableCell className="text-right font-mono">{formatMontantDT(p.montant)}</TableCell>
+                    {/* Split view : FR à gauche, AR à droite */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
+                      {/* Colonne Français */}
+                      <div className="p-6">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-2">
+                          Français
+                        </p>
+                        <h3 className="text-sm font-semibold text-foreground mb-3">{a.titre}</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{a.base}</p>
+                        {a.type === "smig" && a.plafonds && (
+                          <Table className="mt-3">
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="text-xs">Période</TableHead>
+                                <TableHead className="text-xs text-right">Plafond</TableHead>
                               </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                        <SimulateurPoint numero={a.numero} />
-                      </>
-                    )}
-                  </AccordionContent>
-                </Card>
-              </AccordionItem>
-            ))}
-          </Accordion>
-
-          {avantagesFiltres.length === 0 && (
-            <p className="text-center text-muted-foreground py-8">Aucun avantage ne correspond à cette recherche.</p>
-          )}
+                            </TableHeader>
+                            <TableBody>
+                              {a.plafonds.filter(p => p.actuel).map((p) => (
+                                <TableRow key={p.periode}>
+                                  <TableCell className="text-xs">{p.periode}</TableCell>
+                                  <TableCell className="text-xs text-right font-mono">{formatMontantDT(p.montant)}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        )}
+                      </div>
+                      {/* Colonne Arabe */}
+                      <div dir="rtl" lang="ar" className="p-6">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-2">
+                          العربية
+                        </p>
+                        <h3 className="text-sm font-semibold text-foreground mb-3 leading-loose">
+                          النص القانوني
+                        </h3>
+                        <p className="text-sm text-muted-foreground leading-[2.2]">
+                          النص القانوني
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
 
           <div className="mt-8 p-4 bg-warning/10 rounded-lg border border-warning/25">
             <p className="text-sm text-muted-foreground">

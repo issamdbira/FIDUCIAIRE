@@ -3,7 +3,6 @@ import { Link, useLocation } from "wouter";
 import {
   Calculator,
   Home as HomeIcon,
-  FileText,
   ClipboardList,
   BookOpen,
   Menu,
@@ -14,6 +13,7 @@ import {
   ArrowUpDown,
   FileSearch,
   FileX,
+  ScrollText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "./ThemeToggle";
@@ -25,7 +25,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-// ── Navigation Groups (exact arborescence) ──
+// ── Navigation Groups ──
 interface NavChild {
   label: string;
   href: string;
@@ -65,6 +65,7 @@ const NAV_GROUPS: NavGroup[] = [
     groupLabel: "Ressources",
     items: [
       { label: "Référentiel légal", href: "/referentiel-avantages-exclus", icon: BookOpen },
+      { label: "Formulaires CNSS", href: "/formulaires-cnss", icon: ScrollText },
     ],
   },
 ];
@@ -75,14 +76,11 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <nav className="flex flex-col gap-1 px-3 py-4">
-      {/* Home link */}
       <Link
         href="/"
         onClick={onNavigate}
         className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
-          location === "/"
-            ? "bg-white/10 text-white"
-            : "text-white/60 hover:bg-white/5 hover:text-white"
+          location === "/" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
         }`}
       >
         <HomeIcon className="size-5 shrink-0" />
@@ -103,9 +101,7 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
                 href={item.href}
                 onClick={onNavigate}
                 className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
-                  isActive
-                    ? "bg-white/10 text-white"
-                    : "text-white/50 hover:bg-white/5 hover:text-white/90"
+                  isActive ? "bg-white/10 text-white" : "text-white/50 hover:bg-white/5 hover:text-white/90"
                 }`}
               >
                 <Icon className="size-4 shrink-0" />
@@ -127,42 +123,32 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden">
       {/* ─── Desktop Sidebar (md+) ─── */}
       <aside className="hidden md:flex w-64 shrink-0 flex-col bg-blue-950 h-screen">
-        {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-white/10">
             <Calculator className="size-5 text-white" />
           </div>
-          <span
-            className="text-lg font-bold text-white tracking-tight"
-            style={{ fontFamily: "Montserrat, sans-serif" }}
-          >
+          <span className="text-lg font-bold text-white tracking-tight" style={{ fontFamily: "Montserrat, sans-serif" }}>
             LE FIDUCIAIRE
           </span>
         </div>
 
-        {/* Navigation */}
         <div className="flex-1 overflow-y-auto">
           <NavContent />
         </div>
 
-        {/* Footer: theme toggle */}
         <div className="border-t border-white/10 px-3 py-3">
           <ThemeToggle />
         </div>
       </aside>
 
-      {/* ─── Main workspace ─── */}
+      {/* ─── Main content ─── */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Topbar (< md) */}
         <header className="md:hidden flex h-16 shrink-0 items-center justify-between px-4 border-b bg-background">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
               <Calculator className="size-4 text-primary-foreground" />
             </div>
-            <span
-              className="text-base font-bold text-foreground"
-              style={{ fontFamily: "Montserrat, sans-serif" }}
-            >
+            <span className="text-base font-bold text-foreground" style={{ fontFamily: "Montserrat, sans-serif" }}>
               LE FIDUCIAIRE
             </span>
           </div>
@@ -188,10 +174,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </Sheet>
         </header>
 
-        {/* Page content (scrollable) */}
-        <main className="flex-1 overflow-y-auto bg-background">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto bg-background">{children}</main>
       </div>
     </div>
   );
