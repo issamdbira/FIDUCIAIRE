@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch, useLocation } from "wouter";
+import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Layout from "./components/Layout";
@@ -20,8 +20,6 @@ import FormulairesCNSS from "./pages/FormulairesCNSS";
 import DeclarationsNeant from "./pages/calculateurs/DeclarationsNeant";
 
 function AppRoutes() {
-  const [location] = useLocation();
-
   const routes = (
     <Switch>
       <Route path="/" component={Home} />
@@ -41,10 +39,6 @@ function AppRoutes() {
       <Route component={NotFound} />
     </Switch>
   );
-
-  if (location === "/") {
-    return routes;
-  }
 
   return <Layout>{routes}</Layout>;
 }

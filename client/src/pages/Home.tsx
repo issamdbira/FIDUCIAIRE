@@ -15,9 +15,16 @@ import {
   ShieldCheck,
   Upload,
   FileDown,
-  Calculator,
   ArrowRight,
 } from "lucide-react";
+
+/**
+ * Home — Hub Central (Boîte à Outils)
+ *
+ * Point d'entrée unique de l'application. Tous les outils sont
+ * accessibles depuis cette page. La Top Navbar (Layout) affiche
+ * uniquement le logo + thème + admin.
+ */
 
 /* ─── Outils fonctionnels (tous ont une route réelle) ─── */
 
@@ -120,33 +127,9 @@ const POINTS_FORTS = [
 export default function Home() {
   return (
     <div className="min-h-screen bg-background">
-      {/* ═══════════════ HEADER ═══════════════ */}
-      <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-        <div className="max-w-6xl mx-auto flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-2.5">
-            <Calculator className="size-5 text-primary" />
-            <span
-              className="text-base font-bold text-primary tracking-tight"
-              style={{ fontFamily: "Montserrat, sans-serif" }}
-            >
-              LE FIDUCIAIRE
-            </span>
-          </div>
-          <Link href="/calculateurs/calculer-salaire">
-            <Button
-              size="sm"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
-            >
-              Commencer
-              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-            </Button>
-          </Link>
-        </div>
-      </header>
-
       {/* ═══════════════ HERO ═══════════════ */}
       <section className="relative overflow-hidden bg-gradient-to-b from-primary to-background">
-        <div className="max-w-3xl mx-auto px-4 pt-20 pb-16 text-center">
+        <div className="max-w-3xl mx-auto px-4 pt-16 pb-14 text-center">
           <h1
             className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-5"
             style={{ fontFamily: "Montserrat, sans-serif" }}
@@ -197,7 +180,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══════════════ OUTILS ═══════════════ */}
+      {/* ═══════════════ OUTILS — Hub Central ═══════════════ */}
       <section id="outils" className="max-w-5xl mx-auto px-4 pb-16">
         <h2
           className="text-2xl font-bold text-foreground mb-2"

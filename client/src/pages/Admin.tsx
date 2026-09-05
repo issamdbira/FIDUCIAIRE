@@ -144,9 +144,9 @@ function AdminPanel() {
       <header className="border-b border-border">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/">
-            <Button variant="ghost" className="gap-2 text-primary">
+            <Button variant="outline" className="gap-2 text-slate-700 hover:text-primary dark:text-slate-300 dark:hover:text-primary">
               <ArrowLeft className="w-4 h-4" />
-              Retour aux outils
+              Retour à l'accueil
             </Button>
           </Link>
           <div className="flex gap-2">
