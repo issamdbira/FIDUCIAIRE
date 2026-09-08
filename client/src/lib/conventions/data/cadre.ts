@@ -2,9 +2,11 @@
  * Convention Collective Cadre (ID=176)
  * الاتفاقية الجماعية الإطارية
  *
- * Approuvée par l'arrêté du ministre des Affaires Sociales du 29 Mai 1973
- * paru au JORT des 25-29 Mai - 1er Juin 1973, page n° 852
- * Signée à Tunis le 20 Mars 1973
+ * CONVENTION CADRE GÉNÉRALE — sert de base à toutes les conventions sectorielles.
+ * Ne contient PAS de grille de salaires chiffrée ni de primes avec montants.
+ * Les barèmes, primes et indemnités chiffrées sont dans les conventions SECTORIELLES.
+ *
+ * Source : secteurs_donnees.json (secteur[2])
  */
 
 import type { ConventionCollective } from "../types";
@@ -14,7 +16,7 @@ export const CONVENTION_CADRE: ConventionCollective = {
   slug: "cadre",
   sectorNameFr: "Convention Collective Cadre",
   sectorNameAr: "الاتفاقية الجماعية الإطارية",
-  sourceUrl: "https://paie-tunisie.com/387/fr/176/publications/",
+  sourceUrl: "https://paie-tunisie.com/387/fr/176/publications/convention-collective-cadre",
 
   jortHistory: [
     {
@@ -22,172 +24,61 @@ export const CONVENTION_CADRE: ConventionCollective = {
       signatureDate: "20/03/1973",
       arreteAgrementDate: "29/05/1973",
       jortReference: "n° des 25-29 Mai - 1er Juin 1973, page 852",
-      applicationStart: "29/05/1973",
+      applicationStart: "01/06/1973",
     },
   ],
 
-  primesIndemnites: [
-    // Primes mensuelles — Convention Cadre
-    {
-      frequency: "Mensuelle",
-      name: "Indemnité de transport",
-      description:
-        "Servie à tous les cadres. Montant fixé par décret. À partir du 01/01/2026 : 112,323 dinars, 01/01/2027 : 117,939 dinars, 01/01/2028 : 123,935 dinars",
-      montant: null,
-      dateEffet: "01/01/2026",
-    },
-    {
-      frequency: "Mensuelle",
-      name: "Indemnité de panier",
-      description:
-        "Servie aux cadres effectuant des heures supplémentaires ou travaillant dans des conditions particulières",
-      montant: null,
-      dateEffet: null,
-    },
-    {
-      frequency: "Mensuelle",
-      name: "Prime de responsabilité",
-      description:
-        "Accordée aux cadres occupant des fonctions de direction ou d'encadrement. Montant variable selon le niveau hiérarchique",
-      montant: null,
-      dateEffet: null,
-    },
-    {
-      frequency: "Mensuelle",
-      name: "Prime de technicité",
-      description:
-        "Accordée aux cadres techniques justifiant d'une qualification professionnelle supérieure",
-      montant: null,
-      dateEffet: null,
-    },
-    // Primes annuelles
-    {
-      frequency: "Annuelle",
-      name: "Prime de fin d'année",
-      description:
-        "Fixée au salaire de base d'un mois (13ème mois). Servie en fin d'année ou au moment du départ du salarié",
-      montant: null,
-      dateEffet: null,
-    },
-    {
-      frequency: "Annuelle",
-      name: "Prime de rendement",
-      description:
-        "Variable selon la performance individuelle et les résultats de l'entreprise. Peut atteindre 100% du salaire de base",
-      montant: null,
-      dateEffet: null,
-    },
-    // Primes sociales
-    {
-      frequency: "Sociale",
-      name: "Indemnité de scolarité",
-      description:
-        "Enseignement de base : 20D/élève, Enseignement secondaire : 30D/élève, Enseignement supérieur : 40D/étudiant",
-      montant: null,
-      dateEffet: null,
-    },
-    {
-      frequency: "Sociale",
-      name: "Indemnité de mise en retraite",
-      description:
-        "Accordée au salarié partant à la retraite, fixée au salaire de 4 mois",
-      montant: null,
-      dateEffet: null,
-    },
-    {
-      frequency: "Sociale",
-      name: "Assistance décès",
-      description:
-        "150 dinars en cas du décès du salarié (octroyée à la famille du défunt). 100 dinars en cas du décès du père, de la mère, du conjoint ou d'un enfant",
-      montant: 150,
-      dateEffet: null,
-    },
-  ],
+  primesIndemnites: [], // Aucune prime chiffrée propre — renvoie aux conventions sectorielles
 
-  categoriesSalariales: [], // Pas de grille spécifique dans l'extraction actuelle
+  categoriesSalariales: [], // Pas de grille propre — renvoie aux conventions sectorielles
 
-  grillesSalariales: [], // Grilles salariales à compléter via OCR des PDFs
+  grillesSalariales: [], // Pas de grille propre
 
-  allowances: [], // Allowances à extraire des PDFs
+  allowances: [],
 
   pdfDocuments: [],
 
   resume:
-    "CONVENTION COLLECTIVE CADRE — Approuvée par l'arrêté du ministre des Affaires Sociales du 29 Mai 1973, parue au JORT des 25-29 Mai - 1er Juin 1973, page n° 852. Signée à Tunis le 20 Mars 1973 par MM. Habib ACHOUR et FERJANI BEL HADJ AMMAR respectivement Secrétaire général de l'Union Générale Tunisienne du Travail et Président de l'Union Tunisienne de l'Industrie, du Commerce et de l'Artisanat. Cette convention fixe les conditions d'emploi et de travail des cadres ainsi que les droits et obligations des parties.",
+    "Convention cadre générale servant de base à toutes les conventions collectives sectorielles. " +
+    "Ne contient pas de grille de salaires chiffrée ni de classification détaillée par secteur " +
+    "(celles-ci sont renvoyées aux conventions sectorielles). " +
+    "Contient le cadre juridique commun applicable aux 3 catégories de personnel.",
 
-  engineStatus: "partial",
+  engineStatus: "planned", // Pas de calculs possibles sans données sectorielles
 
+  /** Les 3 catégories de personnel définies par la convention cadre */
   categoriesAgents: [
+    { code: "EXECUTION", labelFr: "Agents d'exécution", labelAr: "أعوان التنفيذ" },
+    { code: "MAITRISE", labelFr: "Agents de maîtrise", labelAr: "أعوان التسيير" },
     { code: "CADRES", labelFr: "Cadres", labelAr: "الإطارات" },
-    {
-      code: "CADRES_SUPERIEURS",
-      labelFr: "Cadres supérieurs",
-      labelAr: "الإطارات الأعلى",
-    },
   ],
 
-  primesMensuelles: [
-    {
-      code: "TRANSPORT",
-      labelFr: "Indemnité de transport",
-      labelAr: "منحة النقل",
-      montants: {
-        CADRES: { "2024": 106.975, "2026": 112.323, "2027": 117.939, "2028": 123.935 },
-      },
-      description: "Servie à tous les cadres",
-    },
-    {
-      code: "PANIER",
-      labelFr: "Indemnité de panier",
-      labelAr: "منحة السلة",
-      montants: {},
-      description: "Conditions particulières de travail",
-    },
-    {
-      code: "RESPONSABILITE",
-      labelFr: "Prime de responsabilité",
-      labelAr: "منحة المسؤولية",
-      montants: {},
-      description: "Fonctions de direction ou d'encadrement",
-    },
-  ],
+  primesMensuelles: [], // Aucun montant — renvoie aux conventions sectorielles
 
-  primesAnnuelles: [
-    {
-      code: "FIN_ANNEE",
-      labelFr: "Prime de fin d'année",
-      labelAr: "منحة نهاية السنة",
-      description: "Salaire de base d'un mois (13ème mois)",
-      modeCalcul: "pourcentage_salaire",
-    },
-    {
-      code: "RENDEMENT",
-      labelFr: "Prime de rendement",
-      labelAr: "منحة الأداء",
-      description: "Variable selon performance individuelle",
-      modeCalcul: "note_dependante",
-    },
-  ],
+  primesAnnuelles: [], // Aucun montant — renvoie aux conventions sectorielles
 
-  primesSociales: [
-    {
-      code: "SCOLARITE",
-      labelFr: "Indemnité de scolarité",
-      labelAr: "منحة التمدرس",
-      description: "Base: 20D, Secondaire: 30D, Supérieur: 40D",
-    },
-    {
-      code: "RETRAITE",
-      labelFr: "Indemnité de mise en retraite",
-      labelAr: "منحة الإحالة على التقاعد",
-      description: "4 mois de salaire",
-    },
-    {
-      code: "DECES",
-      labelFr: "Assistance décès",
-      labelAr: "إعانة الوفاة",
-      description: "150 DT (salarié), 100 DT (famille)",
-      montant: 150,
-    },
+  primesSociales: [], // Aucun montant — renvoie aux conventions sectorielles
+};
+
+// Données structurelles (hors ConventionCollective type)
+export const DONNEES_CADRE = {
+  periodeEssai: [
+    { categorie: "Agents d'exécution", duree: "6 mois" },
+    { categorie: "Agents de maîtrise", duree: "9 mois" },
+    { categorie: "Cadres", duree: "1 an" },
   ],
+  congesSpeciaux: [
+    { evenement: "Naissance d'un enfant", duree: "2 jours ouvrables" },
+    { evenement: "Décès du conjoint", duree: "3 jours ouvrables" },
+    { evenement: "Décès père/mère/fils", duree: "3 jours ouvrables" },
+    { evenement: "Mariage du travailleur", duree: "3 jours ouvrables" },
+    { evenement: "Circoncision d'un enfant", duree: "1 jour ouvrable" },
+  ],
+  joursFeries: [
+    "20 mars", "1er mai", "25 juillet", "7 novembre",
+    "Mouled", "1er et 2ème jour Aïd El Fitr", "1er et 2ème jour Aïd El Idha",
+  ],
+  congeSansSoldeMax: "90 jours/an",
+  reposHebdomadaire: "24 heures consécutives",
+  majorationJourFerie: "100%",
 };

@@ -1,57 +1,43 @@
 /**
  * Moteur de paie professionnel par convention collective
  *
- * Ce moteur est SÉPARÉ du moteur de paie général (lib/payroll/engine.ts).
- * Il utilise les données spécifiques à chaque convention collective :
- * - Primes et indemnités propres au secteur
- * - Catégories d'agents (Exécution, Maîtrise, Cadres)
- * - Grilles salariales sectorielles
- * - Barèmes SMIG/SMAG applicables
+ * RÈGLE FONDAMENTALE :
+ * - IRPP, CNSS, CSS → délégués au moteur principal (lib/payroll/)
+ * - Primes & indemnités → spécifiques à la convention (données réelles uniquement)
+ * - AUCUN montant inventé
  */
 
 import type {
   ConventionCollective,
   PrimeMensuelleStructuree,
-  PrimeAnnuelleStructuree,
-  PrimeSocialeStructuree,
   CategorieAgent,
-  SmigEntry,
 } from "./types";
 import { getSmig, getLatestSmigYear } from "./data/index";
+
+// ─── Importer le moteur principal (SOURCE UNIQUE) ────────────────────
+import { getPayrollConfig } from "../payroll/config";
+import { calculerIRPPAnnuel, calculerFraisProfessionnels, calculerDeductionsAnnuelles } from "../payroll/irpp";
+import type { SituationFamiliale as SituationFamilialePrincipale } from "../payroll/irpp";
 
 // ─── Types entrée/sortie ─────────────────────────────────────────────
 
 export interface SalarieConvention {
-  /** Nom complet */
   nom: string;
   prénom: string;
-  /** Catégorie d'agent dans la convention */
-  categorieAgent: string; // "EXECUTION" | "MAITRISE" | "CADRES" | etc.
-  /** Ancienneté en années */
+  categorieAgent: string;
   anciennete: number;
-  /** Régime de travail */
   regime: "48h" | "40h";
-  /** Situation familiale pour IRPP */
   situationFamiliale: "Célibataire" | "Marié" | "Marié + enfants";
   nombreEnfants: number;
 }
 
 export interface ElementsPaieConvention {
-  /** Salaire de base mensuel (brut) */
   salaireBrut: number;
-  /** Année de référence pour les primes */
   annee: number;
-  /** Mois (1-12) */
   mois: number;
-  /** Heures supplémentaires */
   heuresSup?: number;
-  /** Taux horaire HS */
   tauxHoraireHS?: number;
-  /** Prime de responsabilité (pour cadres) — montant forfaitaire */
-  primeResponsabilite?: number;
-  /** Note professionnelle (0-20) pour primes annuelles */
   noteProfessionnelle?: number;
-  /** Primes exceptionnelles */
   primesExceptionnelles?: number;
 }
 
@@ -66,12 +52,7 @@ export interface LignePaie {
 }
 
 export interface ResultatPaieConvention {
-  convention: {
-    sectorId: number;
-    slug: string;
-    nameFr: string;
-    nameAr: string;
-  };
+  convention: { sectorId: number; slug: string; nameFr: string; nameAr: string };
   salarie: SalarieConvention;
   periode: { mois: number; annee: number; moisNom: string };
   lignes: LignePaie[];
@@ -79,33 +60,15 @@ export interface ResultatPaieConvention {
   totalCotisationsSalariales: number;
   totalRetenues: number;
   netAPayer: number;
-  /** Détail des cotisations patronales */
   cotisationsPatronales: { label: string; montant: number }[];
   totalCotisationsPatronales: number;
 }
 
-// ─── Constantes CNSS / CSS / IRPP ────────────────────────────────────
-// (Mêmes taux que le moteur général, mais accessibles ici aussi)
-
-const CNSS_SALARIAL = 0.0918;    // 9,18%
-const CNSS_PATRONAL = 0.1643;    // 16,43%
-const CSS_SALARIAL = 0.01;       // 1%
-const CSS_PATRONAL = 0.02;       // 2%
-const PLAFOND_CNSS_MENSUEL = 5000; // 5000 DT
+// ─── Constantes ──────────────────────────────────────────────────────
 
 const MOIS_NOMS = [
   "", "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
-];
-
-// ─── Barème IRPP 2024 ────────────────────────────────────────────────
-const BAREME_IRPP = [
-  { min: 0, max: 5000, taux: 0 },
-  { min: 5000, max: 10000, taux: 0.26 },
-  { min: 10000, max: 20000, taux: 0.28 },
-  { min: 20000, max: 30000, taux: 0.32 },
-  { min: 30000, max: 50000, taux: 0.35 },
-  { min: 50000, max: Infinity, taux: 0.37 },
 ];
 
 // ─── Fonctions utilitaires ───────────────────────────────────────────
@@ -114,7 +77,7 @@ function round3(n: number): number {
   return Math.round(n * 1000) / 1000;
 }
 
-/** Obtenir la meilleure année disponible pour les primes (année demandée ou la plus proche inférieure) */
+/** Obtenir la meilleure année disponible (année demandée ou la plus proche inférieure) */
 function getBestYear(availableYears: string[], targetYear: number): string | null {
   const years = availableYears.map(Number).sort((a, b) => b - a);
   for (const y of years) {
@@ -131,41 +94,9 @@ function getMontantPrime(
 ): number {
   const catMontants = prime.montants[categorieAgent];
   if (!catMontants) return 0;
-
   const bestYear = getBestYear(Object.keys(catMontants), annee);
   if (!bestYear) return 0;
-
   return catMontants[bestYear] ?? 0;
-}
-
-/** Calcul IRPP mensuel simplifié */
-function calculerIRPPMensuel(
-  netImposableAnnuel: number,
-  situationFamiliale: string,
-  nombreEnfants: number,
-): number {
-  // Déductions
-  let deductions = 0;
-  if (situationFamiliale === "Marié" || situationFamiliale === "Marié + enfants") {
-    deductions += 300; // Chef de famille
-  }
-  deductions += nombreEnfants * 90; // Par enfant à charge
-  deductions += Math.min(netImposableAnnuel * 0.1, 2000); // Frais professionnels (10%, max 2000)
-
-  const revenuImposable = Math.max(0, netImposableAnnuel - deductions);
-
-  // Calcul par tranches
-  let irpp = 0;
-  let reste = revenuImposable;
-  for (const tranche of BAREME_IRPP) {
-    if (reste <= 0) break;
-    const largeur = tranche.max - tranche.min;
-    const imposable = Math.min(reste, largeur);
-    irpp += imposable * tranche.taux;
-    reste -= imposable;
-  }
-
-  return round3(irpp / 12); // Mensuel
 }
 
 // ─── Moteur principal ────────────────────────────────────────────────
@@ -177,19 +108,16 @@ export function calculerPaieConvention(
 ): ResultatPaieConvention {
   const lignes: LignePaie[] = [];
   const cotPat: { label: string; montant: number }[] = [];
+  const config = getPayrollConfig();
 
   // 1. Salaire de base
   lignes.push({
-    code: "SB",
-    labelFr: "Salaire de base",
-    labelAr: "الأجر الأساسي",
-    montant: elements.salaireBrut,
-    type: "gain",
+    code: "SB", labelFr: "Salaire de base", labelAr: "الأجر الأساسي",
+    montant: elements.salaireBrut, type: "gain",
   });
-
   let totalBrut = elements.salaireBrut;
 
-  // 2. Primes mensuelles de la convention
+  // 2. Primes mensuelles de la convention (DONNÉES RÉELLES UNIQUEMENT)
   if (convention.primesMensuelles) {
     for (const prime of convention.primesMensuelles) {
       // Prime de caisse : dépend de l'ancienneté
@@ -198,11 +126,8 @@ export function calculerPaieConvention(
         if (salarie.anciennete >= 5 && salarie.anciennete < 10) montantCaisse = 10;
         if (salarie.anciennete >= 10) montantCaisse = 15;
         lignes.push({
-          code: prime.code,
-          labelFr: prime.labelFr,
-          labelAr: prime.labelAr,
-          montant: round3(montantCaisse),
-          type: "gain",
+          code: prime.code, labelFr: prime.labelFr, labelAr: prime.labelAr,
+          montant: round3(montantCaisse), type: "gain",
         });
         totalBrut += montantCaisse;
         continue;
@@ -211,110 +136,74 @@ export function calculerPaieConvention(
       const montant = getMontantPrime(prime, salarie.categorieAgent, elements.annee);
       if (montant > 0) {
         lignes.push({
-          code: prime.code,
-          labelFr: prime.labelFr,
-          labelAr: prime.labelAr,
-          montant: round3(montant),
-          type: "gain",
+          code: prime.code, labelFr: prime.labelFr, labelAr: prime.labelAr,
+          montant: round3(montant), type: "gain",
         });
         totalBrut += montant;
       }
     }
   }
 
-  // 3. Prime de responsabilité (cadres)
-  if (elements.primeResponsabilite && elements.primeResponsabilite > 0) {
-    lignes.push({
-      code: "RESPONSABILITE",
-      labelFr: "Prime de responsabilité",
-      labelAr: "منحة المسؤولية",
-      montant: round3(elements.primeResponsabilite),
-      type: "gain",
-    });
-    totalBrut += elements.primeResponsabilite;
-  }
-
-  // 4. Heures supplémentaires
+  // 3. Heures supplémentaires
   if (elements.heuresSup && elements.heuresSup > 0) {
     const tauxHS = elements.tauxHoraireHS ?? (elements.salaireBrut / (salarie.regime === "48h" ? 208 : 173.33));
-    const majoration = elements.heuresSup <= 8 ? 1.25 : 1.5; // 25% premières 8h, 50% au-delà
+    const majoration = elements.heuresSup <= 8 ? 1.25 : 1.5;
     const montantHS = round3(tauxHS * majoration * elements.heuresSup);
     lignes.push({
-      code: "HS",
-      labelFr: "Heures supplémentaires",
-      labelAr: "الساعات الإضافية",
-      montant: montantHS,
-      type: "gain",
-      base: elements.heuresSup,
-      taux: majoration,
+      code: "HS", labelFr: "Heures supplémentaires", labelAr: "الساعات الإضافية",
+      montant: montantHS, type: "gain", base: elements.heuresSup, taux: majoration,
     });
     totalBrut += montantHS;
   }
 
-  // 5. Primes exceptionnelles
+  // 4. Primes exceptionnelles
   if (elements.primesExceptionnelles && elements.primesExceptionnelles > 0) {
     lignes.push({
-      code: "EXCEPT",
-      labelFr: "Primes exceptionnelles",
-      labelAr: "منح استثنائية",
-      montant: round3(elements.primesExceptionnelles),
-      type: "gain",
+      code: "EXCEPT", labelFr: "Primes exceptionnelles", labelAr: "منح استثنائية",
+      montant: round3(elements.primesExceptionnelles), type: "gain",
     });
     totalBrut += elements.primesExceptionnelles;
   }
 
-  // ─── Retenues ──────────────────────────────────────────────────────
+  // ─── Retenues — DÉLÉGUÉES AU MOTEUR PRINCIPAL ──────────────────────
+  const PLAFOND_CNSS_MENSUEL = 5000; // 5000 DT — plafond CNSS mensuel
   const assietteCNSS = Math.min(totalBrut, PLAFOND_CNSS_MENSUEL);
 
-  // 6. CNSS salariale
-  const cnssSalarial = round3(assietteCNSS * CNSS_SALARIAL);
+  // 5. CNSS salariale (depuis config)
+  const cnssSalarial = round3(assietteCNSS * config.cnssSalarialNonAgricole);
   lignes.push({
-    code: "CNSS_S",
-    labelFr: "CNSS (part salariale)",
-    labelAr: "الضمان الاجتماعي (نسبة الأجير)",
-    montant: cnssSalarial,
-    type: "retenue",
-    base: assietteCNSS,
-    taux: CNSS_SALARIAL,
+    code: "CNSS_S", labelFr: "CNSS (part salariale)", labelAr: "الضمان الاجتماعي (نسبة الأجير)",
+    montant: cnssSalarial, type: "retenue", base: assietteCNSS, taux: config.cnssSalarialNonAgricole,
   });
+  cotPat.push({ label: "CNSS (part patronale)", montant: round3(assietteCNSS * config.cnssPatronalNonAgricole) });
 
-  // CNSS patronale
-  cotPat.push({
-    label: "CNSS (part patronale)",
-    montant: round3(assietteCNSS * CNSS_PATRONAL),
-  });
+  // 6. CSS (depuis config)
+  const cssSalarial = config.cssActive ? round3(totalBrut * config.cssTaux) : 0;
+  if (cssSalarial > 0) {
+    lignes.push({
+      code: "CSS_S", labelFr: "CSS (part salariale)", labelAr: "المساهمة الاجتماعية للتضامن",
+      montant: cssSalarial, type: "retenue", base: totalBrut, taux: config.cssTaux,
+    });
+    cotPat.push({ label: "CSS (part patronale)", montant: round3(totalBrut * config.cssTaux * 2) });
+  }
 
-  // 7. CSS salariale
-  const cssSalarial = round3(totalBrut * CSS_SALARIAL);
-  lignes.push({
-    code: "CSS_S",
-    labelFr: "CSS (part salariale)",
-    labelAr: "المساهمة الاجتماعية للتضامن (نسبة الأجير)",
-    montant: cssSalarial,
-    type: "retenue",
-    base: totalBrut,
-    taux: CSS_SALARIAL,
-  });
-
-  cotPat.push({
-    label: "CSS (part patronale)",
-    montant: round3(totalBrut * CSS_PATRONAL),
-  });
-
-  // 8. IRPP (calcul simplifié sur base annuelle)
+  // 7. IRPP — DÉLÉGUÉ AU MOTEUR PRINCIPAL (calculerIRPPAnnuel + déductions)
   const netImposableAnnuel = (totalBrut - cnssSalarial) * 12;
-  const irppMensuel = calculerIRPPMensuel(
-    netImposableAnnuel,
-    salarie.situationFamiliale,
-    salarie.nombreEnfants,
-  );
+  const fraisPro = calculerFraisProfessionnels(netImposableAnnuel);
+  const situationIRPP: SituationFamilialePrincipale = {
+    chefFamille: salarie.situationFamiliale !== "Célibataire",
+    enfants: salarie.nombreEnfants,
+    etudiants: 0,
+    infirmes: 0,
+    autresDeductionsAnnuelles: 0,
+  };
+  const deductionsAnnuelles = calculerDeductionsAnnuelles(situationIRPP);
+  const irppAnnuel = calculerIRPPAnnuel(netImposableAnnuel, deductionsAnnuelles + fraisPro);
+  const irppMensuel = round3(irppAnnuel / 12);
   if (irppMensuel > 0) {
     lignes.push({
-      code: "IRPP",
-      labelFr: "IRPP (retenue à la source)",
-      labelAr: "الضريبة على الدخل",
-      montant: round3(irppMensuel),
-      type: "retenue",
+      code: "IRPP", labelFr: "IRPP (retenue à la source)", labelAr: "الضريبة على الدخل",
+      montant: irppMensuel, type: "retenue",
     });
   }
 
@@ -325,18 +214,9 @@ export function calculerPaieConvention(
   const totalCotisationsPatronales = round3(cotPat.reduce((s, c) => s + c.montant, 0));
 
   return {
-    convention: {
-      sectorId: convention.sectorId,
-      slug: convention.slug,
-      nameFr: convention.sectorNameFr,
-      nameAr: convention.sectorNameAr,
-    },
+    convention: { sectorId: convention.sectorId, slug: convention.slug, nameFr: convention.sectorNameFr, nameAr: convention.sectorNameAr },
     salarie,
-    periode: {
-      mois: elements.mois,
-      annee: elements.annee,
-      moisNom: MOIS_NOMS[elements.mois],
-    },
+    periode: { mois: elements.mois, annee: elements.annee, moisNom: MOIS_NOMS[elements.mois] },
     lignes,
     totalBrut: round3(totalBrut),
     totalCotisationsSalariales: round3(totalCotisationsSalariales),
@@ -347,21 +227,15 @@ export function calculerPaieConvention(
   };
 }
 
-// ─── Résumé de la convention (pour page détail) ──────────────────────
+// ─── Résumé de la convention ─────────────────────────────────────────
 
 export interface ResumeConvention {
   convention: ConventionCollective;
-  /** Dernier avenant en date */
   dernierAvenant?: string;
-  /** Nombre total de primes mensuelles */
   nbPrimesMensuelles: number;
-  /** Nombre total de primes annuelles */
   nbPrimesAnnuelles: number;
-  /** Nombre total de primes sociales */
   nbPrimesSociales: number;
-  /** Catégories d'agents */
   categoriesAgents: CategorieAgent[];
-  /** SMIG applicable (année la plus récente) */
   smigMensuel48h: number;
   smigMensuel40h: number;
 }
@@ -369,7 +243,6 @@ export interface ResumeConvention {
 export function getResumeConvention(convention: ConventionCollective): ResumeConvention {
   const dernierJort = convention.jortHistory[convention.jortHistory.length - 1];
   const latestYear = getLatestSmigYear();
-
   return {
     convention,
     dernierAvenant: dernierJort?.documentType,

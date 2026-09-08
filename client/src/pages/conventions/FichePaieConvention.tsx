@@ -83,7 +83,6 @@ export default function FichePaieConvention() {
   const [annee, setAnnee] = useState("2026");
   const [mois, setMois] = useState("1");
   const [heuresSup, setHeuresSup] = useState("");
-  const [primeResponsabilite, setPrimeResponsabilite] = useState("");
   const [noteProfessionnelle, setNoteProfessionnelle] = useState("");
 
   // ─── Résultat ────────────────────────────────────────────────────
@@ -109,7 +108,6 @@ export default function FichePaieConvention() {
       annee: parseInt(annee) || 2026,
       mois: parseInt(mois) || 1,
       heuresSup: parseFloat(heuresSup) || undefined,
-      primeResponsabilite: parseFloat(primeResponsabilite) || undefined,
       noteProfessionnelle: parseFloat(noteProfessionnelle) || undefined,
     };
 
@@ -128,7 +126,7 @@ export default function FichePaieConvention() {
     annee,
     mois,
     heuresSup,
-    primeResponsabilite,
+
     noteProfessionnelle,
   ]);
 
@@ -337,17 +335,7 @@ export default function FichePaieConvention() {
                       placeholder="0"
                     />
                   </div>
-                  <div>
-                    <Label className="text-xs">Prime responsabilité</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.001"
-                      value={primeResponsabilite}
-                      onChange={(e) => setPrimeResponsabilite(e.target.value)}
-                      placeholder="0"
-                    />
-                  </div>
+
                 </div>
                 <div>
                   <Label className="text-xs">Note professionnelle (0-20)</Label>
