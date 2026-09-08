@@ -17,6 +17,7 @@ import {
   FileDown,
   ArrowRight,
   Mail,
+  Building2,
 } from "lucide-react";
 
 /**
@@ -216,6 +217,39 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ═══════════════ CONVENTIONS COLLECTIVES ═══════════════ */}
+      <section className="max-w-5xl mx-auto px-4 pb-14">
+        <h2
+          className="text-2xl font-bold text-foreground mb-2"
+          style={{ fontFamily: "Montserrat, sans-serif" }}
+        >
+          Conventions Collectives
+        </h2>
+        <p className="text-muted-foreground text-sm mb-6">
+          Moteur de paie professionnel par convention collective sectorielle.
+        </p>
+        <Link href="/conventions">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer rounded-lg shadow-sm border border-primary/30 bg-card group">
+            <div className="p-6 flex items-center gap-5">
+              <div className="shrink-0 flex h-14 w-14 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30">
+                <Building2 className="h-7 w-7 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-foreground mb-1">
+                  Conventions Collectives — Moteur de Paie
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Sélectionnez votre convention collective (Cadre, Commerce gros/demi-gros, etc.)
+                  et générez des fiches de paie avec les primes, indemnités et grilles salariales
+                  spécifiques à votre secteur.
+                </p>
+              </div>
+              <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+            </div>
+          </Card>
+        </Link>
+      </section>
+
       {/* ═══════════════ RESSOURCES ═══════════════ */}
       <section className="max-w-5xl mx-auto px-4 pb-10">
         <h2
@@ -247,6 +281,11 @@ export default function Home() {
             Le Fiduciaire — Plateforme de gestion de paie et conformité sociale tunisienne.
           </p>
           <div className="flex items-center gap-4">
+            <Link href="/conventions">
+              <span className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                Conventions
+              </span>
+            </Link>
             <Link href="/guides">
               <span className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
                 Guides
