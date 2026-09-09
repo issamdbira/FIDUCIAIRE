@@ -81,6 +81,9 @@ export default function FichePaieConvention() {
   const [situationFamiliale, setSituationFamiliale] = useState("Célibataire");
   const [nombreEnfants, setNombreEnfants] = useState("0");
 
+  // ─── Poste spécifique (caissier, etc.) ─────────────────────────────
+  const [isCaissier, setIsCaissier] = useState(false);
+
   // ─── Période ─────────────────────────────────────────────────────
   const [annee, setAnnee] = useState("2026");
   const [mois, setMois] = useState(String(new Date().getMonth() + 1));
@@ -138,6 +141,7 @@ export default function FichePaieConvention() {
 
   const handleCategorieChange = useCallback((cat: string) => {
     setCategorieAgent(cat);
+    setIsCaissier(false); // Reset caissier when category changes
     clearResult();
     if (convention) {
       const echelles = getEchellesPourCategorie(convention, cat);
@@ -165,6 +169,7 @@ export default function FichePaieConvention() {
       regime,
       situationFamiliale: situationFamiliale as SalarieConvention["situationFamiliale"],
       nombreEnfants: parseInt(nombreEnfants) || 0,
+      poste: isCaissier ? "caissier" : undefined,
     };
 
     if (mode === "net-to-brut") {
@@ -195,7 +200,7 @@ export default function FichePaieConvention() {
     }
   }, [
     convention, mode, nom, prenom, categorieAgent, categorieDetectee,
-    anciennete, regime, situationFamiliale, nombreEnfants,
+    anciennete, regime, situationFamiliale, nombreEnfants, isCaissier,
     echelle, echelonDetecte, salaireAuto, annee, mois,
     heuresSup, primesExceptionnelles, netSouhaite,
   ]);
@@ -206,16 +211,19 @@ export default function FichePaieConvention() {
     if (!el) { toast.error("Aucun contenu à exporter"); return; }
     setExportEnCours(true);
     try {
-      const html2pdf = (await import("html2pdf.js")).default;
+      // Dynamic import — handle both ESM and CJS default exports
+      const html2pdfModule = await import("html2pdf.js");
+      const html2pdf = html2pdfModule.default || html2pdfModule;
       const sanitizer = (s: string) =>
         s.trim().replace(/[^a-zA-Z0-9\u00C0-\u024F\u1E00-\u1EFF_\- ]/g, "").replace(/\s+/g, "_").slice(0, 40);
       const filename = `Fiche_Paie_${sanitizer(nom) || "Salarie"}_${MOIS_NOMS_EXPORT[(parseInt(mois) || 1) - 1]}_${annee}.pdf`;
+
       await html2pdf()
         .set({
           margin: [8, 6, 8, 6],
           filename,
           image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
+          html2canvas: { scale: 2, useCORS: true, logging: false, allowTaint: true, backgroundColor: "#ffffff" },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         })
         .from(el)
@@ -363,6 +371,24 @@ export default function FichePaieConvention() {
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Caissier checkbox — only for EXECUTION category */}
+                {categorieAgent === "EXECUTION" && (
+                  <label className="flex items-center gap-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isCaissier}
+                      onChange={(e) => { setIsCaissier(e.target.checked); clearResult(); }}
+                      className="h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500"
+                    />
+                    <span className="text-xs font-medium text-amber-800 dark:text-amber-200">
+                      Poste : Caissier
+                    </span>
+                    <span className="text-[10px] text-amber-600 dark:text-amber-400 ml-auto">
+                      → Prime de caisse
+                    </span>
+                  </label>
+                )}
+
                 <div>
                   <Label className="text-[10px]">Échelle (grade)</Label>
                   <Select value={echelle} onValueChange={(e) => { setEchelle(e); clearResult(); }}>
@@ -469,6 +495,7 @@ export default function FichePaieConvention() {
                 resultatNetToBrut={resultatNetToBrut}
                 echelle={parseInt(echelle)}
                 echelon={echelonDetecte}
+                poste={isCaissier ? "caissier" : undefined}
                 employeurNom={employeurNom}
                 employeurLogoDataUrl={employeurLogoDataUrl}
                 conventionName={convention.sectorNameFr}
@@ -504,6 +531,7 @@ function FichePaiePrintable({
   resultatNetToBrut,
   echelle,
   echelon,
+  poste,
   employeurNom,
   employeurLogoDataUrl,
   conventionName,
@@ -516,6 +544,7 @@ function FichePaiePrintable({
   resultatNetToBrut: ResultatNetToBrut | null;
   echelle: number;
   echelon: number;
+  poste?: string;
   employeurNom: string;
   employeurLogoDataUrl?: string;
   conventionName: string;
@@ -596,10 +625,11 @@ function FichePaiePrintable({
           </div>
 
           {/* Salarie strip */}
-          <div className="grid grid-cols-4 border-b text-[11px]" style={{ borderColor: HAIRLINE }}>
+          <div className="grid grid-cols-5 border-b text-[11px]" style={{ borderColor: HAIRLINE }}>
             {[
               { label: "Salarié", value: `${resultat.salarie.prénom} ${resultat.salarie.nom}` },
               { label: "Catégorie", value: resultat.salarie.categorieAgent },
+              { label: "Poste", value: poste || "—" },
               { label: "Échelle / Échelon", value: `${echelle} / ${echelon}` },
               { label: "Régime", value: resultat.salarie.regime },
             ].map((item, i) => (

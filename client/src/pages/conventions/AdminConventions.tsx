@@ -457,6 +457,7 @@ function PrimesMensuellesSection({
                 <TableHead>Catégories</TableHead>
                 <TableHead className="text-center">Anc. min</TableHead>
                 <TableHead>Mode calcul</TableHead>
+                <TableHead>Poste requis</TableHead>
                 <TableHead className="text-center">Actif</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -533,6 +534,16 @@ function PrimesMensuellesSection({
                         <SelectItem value="note_dependant">Note-dépendant</SelectItem>
                       </SelectContent>
                     </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      className="h-8 w-28 text-xs"
+                      placeholder="ex: caissier"
+                      value={newPrime.posteRequis ?? ""}
+                      onChange={(e) =>
+                        setNewPrime({ ...newPrime, posteRequis: e.target.value || undefined })
+                      }
+                    />
                   </TableCell>
                   <TableCell className="text-center">
                     <Switch
@@ -695,6 +706,18 @@ function PrimesMensuellesSection({
                               ? "Note-dép."
                               : "Forfaitaire"}
                           </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {isEditing ? (
+                          <Input
+                            className="h-8 w-28 text-xs"
+                            placeholder="ex: caissier"
+                            value={p.posteRequis ?? ""}
+                            onChange={(e) => updateEditField("posteRequis", e.target.value || undefined)}
+                          />
+                        ) : (
+                          <span className="text-xs">{p.posteRequis ?? "—"}</span>
                         )}
                       </TableCell>
                       <TableCell className="text-center">

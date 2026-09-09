@@ -35,7 +35,7 @@ export const CONVENTION_COMMERCE_GROS: ConventionCollective = {
   primesIndemnites: [
     { frequency: "Mensuelle", name: "Indemnité de transport", description: "Par catégorie d'agent. Inclut décret 503/1982.", montant: null, dateEffet: "2021-12-01" },
     { frequency: "Mensuelle", name: "Prime de présence", description: "Montant unique, non différencié.", montant: null, dateEffet: "2021-01-01" },
-    { frequency: "Mensuelle", name: "Prime de caisse", description: "Selon ancienneté : <5ans=5D, 5-10ans=10D, >10ans=15D", montant: null, dateEffet: null },
+    { frequency: "Mensuelle", name: "Prime de caisse", description: "Poste caissier uniquement. Selon ancienneté : <5ans=5D, 5-10ans=10D, >10ans=15D", montant: null, dateEffet: null },
     { frequency: "Annuelle", name: "Prime de productivité", description: "Selon note professionnelle.", montant: null, dateEffet: null },
     { frequency: "Annuelle", name: "Prime de fin d'année", description: "0,5 mois de salaire de base", montant: null, dateEffet: null },
     { frequency: "Frais employeur", name: "Vêtements de travail", description: "À la charge de l'employeur", montant: null, dateEffet: null },
@@ -129,9 +129,10 @@ export const CONVENTION_COMMERCE_GROS: ConventionCollective = {
       montants: {
         EXECUTION: { "default": 5 },
       },
-      description: "Agents de caisse uniquement (exécution). Selon ancienneté : <5ans=5D, 5-10ans=10D, >10ans=15D",
+      description: "Uniquement pour les agents occupant le poste de caissier. Selon ancienneté : <5ans=5D, 5-10ans=10D, >10ans=15D",
       categoriesConcernees: ["EXECUTION"],
       ancienneteMin: 0,
+      posteRequis: "caissier",
       modeCalcul: "anciennete_dependant",
       baremeAnciennete: [
         { ancienneteMin: 0, ancienneteMax: 4, montant: 5 },
@@ -167,7 +168,7 @@ export const CONVENTION_COMMERCE_GROS: ConventionCollective = {
 
   primesSociales: [
     { code: "SCOLARITE", labelFr: "Indemnité de scolarité", labelAr: "منحة التمدرس", description: "Base: 20D, Secondaire: 30D, Supérieur: 40D", categoriesConcernees: ["EXECUTION", "MAITRISE", "CADRES"], ancienneteMin: 1, actif: true },
-    { code: "RETRAITE", labelFr: "Indemnité de mise en retraite", labelAr: "منحة الإحالة على التقاعد", description: "4 mois de salaire", categoriesConcernees: ["EXECUTION", "MAITRISE", "CADRES"], ancienneteMin: 0, actif: true },
+    { code: "RETRAITE", labelFr: "Indemnité de mise en retraite", labelAr: "منحة الإحالة على التقاعد", description: "4 mois de salaire", categoriesConcernees: ["EXECUTION", "MAITRISE", "CADRES"], ancienneteMin: 10, actif: true },
     { code: "DECES", labelFr: "Assistance décès", labelAr: "إعانة الوفاة", description: "150D (salarié), 100D (famille)", montant: 150, categoriesConcernees: ["EXECUTION", "MAITRISE", "CADRES"], ancienneteMin: 0, actif: true },
   ],
 };

@@ -173,6 +173,8 @@ export interface PrimeMensuelleStructuree {
   modeCalcul?: "forfaitaire" | "anciennete_dependant" | "note_dependant";
   /** Barème ancienneté si modeCalcul = "anciennete_dependant" */
   baremeAnciennete?: { ancienneteMin: number; ancienneteMax: number; montant: number }[];
+  /** Poste/fonction spécifique requis pour cette prime (ex: "caissier") — le salarié doit avoir ce poste */
+  posteRequis?: string;
 }
 
 // ─── Primes annuelles structurées ────────────────────────────────────

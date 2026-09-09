@@ -375,7 +375,14 @@ function DroitsMensuelsRecap({
           // Default-based prime (like prime de caisse)
           return (
             <div key={prime.code} className="mb-4">
-              <h3 className="font-semibold mb-2">{prime.labelFr}</h3>
+              <h3 className="font-semibold mb-2 flex items-center gap-2">
+                {prime.labelFr}
+                {prime.posteRequis && (
+                  <Badge variant="outline" className="text-[10px] font-normal border-amber-400 text-amber-700">
+                    Poste : {prime.posteRequis}
+                  </Badge>
+                )}
+              </h3>
               {prime.description && <p className="text-sm text-muted-foreground mb-2">{prime.description}</p>}
               <div className="overflow-x-auto">
                 <Table>
@@ -414,7 +421,14 @@ function DroitsMensuelsRecap({
 
         return (
           <div key={prime.code} className="mb-4">
-            <h3 className="font-semibold mb-2">{prime.labelFr}</h3>
+            <h3 className="font-semibold mb-2 flex items-center gap-2">
+              {prime.labelFr}
+              {prime.posteRequis && (
+                <Badge variant="outline" className="text-[10px] font-normal border-amber-400 text-amber-700">
+                  Poste : {prime.posteRequis}
+                </Badge>
+              )}
+            </h3>
             {prime.description && <p className="text-sm text-muted-foreground mb-2">{prime.description}</p>}
             <div className="overflow-x-auto">
               <Table>

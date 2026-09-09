@@ -31,6 +31,8 @@ export interface SalarieConvention {
   regime: "48h" | "40h";
   situationFamiliale: "Célibataire" | "Marié" | "Marié + enfants";
   nombreEnfants: number;
+  /** Poste/fonction spécifique du salarié (ex: "caissier") — utilisé pour les primes à poste requis */
+  poste?: string;
 }
 
 export interface ElementsPaieConvention {
@@ -132,6 +134,9 @@ export function calculerPaieConvention(
       // Vérifier l'ancienneté minimum
       const ancienneteMinPrime = prime.ancienneteMin ?? 0;
       if (salarie.anciennete < ancienneteMinPrime) continue;
+
+      // Vérifier le poste requis (ex: "caissier" pour Prime de caisse)
+      if (prime.posteRequis && salarie.poste !== prime.posteRequis) continue;
 
       // Prime à barème d'ancienneté
       if (prime.modeCalcul === "anciennete_dependant" && prime.baremeAnciennete) {
