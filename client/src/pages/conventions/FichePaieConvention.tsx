@@ -211,7 +211,7 @@ export default function FichePaieConvention() {
                     <SelectContent>
                       {convention.categoriesAgents?.map((cat) => (
                         <SelectItem key={cat.code} value={cat.code}>
-                          {cat.labelFr} — {cat.labelAr}
+                          {cat.labelFr}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -442,14 +442,7 @@ function FichePaieResult({ resultat }: { resultat: ResultatPaieConvention }) {
               {gains.map((l) => (
                 <TableRow key={l.code}>
                   <TableCell className="font-mono text-xs">{l.code}</TableCell>
-                  <TableCell>
-                    {l.labelFr}
-                    {l.labelAr && (
-                      <span className="text-xs text-muted-foreground ml-2" dir="rtl">
-                        {l.labelAr}
-                      </span>
-                    )}
-                  </TableCell>
+                  <TableCell>{l.labelFr}</TableCell>
                   <TableCell className="text-right font-mono text-xs">
                     {l.base != null ? l.base : "—"}
                   </TableCell>
@@ -473,14 +466,7 @@ function FichePaieResult({ resultat }: { resultat: ResultatPaieConvention }) {
               {retenues.map((l) => (
                 <TableRow key={l.code}>
                   <TableCell className="font-mono text-xs">{l.code}</TableCell>
-                  <TableCell>
-                    {l.labelFr}
-                    {l.labelAr && (
-                      <span className="text-xs text-muted-foreground ml-2" dir="rtl">
-                        {l.labelAr}
-                      </span>
-                    )}
-                  </TableCell>
+                  <TableCell>{l.labelFr}</TableCell>
                   <TableCell className="text-right font-mono text-xs">
                     {l.base != null ? formatMontantDT(l.base) : "—"}
                   </TableCell>

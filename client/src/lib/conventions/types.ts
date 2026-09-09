@@ -41,12 +41,19 @@ export interface CategorieSalariale {
   currency: "TND";
 }
 
-// ─── Grille Salariale (référence PDF) ────────────────────────────────
+// ─── Grille Salariale ───────────────────────────────────────────────
 export interface GrilleSalarialeRef {
   tableNum: number;
   applicationDate: string;     // Texte (parfois en arabe)
   note?: string;
   pdfUrl?: string;
+}
+
+/** Ligne d'une grille salariale avec montants par année */
+export interface GrilleSalarialeLigne {
+  categorieCode: string;        // "EXECUTION" | "MAITRISE" | "CADRES" | "CADRES_SUPERIEURS"
+  echelon: number;              // 1, 2, 3...
+  montants: Record<string, number>; // { "2021": 432.168, "2023": 461.512, ... }
 }
 
 // ─── Allowance (extrait PDF) ────────────────────────────────────────
@@ -92,6 +99,9 @@ export interface ConventionCollective {
 
   /** Références aux grilles salariales (PDF) */
   grillesSalariales: GrilleSalarialeRef[];
+
+  /** Grille salariale détaillée avec montants par échelon et année */
+  grilleDetaillee?: GrilleSalarialeLigne[];
 
   /** Allowances extraites des PDF */
   allowances: Allowance[];

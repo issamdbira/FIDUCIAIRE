@@ -109,6 +109,37 @@ export const CONVENTION_COMMERCE_GROS: ConventionCollective = {
     { tableNum: 6, applicationDate: "2021", note: "Cadres supérieurs" },
   ],
 
+  /** Grille salariale détaillée — DONNÉES RÉELLES (source: PAIE-TUNISIE + arrêtés officiels) */
+  grilleDetaillee: [
+    // ── Employés / Ouvriers (Agents d'exécution) — 8 échelons ──
+    { categorieCode: "EXECUTION", echelon: 1, montants: { "2021": 432.168, "2023": 461.512, "2024": 492.816, "2026": 528.32, "2027": 554.736, "2028": 582.4 } },
+    { categorieCode: "EXECUTION", echelon: 2, montants: { "2021": 442.728, "2023": 472.808, "2024": 504.856, "2026": 541.248, "2027": 568.312, "2028": 596.696 } },
+    { categorieCode: "EXECUTION", echelon: 3, montants: { "2021": 453.288, "2023": 484.104, "2024": 516.896, "2026": 554.176, "2027": 581.888, "2028": 610.992 } },
+    { categorieCode: "EXECUTION", echelon: 4, montants: { "2021": 463.848, "2023": 495.4, "2024": 528.936, "2026": 567.104, "2027": 595.464, "2028": 625.288 } },
+    { categorieCode: "EXECUTION", echelon: 5, montants: { "2021": 474.408, "2023": 506.696, "2024": 540.976, "2026": 580.032, "2027": 609.04, "2028": 639.584 } },
+    { categorieCode: "EXECUTION", echelon: 6, montants: { "2021": 484.968, "2023": 517.992, "2024": 553.016, "2026": 592.96, "2027": 622.616, "2028": 653.88 } },
+    { categorieCode: "EXECUTION", echelon: 7, montants: { "2021": 495.528, "2023": 529.288, "2024": 565.056, "2026": 605.888, "2027": 636.192, "2028": 668.176 } },
+    { categorieCode: "EXECUTION", echelon: 8, montants: { "2021": 506.088, "2023": 540.584, "2024": 577.096, "2026": 618.816, "2027": 649.768, "2028": 682.472 } },
+    // ── Agents de maîtrise — 8 échelons ──
+    { categorieCode: "MAITRISE", echelon: 1, montants: { "2021": 540.584, "2023": 577.304, "2024": 616.368, "2026": 660.816, "2027": 693.856, "2028": 728.544 } },
+    { categorieCode: "MAITRISE", echelon: 2, montants: { "2021": 553.768, "2023": 591.392, "2024": 631.416, "2026": 676.952, "2027": 710.8, "2028": 746.34 } },
+    { categorieCode: "MAITRISE", echelon: 3, montants: { "2021": 566.952, "2023": 605.48, "2024": 646.464, "2026": 693.088, "2027": 727.744, "2028": 764.136 } },
+    { categorieCode: "MAITRISE", echelon: 4, montants: { "2021": 580.136, "2023": 619.568, "2024": 661.512, "2026": 709.224, "2027": 744.688, "2028": 781.932 } },
+    { categorieCode: "MAITRISE", echelon: 5, montants: { "2021": 593.32, "2023": 633.656, "2024": 676.56, "2026": 725.36, "2027": 761.632, "2028": 799.728 } },
+    { categorieCode: "MAITRISE", echelon: 6, montants: { "2021": 606.504, "2023": 647.744, "2024": 691.608, "2026": 741.496, "2027": 778.576, "2028": 817.524 } },
+    { categorieCode: "MAITRISE", echelon: 7, montants: { "2021": 619.688, "2023": 661.832, "2024": 706.656, "2026": 757.632, "2027": 795.52, "2028": 835.32 } },
+    { categorieCode: "MAITRISE", echelon: 8, montants: { "2021": 632.872, "2023": 675.92, "2024": 721.704, "2026": 773.768, "2027": 812.464, "2028": 853.116 } },
+    // ── Cadres — 8 échelons ──
+    { categorieCode: "CADRES", echelon: 1, montants: { "2021": 675.92, "2023": 721.704, "2024": 770.624, "2026": 825.768, "2027": 867.056, "2028": 910.408 } },
+    { categorieCode: "CADRES", echelon: 2, montants: { "2021": 692.48, "2023": 739.392, "2024": 789.52, "2026": 846.016, "2027": 888.32, "2028": 932.736 } },
+    { categorieCode: "CADRES", echelon: 3, montants: { "2021": 709.04, "2023": 757.08, "2024": 808.416, "2026": 866.264, "2027": 909.584, "2028": 955.064 } },
+    { categorieCode: "CADRES", echelon: 4, montants: { "2021": 725.6, "2023": 774.768, "2024": 827.312, "2026": 886.512, "2027": 930.848, "2028": 977.392 } },
+    { categorieCode: "CADRES", echelon: 5, montants: { "2021": 742.16, "2023": 792.456, "2024": 846.208, "2026": 906.76, "2027": 952.112, "2028": 999.72 } },
+    { categorieCode: "CADRES", echelon: 6, montants: { "2021": 758.72, "2023": 810.144, "2024": 865.104, "2026": 927.008, "2027": 973.376, "2028": 1022.048 } },
+    { categorieCode: "CADRES", echelon: 7, montants: { "2021": 775.28, "2023": 827.832, "2024": 884, "2026": 947.256, "2027": 994.64, "2028": 1044.376 } },
+    { categorieCode: "CADRES", echelon: 8, montants: { "2021": 791.84, "2023": 845.52, "2024": 902.896, "2026": 967.504, "2027": 1015.904, "2028": 1066.704 } },
+  ],
+
   allowances: [],
 
   pdfDocuments: [
@@ -124,7 +155,8 @@ export const CONVENTION_COMMERCE_GROS: ConventionCollective = {
   engineStatus: "partial",
 
   categoriesAgents: [
-    { code: "EXECUTION", labelFr: "Agents d'exécution + Maîtrise", labelAr: "أعوان التنفيذ والتسيير" },
+    { code: "EXECUTION", labelFr: "Agents d'exécution", labelAr: "أعوان التنفيذ" },
+    { code: "MAITRISE", labelFr: "Agents de maîtrise", labelAr: "أعوان التسيير" },
     { code: "CADRES", labelFr: "Cadres", labelAr: "الإطارات" },
   ],
 
@@ -136,6 +168,7 @@ export const CONVENTION_COMMERCE_GROS: ConventionCollective = {
       labelAr: "منحة النقل",
       montants: {
         EXECUTION: { "2021": 65.826, "2023": 70.269, "2024": 75.012, "2026": 78.762, "2027": 82.7, "2028": 86.835 },
+        MAITRISE:  { "2021": 69.219, "2023": 73.892, "2024": 78.879, "2026": 82.823, "2027": 86.964, "2028": 91.312 },
         CADRES:    { "2021": 72.612, "2023": 77.514, "2024": 82.746, "2026": 86.883, "2027": 91.227, "2028": 95.788 },
       },
       description: "Inclut décret 503/1982 : 5D/mois (exécution), 10D/mois (cadres)",
@@ -146,9 +179,10 @@ export const CONVENTION_COMMERCE_GROS: ConventionCollective = {
       labelAr: "منحة الحضور",
       montants: {
         EXECUTION: { "2021": 12.4, "2023": 13.237, "2024": 14.13, "2026": 14.836, "2027": 15.578, "2028": 16.357 },
+        MAITRISE:  { "2021": 12.4, "2023": 13.237, "2024": 14.13, "2026": 14.836, "2027": 15.578, "2028": 16.357 },
         CADRES:    { "2021": 12.4, "2023": 13.237, "2024": 14.13, "2026": 14.836, "2027": 15.578, "2028": 16.357 },
       },
-      description: "Montant unique, non différencié cadre/exécution",
+      description: "Montant unique, non différencié par catégorie",
     },
     {
       code: "CAISSE",
@@ -156,6 +190,7 @@ export const CONVENTION_COMMERCE_GROS: ConventionCollective = {
       labelAr: "منحة الصندوق",
       montants: {
         EXECUTION: { "default": 5 },
+        MAITRISE:  { "default": 10 },
         CADRES:    { "default": 10 },
       },
       description: "Selon ancienneté : <5ans=5D, 5-10ans=10D, >10ans=15D",

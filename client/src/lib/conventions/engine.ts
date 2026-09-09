@@ -17,6 +17,7 @@ import { getSmig, getLatestSmigYear } from "./data/index";
 // ─── Importer le moteur principal (SOURCE UNIQUE) ────────────────────
 import { getPayrollConfig } from "../payroll/config";
 import { calculerIRPPAnnuel, calculerFraisProfessionnels, calculerDeductionsAnnuelles } from "../payroll/irpp";
+import { calculerCSSAnnuelle } from "../payroll/cnss";
 import type { SituationFamiliale as SituationFamilialePrincipale } from "../payroll/irpp";
 
 // ─── Types entrée/sortie ─────────────────────────────────────────────
@@ -112,7 +113,7 @@ export function calculerPaieConvention(
 
   // 1. Salaire de base
   lignes.push({
-    code: "SB", labelFr: "Salaire de base", labelAr: "الأجر الأساسي",
+    code: "SB", labelFr: "Salaire de base",
     montant: elements.salaireBrut, type: "gain",
   });
   let totalBrut = elements.salaireBrut;
@@ -126,7 +127,7 @@ export function calculerPaieConvention(
         if (salarie.anciennete >= 5 && salarie.anciennete < 10) montantCaisse = 10;
         if (salarie.anciennete >= 10) montantCaisse = 15;
         lignes.push({
-          code: prime.code, labelFr: prime.labelFr, labelAr: prime.labelAr,
+          code: prime.code, labelFr: prime.labelFr,
           montant: round3(montantCaisse), type: "gain",
         });
         totalBrut += montantCaisse;
@@ -136,7 +137,7 @@ export function calculerPaieConvention(
       const montant = getMontantPrime(prime, salarie.categorieAgent, elements.annee);
       if (montant > 0) {
         lignes.push({
-          code: prime.code, labelFr: prime.labelFr, labelAr: prime.labelAr,
+          code: prime.code, labelFr: prime.labelFr,
           montant: round3(montant), type: "gain",
         });
         totalBrut += montant;
@@ -150,7 +151,7 @@ export function calculerPaieConvention(
     const majoration = elements.heuresSup <= 8 ? 1.25 : 1.5;
     const montantHS = round3(tauxHS * majoration * elements.heuresSup);
     lignes.push({
-      code: "HS", labelFr: "Heures supplémentaires", labelAr: "الساعات الإضافية",
+      code: "HS", labelFr: "Heures supplémentaires",
       montant: montantHS, type: "gain", base: elements.heuresSup, taux: majoration,
     });
     totalBrut += montantHS;
@@ -159,7 +160,7 @@ export function calculerPaieConvention(
   // 4. Primes exceptionnelles
   if (elements.primesExceptionnelles && elements.primesExceptionnelles > 0) {
     lignes.push({
-      code: "EXCEPT", labelFr: "Primes exceptionnelles", labelAr: "منح استثنائية",
+      code: "EXCEPT", labelFr: "Primes exceptionnelles",
       montant: round3(elements.primesExceptionnelles), type: "gain",
     });
     totalBrut += elements.primesExceptionnelles;
@@ -172,22 +173,12 @@ export function calculerPaieConvention(
   // 5. CNSS salariale (depuis config)
   const cnssSalarial = round3(assietteCNSS * config.cnssSalarialNonAgricole);
   lignes.push({
-    code: "CNSS_S", labelFr: "CNSS (part salariale)", labelAr: "الضمان الاجتماعي (نسبة الأجير)",
+    code: "CNSS_S", labelFr: "CNSS (part salariale)",
     montant: cnssSalarial, type: "retenue", base: assietteCNSS, taux: config.cnssSalarialNonAgricole,
   });
   cotPat.push({ label: "CNSS (part patronale)", montant: round3(assietteCNSS * config.cnssPatronalNonAgricole) });
 
-  // 6. CSS (depuis config)
-  const cssSalarial = config.cssActive ? round3(totalBrut * config.cssTaux) : 0;
-  if (cssSalarial > 0) {
-    lignes.push({
-      code: "CSS_S", labelFr: "CSS (part salariale)", labelAr: "المساهمة الاجتماعية للتضامن",
-      montant: cssSalarial, type: "retenue", base: totalBrut, taux: config.cssTaux,
-    });
-    cotPat.push({ label: "CSS (part patronale)", montant: round3(totalBrut * config.cssTaux * 2) });
-  }
-
-  // 7. IRPP — DÉLÉGUÉ AU MOTEUR PRINCIPAL (calculerIRPPAnnuel + déductions)
+  // 6. IRPP + CSS — DÉLÉGUÉES AU MOTEUR PRINCIPAL (même cascade que le moteur principal)
   const netImposableAnnuel = (totalBrut - cnssSalarial) * 12;
   const fraisPro = calculerFraisProfessionnels(netImposableAnnuel);
   const situationIRPP: SituationFamilialePrincipale = {
@@ -198,11 +189,25 @@ export function calculerPaieConvention(
     autresDeductionsAnnuelles: 0,
   };
   const deductionsAnnuelles = calculerDeductionsAnnuelles(situationIRPP);
+  const assietteFiscaleAnnuelle = netImposableAnnuel - fraisPro - deductionsAnnuelles;
+
+  // CSS — sur l'assiette fiscale annuelle (comme le moteur principal)
+  const cssAnnuel = calculerCSSAnnuelle(Math.max(0, assietteFiscaleAnnuelle));
+  const cssSalarial = round3(cssAnnuel / 12);
+  if (cssSalarial > 0) {
+    lignes.push({
+      code: "CSS_S", labelFr: "CSS (part salariale)",
+      montant: cssSalarial, type: "retenue", base: round3(assietteFiscaleAnnuelle / 12), taux: config.cssTaux,
+    });
+    cotPat.push({ label: "CSS (part patronale)", montant: round3(Math.max(0, assietteFiscaleAnnuelle) * config.cssTaux * 2 / 12) });
+  }
+
+  // IRPP
   const irppAnnuel = calculerIRPPAnnuel(netImposableAnnuel, deductionsAnnuelles + fraisPro);
   const irppMensuel = round3(irppAnnuel / 12);
   if (irppMensuel > 0) {
     lignes.push({
-      code: "IRPP", labelFr: "IRPP (retenue à la source)", labelAr: "الضريبة على الدخل",
+      code: "IRPP", labelFr: "IRPP (retenue à la source)",
       montant: irppMensuel, type: "retenue",
     });
   }

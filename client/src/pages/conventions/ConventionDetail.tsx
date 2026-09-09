@@ -12,11 +12,12 @@ import {
   AlertCircle,
   ExternalLink,
   Info,
+  TableProperties,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -28,7 +29,14 @@ import {
 import BackToTools from "@/components/BackToTools";
 import { getConventionBySlug, getLatestSmigYear, getSmig } from "@/lib/conventions/data/index";
 import { getResumeConvention } from "@/lib/conventions/engine";
-import type { ConventionCollective, PrimeMensuelleStructuree } from "@/lib/conventions/types";
+import type {
+  ConventionCollective,
+  PrimeMensuelleStructuree,
+  PrimeAnnuelleStructuree,
+  PrimeSocialeStructuree,
+  CategorieAgent,
+  GrilleSalarialeLigne,
+} from "@/lib/conventions/types";
 import { formatMontantDT } from "@/lib/utils";
 
 export default function ConventionDetail() {
@@ -59,9 +67,10 @@ export default function ConventionDetail() {
   const resume = getResumeConvention(convention);
   const latestYear = getLatestSmigYear();
   const hasCalculablePrimes = (convention.primesMensuelles?.length ?? 0) > 0;
+  const hasGrille = (convention.grilleDetaillee?.length ?? 0) > 0;
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4">
+    <div className="max-w-6xl mx-auto py-8 px-4">
       <BackToTools />
 
       <motion.div
@@ -81,8 +90,11 @@ export default function ConventionDetail() {
         <h1 className="text-3xl font-bold tracking-tight mb-1">{convention.sectorNameFr}</h1>
         <p className="text-lg text-muted-foreground" dir="rtl">{convention.sectorNameAr}</p>
 
-        {/* CTA */}
-        <div className="mt-4 mb-8">
+        {/* Status + CTA */}
+        <div className="mt-4 mb-6 flex items-center gap-4 flex-wrap">
+          <Badge variant={convention.engineStatus === "complete" ? "default" : convention.engineStatus === "partial" ? "secondary" : "outline"}>
+            {convention.engineStatus === "complete" ? "Moteur complet" : convention.engineStatus === "partial" ? "Moteur partiel" : "Données structurelles uniquement"}
+          </Badge>
           {hasCalculablePrimes ? (
             <Link href={`/conventions/${convention.slug}/fiche-paie`}>
               <Button size="lg" className="gap-2">
@@ -91,185 +103,117 @@ export default function ConventionDetail() {
               </Button>
             </Link>
           ) : (
-            <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-              <p className="text-sm text-amber-800 dark:text-amber-200 flex items-center gap-2">
-                <Info className="h-4 w-4" />
-                Le moteur de paie pour cette convention n'est pas encore disponible.
-                Les primes chiffrées sont définies dans les conventions sectorielles.
-              </p>
+            <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-sm text-amber-800 dark:text-amber-200 flex items-center gap-2">
+              <Info className="h-4 w-4" />
+              Le moteur de paie n'est pas encore disponible — les primes chiffrées sont dans les conventions sectorielles.
             </div>
           )}
         </div>
 
-        {/* ═══ TABLEAU RÉCAPITULatif DES PRIMES (comme PAIE-TUNISIE) ═══ */}
-        {convention.primesMensuelles && convention.primesMensuelles.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Banknote className="h-5 w-5" />
-                Primes & Indemnités mensuelles — Tableau récapitulatif
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {convention.primesMensuelles.map((prime) => (
-                <PrimeMensuelleRecap key={prime.code} prime={prime} categories={convention.categoriesAgents ?? []} />
-              ))}
-            </CardContent>
-          </Card>
-        )}
+        {/* ═══ ONGLETS PRINCIPAUX (style PAIE-TUNISIE) ═══ */}
+        <Tabs defaultValue="recap" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="recap" className="gap-1.5">
+              <Banknote className="h-4 w-4" />
+              Droits accordés
+            </TabsTrigger>
+            {hasGrille && (
+              <TabsTrigger value="grille" className="gap-1.5">
+                <TableProperties className="h-4 w-4" />
+                Grille salariale
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="jort" className="gap-1.5">
+              <CalendarDays className="h-4 w-4" />
+              Historique JORT
+            </TabsTrigger>
+            <TabsTrigger value="smig" className="gap-1.5">
+              <AlertCircle className="h-4 w-4" />
+              SMIG
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Primes annuelles */}
-        {convention.primesAnnuelles && convention.primesAnnuelles.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Briefcase className="h-5 w-5" />
-                Primes annuelles
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {convention.primesAnnuelles.map((prime) => (
-                <div key={prime.code} className="p-4 rounded-lg bg-muted/40">
-                  <span className="font-medium">{prime.labelFr}</span>
-                  {prime.labelAr && <span className="text-sm text-muted-foreground ml-2" dir="rtl">({prime.labelAr})</span>}
-                  {prime.description && <p className="text-sm text-muted-foreground mt-1">{prime.description}</p>}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+          {/* ═══ ONGLET 1 : TABLEAU RÉCAP DES DROITS ACCORDÉS ═══ */}
+          <TabsContent value="recap">
+            <DroitsAccordesTab convention={convention} />
+          </TabsContent>
 
-        {/* Avantages sociaux */}
-        {convention.primesSociales && convention.primesSociales.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Heart className="h-5 w-5" />
-                Avantages sociaux
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {convention.primesSociales.map((prime) => (
-                <div key={prime.code} className="p-4 rounded-lg bg-muted/40">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{prime.labelFr}</span>
-                    {prime.labelAr && <span className="text-sm text-muted-foreground" dir="rtl">({prime.labelAr})</span>}
-                    {prime.montant && <Badge variant="outline" className="ml-auto">{formatMontantDT(prime.montant)}</Badge>}
-                  </div>
-                  {prime.description && <p className="text-sm text-muted-foreground mt-1">{prime.description}</p>}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+          {/* ═══ ONGLET 2 : GRILLE SALARIALE ═══ */}
+          {hasGrille && (
+            <TabsContent value="grille">
+              <GrilleSalarialeTab
+                grille={convention.grilleDetaillee!}
+                categories={convention.categoriesAgents ?? []}
+              />
+            </TabsContent>
+          )}
 
-        {/* Catégories d'agents */}
-        {convention.categoriesAgents && convention.categoriesAgents.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Users className="h-5 w-5" />
-                Catégories de personnel
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-3">
-                {convention.categoriesAgents.map((cat) => (
-                  <Badge key={cat.code} variant="secondary" className="px-4 py-2 text-sm">
-                    {cat.labelFr}
-                    <span className="mx-2 text-muted-foreground">|</span>
-                    <span dir="rtl">{cat.labelAr}</span>
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* SMIG */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <AlertCircle className="h-5 w-5" />
-              SMIG applicable ({latestYear})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="p-4 rounded-lg bg-muted/40 text-center">
-                <p className="text-sm text-muted-foreground mb-1">Régime 48h (Mensuel)</p>
-                <p className="text-2xl font-bold">{formatMontantDT(resume.smigMensuel48h)}</p>
-              </div>
-              <div className="p-4 rounded-lg bg-muted/40 text-center">
-                <p className="text-sm text-muted-foreground mb-1">Régime 40h (Mensuel)</p>
-                <p className="text-2xl font-bold">{formatMontantDT(resume.smigMensuel40h)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* JORT History */}
-        {convention.jortHistory.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <CalendarDays className="h-5 w-5" />
-                Historique JORT
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Signature</TableHead>
-                      <TableHead>Agrément</TableHead>
-                      <TableHead>JORT</TableHead>
-                      <TableHead>Application</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {convention.jortHistory.map((j, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="font-medium">{j.documentType}</TableCell>
-                        <TableCell>{j.signatureDate}</TableCell>
-                        <TableCell>{j.arreteAgrementDate}</TableCell>
-                        <TableCell className="text-xs">{j.jortReference}</TableCell>
-                        <TableCell>{j.applicationStart}</TableCell>
+          {/* ═══ ONGLET 3 : HISTORIQUE JORT ═══ */}
+          <TabsContent value="jort">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <CalendarDays className="h-5 w-5" />
+                  Historique JORT — {convention.sectorNameFr}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Signature</TableHead>
+                        <TableHead>Agrément</TableHead>
+                        <TableHead>Référence JORT</TableHead>
+                        <TableHead>Application</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                    </TableHeader>
+                    <TableBody>
+                      {convention.jortHistory.map((j, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-medium">{j.documentType}</TableCell>
+                          <TableCell>{j.signatureDate}</TableCell>
+                          <TableCell>{j.arreteAgrementDate}</TableCell>
+                          <TableCell className="text-xs">{j.jortReference}</TableCell>
+                          <TableCell>{j.applicationStart}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Grilles salariales refs */}
-        {convention.grillesSalariales.length > 0 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <FileText className="h-5 w-5" />
-                Grilles salariales
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-3">
-                {convention.grillesSalariales.map((g) => (
-                  <Badge key={g.tableNum} variant="outline" className="px-3 py-1">
-                    Grille {g.tableNum} — {g.note || g.applicationDate}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+          {/* ═══ ONGLET 4 : SMIG ═══ */}
+          <TabsContent value="smig">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <AlertCircle className="h-5 w-5" />
+                  SMIG applicable ({latestYear})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-lg bg-muted/40 text-center">
+                    <p className="text-sm text-muted-foreground mb-1">Régime 48h (Mensuel)</p>
+                    <p className="text-2xl font-bold">{formatMontantDT(resume.smigMensuel48h)}</p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-muted/40 text-center">
+                    <p className="text-sm text-muted-foreground mb-1">Régime 40h (Mensuel)</p>
+                    <p className="text-2xl font-bold">{formatMontantDT(resume.smigMensuel40h)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
-        {/* PDF */}
+        {/* PDF Documents (always visible) */}
         {convention.pdfDocuments.length > 0 && (
-          <Card className="mb-6">
+          <Card className="mt-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <FileText className="h-5 w-5" />
@@ -290,62 +234,357 @@ export default function ConventionDetail() {
   );
 }
 
-// ─── Tableau récapitulatif d'une prime (comme PAIE-TUNISIE) ──────────
+// ═══════════════════════════════════════════════════════════════════════
+// ONGLET : DROITS ACCORDÉS — Tableau récapitulatif (style PAIE-TUNISIE)
+// ═══════════════════════════════════════════════════════════════════════
 
-function PrimeMensuelleRecap({
-  prime,
-  categories,
-}: {
-  prime: PrimeMensuelleStructuree;
-  categories: { code: string; labelFr: string; labelAr: string }[];
-}) {
-  const availableYears = new Set<string>();
-  for (const catCode of Object.keys(prime.montants)) {
-    for (const year of Object.keys(prime.montants[catCode])) {
-      availableYears.add(year);
-    }
-  }
-  const years = Array.from(availableYears).sort();
-  const relevantCats = categories.filter((c) => prime.montants[c.code]);
+function DroitsAccordesTab({ convention }: { convention: ConventionCollective }) {
+  const categories = convention.categoriesAgents ?? [];
+  const primesM = convention.primesMensuelles ?? [];
+  const primesA = convention.primesAnnuelles ?? [];
+  const primesS = convention.primesSociales ?? [];
 
-  if (years.length === 0) {
+  const hasAnyData = primesM.length > 0 || primesA.length > 0 || primesS.length > 0;
+
+  if (!hasAnyData) {
     return (
-      <div className="p-4 rounded-lg bg-muted/40 mb-4">
-        <span className="font-medium">{prime.labelFr}</span>
-        {prime.labelAr && <span className="text-sm text-muted-foreground ml-2" dir="rtl">({prime.labelAr})</span>}
-        {prime.description && <p className="text-sm text-muted-foreground mt-1">{prime.description}</p>}
-      </div>
+      <Card>
+        <CardContent className="py-10 text-center text-muted-foreground">
+          <Info className="h-10 w-10 mx-auto mb-3 opacity-40" />
+          <p className="text-lg font-medium">Aucun droit chiffré propre</p>
+          <p className="text-sm mt-1">
+            Cette convention cadre ne contient pas de primes ou indemnités chiffrées.
+            Les montants sont définis dans les conventions sectorielles.
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="mb-6">
-      <h3 className="font-semibold mb-2">{prime.labelFr}</h3>
-      {prime.description && <p className="text-sm text-muted-foreground mb-3">{prime.description}</p>}
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Catégorie</TableHead>
-              {years.map((y) => (
-                <TableHead key={y} className="text-right">{y === "default" ? "Forfait" : y}</TableHead>
+    <div className="space-y-6">
+      {/* ── TABLEAU RÉCAP MENSUEL (style PAIE-TUNISIE) ── */}
+      {primesM.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Banknote className="h-5 w-5" />
+              Primes & Indemnités mensuelles
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DroitsMensuelsRecap primes={primesM} categories={categories} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Primes annuelles ── */}
+      {primesA.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Briefcase className="h-5 w-5" />
+              Primes annuelles
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PrimesAnnuellesRecap primes={primesA} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Avantages sociaux ── */}
+      {primesS.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Heart className="h-5 w-5" />
+              Avantages sociaux
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PrimesSocialesRecap primes={primesS} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Catégories de personnel ── */}
+      {categories.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Users className="h-5 w-5" />
+              Catégories de personnel
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              {categories.map((cat) => (
+                <Badge key={cat.code} variant="secondary" className="px-4 py-2 text-sm">
+                  {cat.labelFr}
+                </Badge>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// COMPOSANT : Tableau récap mensuel (style PAIE-TUNISIE)
+// Une seule table avec toutes les primes × catégories × années
+// ═══════════════════════════════════════════════════════════════════════
+
+function DroitsMensuelsRecap({
+  primes,
+  categories,
+}: {
+  primes: PrimeMensuelleStructuree[];
+  categories: CategorieAgent[];
+}) {
+  // Collect all available years across all primes and categories
+  const allYears = new Set<string>();
+  for (const prime of primes) {
+    for (const catCode of Object.keys(prime.montants)) {
+      for (const year of Object.keys(prime.montants[catCode])) {
+        if (year !== "default") allYears.add(year);
+      }
+    }
+  }
+  const years = Array.from(allYears).sort();
+
+  // Get latest year for default display
+  const latestYear = years.length > 0 ? years[years.length - 1] : "2026";
+
+  return (
+    <div className="space-y-6">
+      {primes.map((prime) => {
+        // Check if this prime has year-based or default-based data
+        const hasYearData = Object.keys(prime.montants).some(catCode =>
+          Object.keys(prime.montants[catCode]).some(y => y !== "default")
+        );
+        const relevantCats = categories.filter((c) => prime.montants[c.code]);
+
+        if (!hasYearData) {
+          // Default-based prime (like prime de caisse)
+          return (
+            <div key={prime.code} className="mb-4">
+              <h3 className="font-semibold mb-2">{prime.labelFr}</h3>
+              {prime.description && <p className="text-sm text-muted-foreground mb-2">{prime.description}</p>}
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Catégorie</TableHead>
+                      <TableHead className="text-right">Montant (DT)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {relevantCats.map((cat) => (
+                      <TableRow key={cat.code}>
+                        <TableCell className="font-medium">{cat.labelFr}</TableCell>
+                        <TableCell className="text-right font-mono">
+                          {prime.montants[cat.code]?.["default"] != null
+                            ? formatMontantDT(prime.montants[cat.code]["default"])
+                            : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          );
+        }
+
+        // Year-based prime table
+        const primeYears = new Set<string>();
+        for (const catCode of Object.keys(prime.montants)) {
+          for (const y of Object.keys(prime.montants[catCode])) {
+            if (y !== "default") primeYears.add(y);
+          }
+        }
+        const sortedPrimeYears = Array.from(primeYears).sort();
+
+        return (
+          <div key={prime.code} className="mb-4">
+            <h3 className="font-semibold mb-2">{prime.labelFr}</h3>
+            {prime.description && <p className="text-sm text-muted-foreground mb-2">{prime.description}</p>}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Catégorie</TableHead>
+                    {sortedPrimeYears.map((y) => (
+                      <TableHead key={y} className="text-right min-w-[90px]">{y}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {relevantCats.map((cat) => (
+                    <TableRow key={cat.code}>
+                      <TableCell className="font-medium">{cat.labelFr}</TableCell>
+                      {sortedPrimeYears.map((y) => (
+                        <TableCell key={y} className="text-right font-mono">
+                          {prime.montants[cat.code]?.[y] != null
+                            ? formatMontantDT(prime.montants[cat.code][y])
+                            : "—"}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Primes annuelles recap
+// ═══════════════════════════════════════════════════════════════════════
+
+function PrimesAnnuellesRecap({ primes }: { primes: PrimeAnnuelleStructuree[] }) {
+  return (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Prime</TableHead>
+            <TableHead>Mode de calcul</TableHead>
+            <TableHead>Description</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {primes.map((prime) => (
+            <TableRow key={prime.code}>
+              <TableCell className="font-medium">{prime.labelFr}</TableCell>
+              <TableCell>
+                <Badge variant="outline" className="text-xs">
+                  {prime.modeCalcul === "pourcentage_salaire"
+                    ? "% du salaire"
+                    : prime.modeCalcul === "forfaitaire"
+                    ? "Forfaitaire"
+                    : prime.modeCalcul === "note_dependante"
+                    ? "Selon note"
+                    : prime.modeCalcul ?? "—"}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {prime.description ?? "—"}
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {relevantCats.map((cat) => (
-              <TableRow key={cat.code}>
-                <TableCell className="font-medium">{cat.labelFr}</TableCell>
-                {years.map((y) => (
-                  <TableCell key={y} className="text-right font-mono">
-                    {prime.montants[cat.code]?.[y] != null ? formatMontantDT(prime.montants[cat.code][y]) : "—"}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Primes sociales recap
+// ═══════════════════════════════════════════════════════════════════════
+
+function PrimesSocialesRecap({ primes }: { primes: PrimeSocialeStructuree[] }) {
+  return (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Avantage</TableHead>
+            <TableHead className="text-right">Montant</TableHead>
+            <TableHead>Description</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {primes.map((prime) => (
+            <TableRow key={prime.code}>
+              <TableCell className="font-medium">{prime.labelFr}</TableCell>
+              <TableCell className="text-right font-mono">
+                {prime.montant != null ? formatMontantDT(prime.montant) : "—"}
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {prime.description ?? "—"}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// ONGLET : GRILLE SALARIALE
+// ═══════════════════════════════════════════════════════════════════════
+
+function GrilleSalarialeTab({
+  grille,
+  categories,
+}: {
+  grille: GrilleSalarialeLigne[];
+  categories: CategorieAgent[];
+}) {
+  // Group by category
+  const catCodes = Array.from(new Set(grille.map((g) => g.categorieCode)));
+
+  // Collect all years
+  const allYears = new Set<string>();
+  for (const ligne of grille) {
+    for (const y of Object.keys(ligne.montants)) {
+      allYears.add(y);
+    }
+  }
+  const years = Array.from(allYears).sort();
+  const latestYear = years.length > 0 ? years[years.length - 1] : "2026";
+
+  return (
+    <div className="space-y-6">
+      {catCodes.map((catCode) => {
+        const catInfo = categories.find((c) => c.code === catCode);
+        const lignes = grille.filter((g) => g.categorieCode === catCode).sort((a, b) => a.echelon - b.echelon);
+
+        return (
+          <Card key={catCode}>
+            <CardHeader>
+              <CardTitle className="text-lg">
+                {catInfo?.labelFr ?? catCode}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Échelon</TableHead>
+                      {years.map((y) => (
+                        <TableHead key={y} className="text-right min-w-[100px]">{y}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lignes.map((ligne) => (
+                      <TableRow key={ligne.echelon}>
+                        <TableCell className="font-medium">{ligne.echelon}</TableCell>
+                        {years.map((y) => (
+                          <TableCell key={y} className="text-right font-mono">
+                            {ligne.montants[y] != null ? formatMontantDT(ligne.montants[y]) : "—"}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
