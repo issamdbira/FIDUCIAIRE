@@ -49,11 +49,23 @@ export interface GrilleSalarialeRef {
   pdfUrl?: string;
 }
 
-/** Ligne d'une grille salariale avec montants par année */
+/**
+ * Cellule de la grille salariale : intersection échelle × échelon → montant par année
+ * Échelle = grade/classification (1-21 pour commerce gros)
+ * Échelon = step d'ancienneté dans l'échelle (1-13)
+ */
 export interface GrilleSalarialeLigne {
-  categorieCode: string;        // "EXECUTION" | "MAITRISE" | "CADRES" | "CADRES_SUPERIEURS"
-  echelon: number;              // 1, 2, 3...
+  echelle: number;               // Numéro d'échelle (1, 2, 3...)
+  echelon: number;               // Numéro d'échelon (1, 2, 3...)
   montants: Record<string, number>; // { "2021": 432.168, "2023": 461.512, ... }
+}
+
+/** Règles d'avancement pour la détection échelon depuis ancienneté */
+export interface ReglesAvancement {
+  /** Période d'avancement en années (ex: 2 = tous les 2 ans) */
+  periodeAvancement: number;
+  /** Table de correspondance ancienneté → échelon */
+  tableAnciennete: { ancienneteMin: number; ancienneteMax: number; echelon: number }[];
 }
 
 // ─── Allowance (extrait PDF) ────────────────────────────────────────
@@ -100,8 +112,11 @@ export interface ConventionCollective {
   /** Références aux grilles salariales (PDF) */
   grillesSalariales: GrilleSalarialeRef[];
 
-  /** Grille salariale détaillée avec montants par échelon et année */
+  /** Grille salariale détaillée avec montants par échelle/échelon et année */
   grilleDetaillee?: GrilleSalarialeLigne[];
+
+  /** Règles d'avancement (période, table ancienneté→échelon) */
+  reglesAvancement?: ReglesAvancement;
 
   /** Allowances extraites des PDF */
   allowances: Allowance[];
@@ -133,6 +148,9 @@ export interface CategorieAgent {
   code: string;                // "EXECUTION" | "MAITRISE" | "CADRES"
   labelFr: string;
   labelAr: string;
+  /** Plage d'échelles pour cette catégorie */
+  echelleMin: number;
+  echelleMax: number;
 }
 
 // ─── Primes mensuelles structurées ───────────────────────────────────

@@ -144,6 +144,7 @@ export default function ConventionDetail() {
               <GrilleSalarialeTab
                 grille={convention.grilleDetaillee!}
                 categories={convention.categoriesAgents ?? []}
+                reglesAvancement={convention.reglesAvancement}
               />
             </TabsContent>
           )}
@@ -520,19 +521,18 @@ function PrimesSocialesRecap({ primes }: { primes: PrimeSocialeStructuree[] }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// ONGLET : GRILLE SALARIALE
+// ONGLET : GRILLE SALARIALE — échelle × échelon × année
 // ═══════════════════════════════════════════════════════════════════════
 
 function GrilleSalarialeTab({
   grille,
   categories,
+  reglesAvancement,
 }: {
   grille: GrilleSalarialeLigne[];
   categories: CategorieAgent[];
+  reglesAvancement?: { periodeAvancement: number; tableAnciennete: { ancienneteMin: number; ancienneteMax: number; echelon: number }[] };
 }) {
-  // Group by category
-  const catCodes = Array.from(new Set(grille.map((g) => g.categorieCode)));
-
   // Collect all years
   const allYears = new Set<string>();
   for (const ligne of grille) {
@@ -541,46 +541,106 @@ function GrilleSalarialeTab({
     }
   }
   const years = Array.from(allYears).sort();
-  const latestYear = years.length > 0 ? years[years.length - 1] : "2026";
 
   return (
     <div className="space-y-6">
-      {catCodes.map((catCode) => {
-        const catInfo = categories.find((c) => c.code === catCode);
-        const lignes = grille.filter((g) => g.categorieCode === catCode).sort((a, b) => a.echelon - b.echelon);
+      {/* Avancement rules */}
+      {reglesAvancement && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <CalendarDays className="h-5 w-5" />
+              Règles d'avancement
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">
+              Avancement normal tous les <strong>{reglesAvancement.periodeAvancement} ans</strong> d'ancienneté.
+            </p>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Ancienneté</TableHead>
+                    <TableHead className="text-right">Échelon</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reglesAvancement.tableAnciennete.map((rule, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">
+                        {rule.ancienneteMax >= 999
+                          ? `${rule.ancienneteMin} ans et plus`
+                          : `${rule.ancienneteMin} – ${rule.ancienneteMax} ans`}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">{rule.echelon}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Grille par catégorie */}
+      {categories.map((cat) => {
+        const echellesRange = Array.from(
+          { length: cat.echelleMax - cat.echelleMin + 1 },
+          (_, i) => cat.echelleMin + i,
+        );
+        // Only show échelles that have data
+        const echellesWithData = echellesRange.filter((e) =>
+          grille.some((l) => l.echelle === e),
+        );
+        if (echellesWithData.length === 0) return null;
 
         return (
-          <Card key={catCode}>
+          <Card key={cat.code}>
             <CardHeader>
               <CardTitle className="text-lg">
-                {catInfo?.labelFr ?? catCode}
+                {cat.labelFr} — Échelles {cat.echelleMin} à {cat.echelleMax}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Échelon</TableHead>
-                      {years.map((y) => (
-                        <TableHead key={y} className="text-right min-w-[100px]">{y}</TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {lignes.map((ligne) => (
-                      <TableRow key={ligne.echelon}>
-                        <TableCell className="font-medium">{ligne.echelon}</TableCell>
-                        {years.map((y) => (
-                          <TableCell key={y} className="text-right font-mono">
-                            {ligne.montants[y] != null ? formatMontantDT(ligne.montants[y]) : "—"}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              {echellesWithData.map((echelle) => {
+                const lignes = grille
+                  .filter((l) => l.echelle === echelle)
+                  .sort((a, b) => a.echelon - b.echelon);
+                if (lignes.length === 0) return null;
+
+                return (
+                  <div key={echelle} className="mb-5">
+                    <h4 className="font-semibold text-sm mb-2 text-muted-foreground">
+                      Échelle {echelle}
+                    </h4>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[80px]">Échelon</TableHead>
+                            {years.map((y) => (
+                              <TableHead key={y} className="text-right min-w-[100px]">{y}</TableHead>
+                            ))}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {lignes.map((ligne) => (
+                            <TableRow key={ligne.echelon}>
+                              <TableCell className="font-medium">{ligne.echelon}</TableCell>
+                              {years.map((y) => (
+                                <TableCell key={y} className="text-right font-mono">
+                                  {ligne.montants[y] != null ? formatMontantDT(ligne.montants[y]) : "—"}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         );

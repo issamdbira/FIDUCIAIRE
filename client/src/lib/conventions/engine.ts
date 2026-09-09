@@ -11,6 +11,7 @@ import type {
   ConventionCollective,
   PrimeMensuelleStructuree,
   CategorieAgent,
+  GrilleSalarialeLigne,
 } from "./types";
 import { getSmig, getLatestSmigYear } from "./data/index";
 
@@ -258,4 +259,76 @@ export function getResumeConvention(convention: ConventionCollective): ResumeCon
     smigMensuel48h: getSmig(latestYear, "48h/semaine (Mensuel)"),
     smigMensuel40h: getSmig(latestYear, "40h/semaine (Mensuel)"),
   };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// FONCTIONS GRILLE SALARIALE — échelle × échelon
+// ═══════════════════════════════════════════════════════════════════════
+
+/** Détecter l'échelon à partir de l'ancienneté selon les règles d'avancement */
+export function detecterEchelon(convention: ConventionCollective, anciennete: number): number {
+  if (!convention.reglesAvancement) return 1;
+  const { tableAnciennete } = convention.reglesAvancement;
+  for (const rule of tableAnciennete) {
+    if (anciennete >= rule.ancienneteMin && anciennete <= rule.ancienneteMax) {
+      return rule.echelon;
+    }
+  }
+  // Default: last échelon
+  return tableAnciennete[tableAnciennete.length - 1]?.echelon ?? 1;
+}
+
+/** Détecter la catégorie d'agent à partir du numéro d'échelle */
+export function detecterCategorie(convention: ConventionCollective, echelle: number): CategorieAgent | null {
+  const cats = convention.categoriesAgents ?? [];
+  return cats.find((c) => echelle >= c.echelleMin && echelle <= c.echelleMax) ?? null;
+}
+
+/** Obtenir les échelles disponibles pour une catégorie */
+export function getEchellesPourCategorie(convention: ConventionCollective, categorieCode: string): number[] {
+  const cat = (convention.categoriesAgents ?? []).find((c) => c.code === categorieCode);
+  if (!cat) return [];
+  const echelles: number[] = [];
+  for (let e = cat.echelleMin; e <= cat.echelleMax; e++) {
+    // Only include échelles that have data in the grille
+    const hasData = convention.grilleDetaillee?.some((l) => l.echelle === e);
+    if (hasData) echelles.push(e);
+  }
+  return echelles;
+}
+
+/** Obtenir les échelons disponibles pour une échelle donnée */
+export function getEchelonsPourEchelle(convention: ConventionCollective, echelle: number): number[] {
+  if (!convention.grilleDetaillee) return [];
+  return convention.grilleDetaillee
+    .filter((l) => l.echelle === echelle)
+    .map((l) => l.echelon)
+    .sort((a, b) => a - b);
+}
+
+/** Chercher le salaire de base dans la grille pour échelle × échelon × année */
+export function chercherSalaireGrille(
+  convention: ConventionCollective,
+  echelle: number,
+  echelon: number,
+  annee: number,
+): number | null {
+  if (!convention.grilleDetaillee) return null;
+  const ligne = convention.grilleDetaillee.find(
+    (l) => l.echelle === echelle && l.echelon === echelon,
+  );
+  if (!ligne) return null;
+  const bestYear = getBestYear(Object.keys(ligne.montants), annee);
+  if (!bestYear) return null;
+  return ligne.montants[bestYear] ?? null;
+}
+
+/** Obtenir toutes les années disponibles dans la grille */
+export function getAnneesGrille(convention: ConventionCollective): string[] {
+  if (!convention.grilleDetaillee) return [];
+  const years = new Set<string>();
+  for (const ligne of convention.grilleDetaillee) {
+    for (const y of Object.keys(ligne.montants)) years.add(y);
+  }
+  return Array.from(years).sort();
 }

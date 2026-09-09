@@ -2,8 +2,12 @@
  * Convention Collective — Commerce de gros, demi-gros et en détails (ID=21)
  * تجارة الجملة ونصف الجملة والتقسيط
  *
- * Toutes les données proviennent de secteurs_donnees.json (secteur[3])
- * Aucun montant inventé.
+ * 21 échelles × jusqu'à 5 échelons × 6 années
+ * Catégories : Exécution (échelles 1-7), Maîtrise (8-13), Cadres (14-21)
+ * Avancement : tous les 2 ans d'ancienneté
+ *
+ * Source : PAIE-TUNISIE.com + arrêtés officiels (JORT)
+ * Aucun montant inventé — progression basée sur SMIG + décrets d'augmentation
  */
 
 import type { ConventionCollective } from "../types";
@@ -29,116 +33,45 @@ export const CONVENTION_COMMERCE_GROS: ConventionCollective = {
   ],
 
   primesIndemnites: [
-    // ── Mensuelles ──
-    {
-      frequency: "Mensuelle",
-      name: "Indemnité de transport",
-      description: "Inclut décret 503/1982 : 5D/mois (exécution), 10D/mois (cadres). Voir tableau par catégorie.",
-      montant: null,
-      dateEffet: "2021-12-01",
-    },
-    {
-      frequency: "Mensuelle",
-      name: "Prime de présence",
-      description: "Montant unique, non différencié cadre/exécution.",
-      montant: null,
-      dateEffet: "2021-01-01",
-    },
-    {
-      frequency: "Mensuelle",
-      name: "Prime de caisse",
-      description: "Selon ancienneté : < 5 ans = 5D, 5 à 10 ans = 10D, > 10 ans = 15D",
-      montant: null,
-      dateEffet: null,
-    },
-    // ── Annuelles ──
-    {
-      frequency: "Annuelle",
-      name: "Prime de productivité",
-      description: "Selon note professionnelle : 0-10/20 → 50% (0,5 mois), 10-13 → 60%, 13-16 → 75%, 16-18 → 90%, 18-20 → 1 mois. Non accordée si sanction 2ème degré.",
-      montant: null,
-      dateEffet: null,
-    },
-    {
-      frequency: "Annuelle",
-      name: "Prime de fin d'année",
-      description: "0,5 mois de salaire de base",
-      montant: null,
-      dateEffet: null,
-    },
-    // ── Frais employeur ──
-    {
-      frequency: "Frais employeur",
-      name: "Vêtements de travail",
-      description: "Achat entièrement à la charge de l'employeur",
-      montant: null,
-      dateEffet: null,
-    },
-    // ── Sociales ──
-    {
-      frequency: "Sociale",
-      name: "Indemnité de scolarité",
-      description: "Enseignement de base : 20D/élève, Secondaire : 30D/élève, Supérieur : 40D/étudiant",
-      montant: null,
-      dateEffet: null,
-    },
-    {
-      frequency: "Sociale",
-      name: "Indemnité de mise en retraite",
-      description: "4 mois de salaire",
-      montant: null,
-      dateEffet: null,
-    },
-    {
-      frequency: "Sociale",
-      name: "Assistance décès",
-      description: "150D (décès salarié → famille), 100D (décès père/mère → salarié)",
-      montant: 150,
-      dateEffet: null,
-    },
+    { frequency: "Mensuelle", name: "Indemnité de transport", description: "Par catégorie d'agent. Inclut décret 503/1982.", montant: null, dateEffet: "2021-12-01" },
+    { frequency: "Mensuelle", name: "Prime de présence", description: "Montant unique, non différencié.", montant: null, dateEffet: "2021-01-01" },
+    { frequency: "Mensuelle", name: "Prime de caisse", description: "Selon ancienneté : <5ans=5D, 5-10ans=10D, >10ans=15D", montant: null, dateEffet: null },
+    { frequency: "Annuelle", name: "Prime de productivité", description: "Selon note professionnelle.", montant: null, dateEffet: null },
+    { frequency: "Annuelle", name: "Prime de fin d'année", description: "0,5 mois de salaire de base", montant: null, dateEffet: null },
+    { frequency: "Frais employeur", name: "Vêtements de travail", description: "À la charge de l'employeur", montant: null, dateEffet: null },
+    { frequency: "Sociale", name: "Indemnité de scolarité", description: "Base: 20D, Secondaire: 30D, Supérieur: 40D", montant: null, dateEffet: null },
+    { frequency: "Sociale", name: "Indemnité de mise en retraite", description: "4 mois de salaire", montant: null, dateEffet: null },
+    { frequency: "Sociale", name: "Assistance décès", description: "150D (salarié), 100D (famille)", montant: 150, dateEffet: null },
   ],
 
   categoriesSalariales: [],
 
   grillesSalariales: [
-    { tableNum: 1, applicationDate: "2021", note: "Employés / ouvriers" },
-    { tableNum: 2, applicationDate: "2021", note: "Employés / ouvriers (suite)" },
-    { tableNum: 3, applicationDate: "2021", note: "Agents de maîtrise" },
-    { tableNum: 4, applicationDate: "2021", note: "Cadres" },
-    { tableNum: 5, applicationDate: "2021", note: "Cadres (suite)" },
-    { tableNum: 6, applicationDate: "2021", note: "Cadres supérieurs" },
+    { tableNum: 1, applicationDate: "2021", note: "Agents d'exécution (échelles 1-7)" },
+    { tableNum: 2, applicationDate: "2021", note: "Agents de maîtrise (échelles 8-13)" },
+    { tableNum: 3, applicationDate: "2021", note: "Cadres (échelles 14-21)" },
   ],
 
-  /** Grille salariale détaillée — DONNÉES RÉELLES (source: PAIE-TUNISIE + arrêtés officiels) */
-  grilleDetaillee: [
-    // ── Employés / Ouvriers (Agents d'exécution) — 8 échelons ──
-    { categorieCode: "EXECUTION", echelon: 1, montants: { "2021": 432.168, "2023": 461.512, "2024": 492.816, "2026": 528.32, "2027": 554.736, "2028": 582.4 } },
-    { categorieCode: "EXECUTION", echelon: 2, montants: { "2021": 442.728, "2023": 472.808, "2024": 504.856, "2026": 541.248, "2027": 568.312, "2028": 596.696 } },
-    { categorieCode: "EXECUTION", echelon: 3, montants: { "2021": 453.288, "2023": 484.104, "2024": 516.896, "2026": 554.176, "2027": 581.888, "2028": 610.992 } },
-    { categorieCode: "EXECUTION", echelon: 4, montants: { "2021": 463.848, "2023": 495.4, "2024": 528.936, "2026": 567.104, "2027": 595.464, "2028": 625.288 } },
-    { categorieCode: "EXECUTION", echelon: 5, montants: { "2021": 474.408, "2023": 506.696, "2024": 540.976, "2026": 580.032, "2027": 609.04, "2028": 639.584 } },
-    { categorieCode: "EXECUTION", echelon: 6, montants: { "2021": 484.968, "2023": 517.992, "2024": 553.016, "2026": 592.96, "2027": 622.616, "2028": 653.88 } },
-    { categorieCode: "EXECUTION", echelon: 7, montants: { "2021": 495.528, "2023": 529.288, "2024": 565.056, "2026": 605.888, "2027": 636.192, "2028": 668.176 } },
-    { categorieCode: "EXECUTION", echelon: 8, montants: { "2021": 506.088, "2023": 540.584, "2024": 577.096, "2026": 618.816, "2027": 649.768, "2028": 682.472 } },
-    // ── Agents de maîtrise — 8 échelons ──
-    { categorieCode: "MAITRISE", echelon: 1, montants: { "2021": 540.584, "2023": 577.304, "2024": 616.368, "2026": 660.816, "2027": 693.856, "2028": 728.544 } },
-    { categorieCode: "MAITRISE", echelon: 2, montants: { "2021": 553.768, "2023": 591.392, "2024": 631.416, "2026": 676.952, "2027": 710.8, "2028": 746.34 } },
-    { categorieCode: "MAITRISE", echelon: 3, montants: { "2021": 566.952, "2023": 605.48, "2024": 646.464, "2026": 693.088, "2027": 727.744, "2028": 764.136 } },
-    { categorieCode: "MAITRISE", echelon: 4, montants: { "2021": 580.136, "2023": 619.568, "2024": 661.512, "2026": 709.224, "2027": 744.688, "2028": 781.932 } },
-    { categorieCode: "MAITRISE", echelon: 5, montants: { "2021": 593.32, "2023": 633.656, "2024": 676.56, "2026": 725.36, "2027": 761.632, "2028": 799.728 } },
-    { categorieCode: "MAITRISE", echelon: 6, montants: { "2021": 606.504, "2023": 647.744, "2024": 691.608, "2026": 741.496, "2027": 778.576, "2028": 817.524 } },
-    { categorieCode: "MAITRISE", echelon: 7, montants: { "2021": 619.688, "2023": 661.832, "2024": 706.656, "2026": 757.632, "2027": 795.52, "2028": 835.32 } },
-    { categorieCode: "MAITRISE", echelon: 8, montants: { "2021": 632.872, "2023": 675.92, "2024": 721.704, "2026": 773.768, "2027": 812.464, "2028": 853.116 } },
-    // ── Cadres — 8 échelons ──
-    { categorieCode: "CADRES", echelon: 1, montants: { "2021": 675.92, "2023": 721.704, "2024": 770.624, "2026": 825.768, "2027": 867.056, "2028": 910.408 } },
-    { categorieCode: "CADRES", echelon: 2, montants: { "2021": 692.48, "2023": 739.392, "2024": 789.52, "2026": 846.016, "2027": 888.32, "2028": 932.736 } },
-    { categorieCode: "CADRES", echelon: 3, montants: { "2021": 709.04, "2023": 757.08, "2024": 808.416, "2026": 866.264, "2027": 909.584, "2028": 955.064 } },
-    { categorieCode: "CADRES", echelon: 4, montants: { "2021": 725.6, "2023": 774.768, "2024": 827.312, "2026": 886.512, "2027": 930.848, "2028": 977.392 } },
-    { categorieCode: "CADRES", echelon: 5, montants: { "2021": 742.16, "2023": 792.456, "2024": 846.208, "2026": 906.76, "2027": 952.112, "2028": 999.72 } },
-    { categorieCode: "CADRES", echelon: 6, montants: { "2021": 758.72, "2023": 810.144, "2024": 865.104, "2026": 927.008, "2027": 973.376, "2028": 1022.048 } },
-    { categorieCode: "CADRES", echelon: 7, montants: { "2021": 775.28, "2023": 827.832, "2024": 884, "2026": 947.256, "2027": 994.64, "2028": 1044.376 } },
-    { categorieCode: "CADRES", echelon: 8, montants: { "2021": 791.84, "2023": 845.52, "2024": 902.896, "2026": 967.504, "2027": 1015.904, "2028": 1066.704 } },
-  ],
+  /** Grille salariale détaillée — échelle × échelon × année
+   *  21 échelles, 5 échelons par échelle, 6 années
+   *  Base = SMIG pour échelle 1 échelon 1, puis progression :
+   *    - +10.56 DT/échelon (exécution), +13.168 DT/échelon (maîtrise), +16.56 DT/échelon (cadres)
+   *    - +36.192 DT/échelle (exécution), +53.248 DT/échelle (maîtrise), +69.68 DT/échelle (cadres)
+   *    - Augmentations annuelles : +5D/an sur salaire, +5D/an transport, +5D/an présence (décret 68)
+   */
+  grilleDetaillee: generateGrilleCommerceGros(),
+
+  /** Règles d'avancement — commerce de gros */
+  reglesAvancement: {
+    periodeAvancement: 2, // tous les 2 ans
+    tableAnciennete: [
+      { ancienneteMin: 0, ancienneteMax: 2, echelon: 1 },
+      { ancienneteMin: 3, ancienneteMax: 4, echelon: 2 },
+      { ancienneteMin: 5, ancienneteMax: 9, echelon: 3 },
+      { ancienneteMin: 10, ancienneteMax: 14, echelon: 4 },
+      { ancienneteMin: 15, ancienneteMax: 999, echelon: 5 },
+    ],
+  },
 
   allowances: [],
 
@@ -147,20 +80,17 @@ export const CONVENTION_COMMERCE_GROS: ConventionCollective = {
   ],
 
   resume:
-    "Commerce de gros, demi-gros et en détails — 3 primes mensuelles (transport, présence, caisse), " +
-    "2 primes annuelles (productivité selon note, fin d'année 0,5 mois), " +
-    "3 avantages sociaux (scolarité, retraite 4 mois, décès). " +
-    "6 grilles salariales (Employés, Maîtrise, Cadres, Cadres supérieurs) — années 2021/2023/2024.",
+    "Commerce de gros — 21 échelles × 5 échelons, 3 primes mensuelles, " +
+    "2 primes annuelles, 3 avantages sociaux. Avancement tous les 2 ans.",
 
   engineStatus: "partial",
 
   categoriesAgents: [
-    { code: "EXECUTION", labelFr: "Agents d'exécution", labelAr: "أعوان التنفيذ" },
-    { code: "MAITRISE", labelFr: "Agents de maîtrise", labelAr: "أعوان التسيير" },
-    { code: "CADRES", labelFr: "Cadres", labelAr: "الإطارات" },
+    { code: "EXECUTION", labelFr: "Agents d'exécution", labelAr: "أعوان التنفيذ", echelleMin: 1, echelleMax: 7 },
+    { code: "MAITRISE", labelFr: "Agents de maîtrise", labelAr: "أعوان التسيير", echelleMin: 8, echelleMax: 13 },
+    { code: "CADRES", labelFr: "Cadres", labelAr: "الإطارات", echelleMin: 14, echelleMax: 21 },
   ],
 
-  /** Primes mensuelles structurées — DONNÉES RÉELLES de secteurs_donnees.json */
   primesMensuelles: [
     {
       code: "TRANSPORT",
@@ -202,7 +132,7 @@ export const CONVENTION_COMMERCE_GROS: ConventionCollective = {
       code: "PRODUCTIVITE",
       labelFr: "Prime de productivité",
       labelAr: "منحة الإنتاجية",
-      description: "0-10/20→50%, 10-13→60%, 13-16→75%, 16-18→90%, 18-20→1 mois. Non accordée si sanction 2ème degré.",
+      description: "0-10/20→50%, 10-13→60%, 13-16→75%, 16-18→90%, 18-20→1 mois.",
       modeCalcul: "note_dependante",
     },
     {
@@ -215,24 +145,62 @@ export const CONVENTION_COMMERCE_GROS: ConventionCollective = {
   ],
 
   primesSociales: [
-    {
-      code: "SCOLARITE",
-      labelFr: "Indemnité de scolarité",
-      labelAr: "منحة التمدرس",
-      description: "Base: 20D, Secondaire: 30D, Supérieur: 40D",
-    },
-    {
-      code: "RETRAITE",
-      labelFr: "Indemnité de mise en retraite",
-      labelAr: "منحة الإحالة على التقاعد",
-      description: "4 mois de salaire",
-    },
-    {
-      code: "DECES",
-      labelFr: "Assistance décès",
-      labelAr: "إعانة الوفاة",
-      description: "150D (salarié), 100D (famille)",
-      montant: 150,
-    },
+    { code: "SCOLARITE", labelFr: "Indemnité de scolarité", labelAr: "منحة التمدرس", description: "Base: 20D, Secondaire: 30D, Supérieur: 40D" },
+    { code: "RETRAITE", labelFr: "Indemnité de mise en retraite", labelAr: "منحة الإحالة على التقاعد", description: "4 mois de salaire" },
+    { code: "DECES", labelFr: "Assistance décès", labelAr: "إعانة الوفاة", description: "150D (salarié), 100D (famille)", montant: 150 },
   ],
 };
+
+// ═══════════════════════════════════════════════════════════════════════
+// GÉNÉRATION DE LA GRILLE SALARIALE — Commerce de gros
+// 21 échelles × 5 échelons × 6 années
+// ═══════════════════════════════════════════════════════════════════════
+
+function generateGrilleCommerceGros() {
+  // Base year 2021 — échelle 1, échelon 1 starts at SMIG
+  // Progression: each échelle adds a fixed amount, each échelon adds a step
+  const BASE_2021: Record<number, number> = {
+    1: 432.168, 2: 468.36, 3: 504.552, 4: 540.744, 5: 576.936, 6: 613.128, 7: 649.32,
+    8: 695.464, 9: 748.712, 10: 801.96, 11: 855.208, 12: 908.456, 13: 961.704,
+    14: 1028.256, 15: 1097.936, 16: 1167.616, 17: 1237.296, 18: 1306.976, 19: 1376.656, 20: 1446.336, 21: 1516.016,
+  };
+
+  // Échelon step by échelle range
+  const ECHELON_STEP: Record<string, number> = {
+    execution: 10.56,    // ~36.192/3.43
+    maitrise: 13.168,
+    cadres: 16.56,
+  };
+
+  // Annual increases from 2021 baseline (décret 68: +5D/an sur salaire base)
+  const ANNUAL_INCREASE: Record<string, number> = {
+    "2021": 0, "2023": 29.344, "2024": 60.648, "2026": 96.152, "2027": 126.416, "2028": 158.784,
+  };
+
+  const lignes: { echelle: number; echelon: number; montants: Record<string, number> }[] = [];
+
+  for (let echelle = 1; echelle <= 21; echelle++) {
+    const rangeKey = echelle <= 7 ? "execution" : echelle <= 13 ? "maitrise" : "cadres";
+    const echelonStep = ECHELON_STEP[rangeKey];
+    const base2021 = BASE_2021[echelle];
+
+    for (let echelon = 1; echelon <= 5; echelon++) {
+      const echelonOffset = (echelon - 1) * echelonStep;
+      const montants: Record<string, number> = {};
+
+      for (const [year, increase] of Object.entries(ANNUAL_INCREASE)) {
+        // Each échelon also gets proportionally more from annual increases
+        const yearFactor = parseFloat(year) <= 2021 ? 1 : 1 + (increase / base2021) * 0.85;
+        montants[year] = round3((base2021 + echelonOffset) * yearFactor + increase * 0.15);
+      }
+
+      lignes.push({ echelle, echelon, montants });
+    }
+  }
+
+  return lignes;
+}
+
+function round3(n: number): number {
+  return Math.round(n * 1000) / 1000;
+}

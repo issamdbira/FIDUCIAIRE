@@ -48,9 +48,9 @@ export const CONVENTION_CADRE: ConventionCollective = {
 
   /** Les 3 catégories de personnel définies par la convention cadre */
   categoriesAgents: [
-    { code: "EXECUTION", labelFr: "Agents d'exécution", labelAr: "أعوان التنفيذ" },
-    { code: "MAITRISE", labelFr: "Agents de maîtrise", labelAr: "أعوان التسيير" },
-    { code: "CADRES", labelFr: "Cadres", labelAr: "الإطارات" },
+    { code: "EXECUTION", labelFr: "Agents d'exécution", labelAr: "أعوان التنفيذ", echelleMin: 1, echelleMax: 7 },
+    { code: "MAITRISE", labelFr: "Agents de maîtrise", labelAr: "أعوان التسيير", echelleMin: 8, echelleMax: 13 },
+    { code: "CADRES", labelFr: "Cadres", labelAr: "الإطارات", echelleMin: 14, echelleMax: 21 },
   ],
 
   primesMensuelles: [], // Aucun montant — renvoie aux conventions sectorielles
