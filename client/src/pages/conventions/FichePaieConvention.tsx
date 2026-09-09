@@ -8,11 +8,10 @@ import {
   ChevronRight,
   Download,
   User,
-  Calculator,
-  Search,
-  Info,
   ArrowRightLeft,
   Building2,
+  CalendarDays,
+  Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BackToTools from "@/components/BackToTools";
 import { getConventionBySlug } from "@/lib/conventions/data/index";
@@ -45,19 +43,9 @@ import {
 import { formatMontantDT } from "@/lib/utils";
 import { toast } from "sonner";
 
-const MOIS_OPTIONS = [
-  { value: "1", label: "Janvier" }, { value: "2", label: "Février" },
-  { value: "3", label: "Mars" }, { value: "4", label: "Avril" },
-  { value: "5", label: "Mai" }, { value: "6", label: "Juin" },
-  { value: "7", label: "Juillet" }, { value: "8", label: "Août" },
-  { value: "9", label: "Septembre" }, { value: "10", label: "Octobre" },
-  { value: "11", label: "Novembre" }, { value: "12", label: "Décembre" },
-];
-
-const SITUATION_OPTIONS = [
-  { value: "Célibataire", label: "Célibataire" },
-  { value: "Marié", label: "Marié" },
-  { value: "Marié + enfants", label: "Marié + enfants" },
+const MOIS_NOMS = [
+  "", "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+  "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
 ];
 
 const MOIS_NOMS_EXPORT = [
@@ -67,14 +55,21 @@ const MOIS_NOMS_EXPORT = [
 
 type CalculMode = "brut-to-net" | "net-to-brut";
 
+// ─── Design tokens (matching maquette) ─────────────────────────────────
+const NAVY = "#0B2545";
+const NAVY_MID = "#13415C";
+const GOLD = "#C5973E";
+const GOLD_DIM = "#A07D2F";
+const SLATE = "#5C6B7A";
+const HAIRLINE = "#D9DDE3";
+
 export default function FichePaieConvention() {
   const { slug } = useParams<{ slug: string }>();
   const convention = getConventionBySlug(slug ?? "");
 
-  // ─── Mode de calcul ──────────────────────────────────────────────
   const [mode, setMode] = useState<CalculMode>("brut-to-net");
 
-  // ─── État du salarié ─────────────────────────────────────────────
+  // ─── Salarié (champs minimaux) ───────────────────────────────────
   const [nom, setNom] = useState("");
   const [prenom, setPrenom] = useState("");
   const [categorieAgent, setCategorieAgent] = useState(
@@ -86,38 +81,34 @@ export default function FichePaieConvention() {
   const [situationFamiliale, setSituationFamiliale] = useState("Célibataire");
   const [nombreEnfants, setNombreEnfants] = useState("0");
 
-  // ─── Éléments de paie ────────────────────────────────────────────
+  // ─── Période ─────────────────────────────────────────────────────
   const [annee, setAnnee] = useState("2026");
-  const [mois, setMois] = useState("1");
+  const [mois, setMois] = useState(String(new Date().getMonth() + 1));
+
+  // ─── Options ─────────────────────────────────────────────────────
   const [heuresSup, setHeuresSup] = useState("");
-  const [noteProfessionnelle, setNoteProfessionnelle] = useState("");
   const [primesExceptionnelles, setPrimesExceptionnelles] = useState("");
 
-  // ─── Net→Brut : montant net souhaité ─────────────────────────────
+  // ─── Net→Brut ───────────────────────────────────────────────────
   const [netSouhaite, setNetSouhaite] = useState("");
 
-  // ─── Employeur (pour la fiche de paie, comme le moteur principal) ─
+  // ─── Employeur ──────────────────────────────────────────────────
   const [employeurNom, setEmployeurNom] = useState("");
   const [employeurLogoDataUrl, setEmployeurLogoDataUrl] = useState<string | undefined>(undefined);
 
-  // ─── Résultat ────────────────────────────────────────────────────
+  // ─── Résultat ───────────────────────────────────────────────────
   const [resultat, setResultat] = useState<ResultatPaieConvention | null>(null);
   const [resultatNetToBrut, setResultatNetToBrut] = useState<ResultatNetToBrut | null>(null);
 
-  // ─── Export ──────────────────────────────────────────────────────
+  // ─── Export ─────────────────────────────────────────────────────
   const ficheRef = useRef<HTMLDivElement>(null);
   const [exportEnCours, setExportEnCours] = useState(false);
 
-  // ─── Données dérivées ────────────────────────────────────────────
+  // ─── Données dérivées ───────────────────────────────────────────
   const echellesDisponibles = useMemo(() => {
     if (!convention) return [];
     return getEchellesPourCategorie(convention, categorieAgent);
   }, [convention, categorieAgent]);
-
-  const echelonsDisponibles = useMemo(() => {
-    if (!convention || !echelle) return [];
-    return getEchelonsPourEchelle(convention, parseInt(echelle));
-  }, [convention, echelle]);
 
   const echelonDetecte = useMemo(() => {
     if (!convention) return 1;
@@ -139,24 +130,21 @@ export default function FichePaieConvention() {
     return detecterCategorie(convention, parseInt(echelle));
   }, [convention, echelle]);
 
-  // Auto-set echelle when category changes
-  const handleCategorieChange = useCallback((cat: string) => {
-    setCategorieAgent(cat);
-    setResultat(null);
-    setResultatNetToBrut(null);
-    if (convention) {
-      const echelles = getEchellesPourCategorie(convention, cat);
-      if (echelles.length > 0) setEchelle(String(echelles[0]));
-    }
-  }, [convention]);
-
-  const handleEchelleChange = useCallback((e: string) => {
-    setEchelle(e);
+  // ─── Handlers ───────────────────────────────────────────────────
+  const clearResult = useCallback(() => {
     setResultat(null);
     setResultatNetToBrut(null);
   }, []);
 
-  // ─── Logo upload ─────────────────────────────────────────────────
+  const handleCategorieChange = useCallback((cat: string) => {
+    setCategorieAgent(cat);
+    clearResult();
+    if (convention) {
+      const echelles = getEchellesPourCategorie(convention, cat);
+      if (echelles.length > 0) setEchelle(String(echelles[0]));
+    }
+  }, [convention, clearResult]);
+
   const handleLogoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -165,11 +153,9 @@ export default function FichePaieConvention() {
     reader.readAsDataURL(file);
   }, []);
 
-  // ─── Calcul Brut → Net ───────────────────────────────────────────
-  const calculerBrutToNet = useCallback(() => {
+  // ─── Calcul ─────────────────────────────────────────────────────
+  const lancerCalcul = useCallback(() => {
     if (!convention) return;
-    const sb = salaireAuto;
-    if (!sb || sb <= 0) return;
 
     const salarie: SalarieConvention = {
       nom,
@@ -181,95 +167,67 @@ export default function FichePaieConvention() {
       nombreEnfants: parseInt(nombreEnfants) || 0,
     };
 
-    const elements: ElementsPaieConvention = {
-      salaireBrut: sb,
-      annee: parseInt(annee) || 2026,
-      mois: parseInt(mois) || 1,
-      heuresSup: parseFloat(heuresSup) || undefined,
-      noteProfessionnelle: parseFloat(noteProfessionnelle) || undefined,
-      primesExceptionnelles: parseFloat(primesExceptionnelles) || undefined,
-    };
-
-    const res = calculerPaieConvention(convention, salarie, elements);
-    setResultat(res);
-    setResultatNetToBrut(null);
-  }, [
-    convention, nom, prenom, categorieAgent, categorieDetectee,
-    anciennete, regime, situationFamiliale, nombreEnfants,
-    salaireAuto, annee, mois, heuresSup, noteProfessionnelle, primesExceptionnelles,
-  ]);
-
-  // ─── Calcul Net → Brut ───────────────────────────────────────────
-  const calculerNetToBrut = useCallback(() => {
-    if (!convention || !echelle) return;
-    const netVal = parseFloat(netSouhaite);
-    if (!netVal || netVal <= 0) return;
-
-    const salarie: SalarieConvention = {
-      nom,
-      prénom: prenom,
-      categorieAgent: categorieDetectee?.code ?? categorieAgent,
-      anciennete: parseInt(anciennete) || 0,
-      regime,
-      situationFamiliale: situationFamiliale as SalarieConvention["situationFamiliale"],
-      nombreEnfants: parseInt(nombreEnfants) || 0,
-    };
-
-    const res = calculerBrutPourNetConvention(
-      netVal,
-      convention,
-      salarie,
-      parseInt(echelle),
-      echelonDetecte,
-      parseInt(annee) || 2026,
-      parseInt(mois) || 1,
-      {
+    if (mode === "net-to-brut") {
+      const netVal = parseFloat(netSouhaite);
+      if (!netVal || netVal <= 0 || !echelle) return;
+      const res = calculerBrutPourNetConvention(
+        netVal, convention, salarie,
+        parseInt(echelle), echelonDetecte,
+        parseInt(annee) || 2026, parseInt(mois) || 1,
+        { heuresSup: parseFloat(heuresSup) || undefined, primesExceptionnelles: parseFloat(primesExceptionnelles) || undefined },
+      );
+      if (res) {
+        setResultat(res.resultat);
+        setResultatNetToBrut(res);
+      }
+    } else {
+      const sb = salaireAuto;
+      if (!sb || sb <= 0) return;
+      const elements: ElementsPaieConvention = {
+        salaireBrut: sb,
+        annee: parseInt(annee) || 2026,
+        mois: parseInt(mois) || 1,
         heuresSup: parseFloat(heuresSup) || undefined,
-        noteProfessionnelle: parseFloat(noteProfessionnelle) || undefined,
         primesExceptionnelles: parseFloat(primesExceptionnelles) || undefined,
-      },
-    );
-
-    if (res) {
-      setResultat(res.resultat);
-      setResultatNetToBrut(res);
+      };
+      setResultat(calculerPaieConvention(convention, salarie, elements));
+      setResultatNetToBrut(null);
     }
   }, [
-    convention, echelle, netSouhaite, nom, prenom, categorieAgent, categorieDetectee,
+    convention, mode, nom, prenom, categorieAgent, categorieDetectee,
     anciennete, regime, situationFamiliale, nombreEnfants,
-    echelonDetecte, annee, mois, heuresSup, noteProfessionnelle, primesExceptionnelles,
+    echelle, echelonDetecte, salaireAuto, annee, mois,
+    heuresSup, primesExceptionnelles, netSouhaite,
   ]);
 
-  // ─── Export PDF ──────────────────────────────────────────────────
+  // ─── Export PDF ─────────────────────────────────────────────────
   const exporterPDF = useCallback(async () => {
-    if (!ficheRef.current) return;
+    const el = ficheRef.current;
+    if (!el) { toast.error("Aucun contenu à exporter"); return; }
     setExportEnCours(true);
     try {
       const html2pdf = (await import("html2pdf.js")).default;
       const sanitizer = (s: string) =>
         s.trim().replace(/[^a-zA-Z0-9\u00C0-\u024F\u1E00-\u1EFF_\- ]/g, "").replace(/\s+/g, "_").slice(0, 40);
-      const nomFichier = sanitizer(nom);
-      const prenomFichier = sanitizer(prenom);
-      const moisNom = MOIS_NOMS_EXPORT[(parseInt(mois) || 1) - 1];
-      const anneeVal = annee || "2026";
-      const filename = `Fiche_Paie_${nomFichier || "Salarie"}${prenomFichier ? "_" + prenomFichier : ""}_${moisNom}_${anneeVal}.pdf`;
+      const filename = `Fiche_Paie_${sanitizer(nom) || "Salarie"}_${MOIS_NOMS_EXPORT[(parseInt(mois) || 1) - 1]}_${annee}.pdf`;
       await html2pdf()
         .set({
-          margin: 10,
+          margin: [8, 6, 8, 6],
           filename,
           image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2 },
+          html2canvas: { scale: 2, useCORS: true },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         })
-        .from(ficheRef.current)
+        .from(el)
         .save();
       toast.success(`PDF exporté : ${filename}`);
-    } catch {
-      toast.error("Erreur lors de l'export PDF");
+    } catch (err) {
+      console.error("PDF export error:", err);
+      toast.error("Erreur lors de l'export PDF — réessayez");
     } finally {
       setExportEnCours(false);
     }
-  }, [nom, prenom, mois, annee]);
+  }, [nom, mois, annee]);
 
   if (!convention) {
     return (
@@ -281,7 +239,7 @@ export default function FichePaieConvention() {
           <Link href="/conventions">
             <Button variant="outline" className="mt-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour aux conventions
+              Retour
             </Button>
           </Link>
         </div>
@@ -289,138 +247,78 @@ export default function FichePaieConvention() {
     );
   }
 
-  const hasGrille = (convention.grilleDetaillee?.length ?? 0) > 0;
+  const canCalculate = mode === "brut-to-net"
+    ? salaireAuto != null && salaireAuto > 0
+    : parseFloat(netSouhaite) > 0 && echelle !== "";
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-4">
       <BackToTools />
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="mt-6"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mt-6">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
           <Link href="/conventions" className="hover:underline">Conventions</Link>
           <ChevronRight className="h-4 w-4" />
-          <Link href={`/conventions/${convention.slug}`} className="hover:underline">
-            {convention.sectorNameFr}
-          </Link>
+          <Link href={`/conventions/${convention.slug}`} className="hover:underline">{convention.sectorNameFr}</Link>
           <ChevronRight className="h-4 w-4" />
           <span className="text-foreground">Fiche de paie</span>
         </div>
 
-        <h1 className="text-2xl font-bold tracking-tight mb-2">
-          Fiche de paie — {convention.sectorNameFr}
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight mb-2">Fiche de paie — {convention.sectorNameFr}</h1>
 
-        {/* Layout: inputs left, result right */}
-        <div className="grid lg:grid-cols-[440px_1fr] gap-6 mt-6">
-          {/* LEFT COLUMN — Inputs */}
-          <div className="space-y-5">
-            {/* Mode de calcul */}
+        <div className="grid lg:grid-cols-[400px_1fr] gap-6 mt-6">
+          {/* ─── LEFT: FORM ─── */}
+          <div className="space-y-4">
+            {/* Mode */}
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <ArrowRightLeft className="h-5 w-5" />
-                  Mode de calcul
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Tabs
-                  value={mode}
-                  onValueChange={(v) => {
-                    setMode(v as CalculMode);
-                    setResultat(null);
-                    setResultatNetToBrut(null);
-                  }}
-                >
+              <CardContent className="py-3">
+                <Tabs value={mode} onValueChange={(v) => { setMode(v as CalculMode); clearResult(); }}>
                   <TabsList className="w-full">
-                    <TabsTrigger value="brut-to-net" className="flex-1">
-                      Brut → Net
+                    <TabsTrigger value="brut-to-net" className="flex-1 gap-1.5 text-xs">
+                      <Banknote className="h-3.5 w-3.5" /> Brut → Net
                     </TabsTrigger>
-                    <TabsTrigger value="net-to-brut" className="flex-1">
-                      Net → Brut
+                    <TabsTrigger value="net-to-brut" className="flex-1 gap-1.5 text-xs">
+                      <ArrowRightLeft className="h-3.5 w-3.5" /> Net → Brut
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
-                {mode === "net-to-brut" && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Entrez le net souhaité — le moteur calcule le brut et décompose en base grille + indemnité supplémentaire.
-                  </p>
-                )}
               </CardContent>
             </Card>
 
             {/* Employeur */}
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Building2 className="h-5 w-5" />
-                  Employeur
-                </CardTitle>
+              <CardHeader className="pb-2 pt-4 px-4">
+                <CardTitle className="flex items-center gap-2 text-sm"><Building2 className="h-4 w-4" /> Employeur</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-3">
-                  {employeurLogoDataUrl && (
-                    <img
-                      src={employeurLogoDataUrl}
-                      alt="Logo"
-                      className="h-12 w-12 object-contain border border-border rounded"
-                    />
-                  )}
+              <CardContent className="space-y-2 px-4 pb-4">
+                <div className="flex items-center gap-2">
+                  {employeurLogoDataUrl && <img src={employeurLogoDataUrl} alt="Logo" className="h-10 w-10 object-contain border border-border rounded" />}
                   <div className="flex-1">
-                    <Label className="text-xs">Raison sociale</Label>
-                    <Input
-                      value={employeurNom}
-                      onChange={(e) => setEmployeurNom(e.target.value)}
-                      placeholder="Nom de l'entreprise"
-                    />
+                    <Input value={employeurNom} onChange={(e) => setEmployeurNom(e.target.value)} placeholder="Raison sociale" className="h-8 text-sm" />
                   </div>
                 </div>
-                <div>
-                  <Label className="text-xs">Logo (optionnel)</Label>
-                  <label className="block mt-1">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoUpload}
-                      className="text-xs"
-                    />
-                  </label>
-                </div>
+                <label className="block">
+                  <Input type="file" accept="image/*" onChange={handleLogoUpload} className="text-xs h-7" />
+                </label>
               </CardContent>
             </Card>
 
             {/* Salarié */}
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <User className="h-5 w-5" />
-                  Salarié
-                </CardTitle>
+              <CardHeader className="pb-2 pt-4 px-4">
+                <CardTitle className="flex items-center gap-2 text-sm"><User className="h-4 w-4" /> Salarié</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs">Nom</Label>
-                    <Input value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Nom" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Prénom</Label>
-                    <Input value={prenom} onChange={(e) => setPrenom(e.target.value)} placeholder="Prénom" />
-                  </div>
+              <CardContent className="space-y-2 px-4 pb-4">
+                <div className="grid grid-cols-2 gap-2">
+                  <Input value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Nom" className="h-8 text-sm" />
+                  <Input value={prenom} onChange={(e) => setPrenom(e.target.value)} placeholder="Prénom" className="h-8 text-sm" />
                 </div>
-
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <Label className="text-xs">Régime</Label>
+                    <Label className="text-[10px]">Régime</Label>
                     <Select value={regime} onValueChange={(v) => setRegime(v as "48h" | "40h")}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
+                      <SelectTrigger className="h-8 text-sm mt-0.5"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="48h">48h / semaine</SelectItem>
                         <SelectItem value="40h">40h / semaine</SelectItem>
@@ -428,216 +326,145 @@ export default function FichePaieConvention() {
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-xs">Situation familiale</Label>
+                    <Label className="text-[10px]">Situation</Label>
                     <Select value={situationFamiliale} onValueChange={setSituationFamiliale}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
+                      <SelectTrigger className="h-8 text-sm mt-0.5"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {SITUATION_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="Célibataire">Célibataire</SelectItem>
+                        <SelectItem value="Marié">Marié</SelectItem>
+                        <SelectItem value="Marié + enfants">Marié + enfants</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-
-                <div>
-                  <Label className="text-xs">Enfants à charge</Label>
-                  <Input type="number" min="0" value={nombreEnfants} onChange={(e) => setNombreEnfants(e.target.value)} />
-                </div>
+                {situationFamiliale !== "Célibataire" && (
+                  <div>
+                    <Label className="text-[10px]">Enfants à charge</Label>
+                    <Input type="number" min="0" value={nombreEnfants} onChange={(e) => setNombreEnfants(e.target.value)} className="h-8 text-sm" />
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* Classification & Grille */}
+            {/* Classification grille */}
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Search className="h-5 w-5" />
-                  Classification dans la grille
-                </CardTitle>
+              <CardHeader className="pb-2 pt-4 px-4">
+                <CardTitle className="flex items-center gap-2 text-sm"><Briefcase className="h-4 w-4" /> Classification</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {/* Catégorie */}
+              <CardContent className="space-y-2 px-4 pb-4">
                 <div>
-                  <Label className="text-xs">Catégorie d'agent</Label>
+                  <Label className="text-[10px]">Catégorie</Label>
                   <Select value={categorieAgent} onValueChange={handleCategorieChange}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger className="h-8 text-sm mt-0.5"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {convention.categoriesAgents?.map((cat) => (
-                        <SelectItem key={cat.code} value={cat.code}>
-                          {cat.labelFr} (éch. {cat.echelleMin}–{cat.echelleMax})
-                        </SelectItem>
+                        <SelectItem key={cat.code} value={cat.code}>{cat.labelFr}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-
-                {/* Échelle */}
                 <div>
-                  <Label className="text-xs">Échelle</Label>
-                  <Select value={echelle} onValueChange={handleEchelleChange}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Sélectionner" />
-                    </SelectTrigger>
+                  <Label className="text-[10px]">Échelle (grade)</Label>
+                  <Select value={echelle} onValueChange={(e) => { setEchelle(e); clearResult(); }}>
+                    <SelectTrigger className="h-8 text-sm mt-0.5"><SelectValue placeholder="Choisir" /></SelectTrigger>
                     <SelectContent>
                       {echellesDisponibles.map((e) => (
-                        <SelectItem key={e} value={String(e)}>
-                          Échelle {e}
-                        </SelectItem>
+                        <SelectItem key={e} value={String(e)}>Échelle {e}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-
-                {/* Ancienneté → Échelon auto */}
-                <div>
-                  <Label className="text-xs">Ancienneté (années)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={anciennete}
-                    onChange={(e) => { setAnciennete(e.target.value); setResultat(null); setResultatNetToBrut(null); }}
-                  />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-[10px]">Ancienneté (ans)</Label>
+                    <Input type="number" min="0" value={anciennete} onChange={(e) => { setAnciennete(e.target.value); clearResult(); }} className="h-8 text-sm" />
+                  </div>
+                  <div className="flex flex-col justify-end">
+                    <div className="h-8 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span>Échelon :</span>
+                      <span className="font-semibold text-sm text-foreground">{echelonDetecte}</span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Échelon détecté automatiquement */}
-                <div className="p-3 rounded-lg bg-muted/40 flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Échelon détecté</span>
-                  <span className="font-semibold text-lg">{echelonDetecte}</span>
-                </div>
-
-                {/* Salaire de base auto-détecté */}
-                <div className={`p-3 rounded-lg flex items-center justify-between ${salaireAuto ? "bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800" : "bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800"}`}>
-                  <span className="text-sm font-medium">Salaire de base (grille)</span>
+                {/* Salaire auto-détecté */}
+                <div className={`p-2.5 rounded-lg flex items-center justify-between ${salaireAuto ? "bg-emerald-50 dark:bg-emerald-950/30" : "bg-muted/40"}`}>
+                  <span className="text-xs font-medium">Salaire de base</span>
                   {salaireAuto ? (
-                    <span className="font-bold text-lg font-mono">{formatMontantDT(salaireAuto)}</span>
+                    <span className="font-bold font-mono">{formatMontantDT(salaireAuto)}</span>
                   ) : (
-                    <span className="text-sm text-amber-700 dark:text-amber-300 flex items-center gap-1">
-                      <Info className="h-3 w-3" />
-                      Sélectionner échelle
-                    </span>
+                    <span className="text-xs text-muted-foreground">Choisir échelle</span>
                   )}
                 </div>
 
-                {/* Info catégorie détectée */}
                 {categorieDetectee && (
-                  <div className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Info className="h-3 w-3" />
-                    Échelle {echelle} → {categorieDetectee.labelFr}
-                  </div>
+                  <p className="text-[10px] text-muted-foreground">Échelle {echelle} → {categorieDetectee.labelFr}</p>
                 )}
               </CardContent>
             </Card>
 
-            {/* Éléments complémentaires / Net souhaité */}
+            {/* Période & options */}
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Calculator className="h-5 w-5" />
-                  {mode === "brut-to-net" ? "Éléments complémentaires" : "Net souhaité & options"}
-                </CardTitle>
+              <CardHeader className="pb-2 pt-4 px-4">
+                <CardTitle className="flex items-center gap-2 text-sm"><CalendarDays className="h-4 w-4" /> Période</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {/* Net→Brut: input du net souhaité */}
-                {mode === "net-to-brut" && (
-                  <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
-                    <Label className="text-xs font-semibold text-blue-800 dark:text-blue-200">
-                      Net à payer souhaité (DT)
-                    </Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.001"
-                      value={netSouhaite}
-                      onChange={(e) => { setNetSouhaite(e.target.value); setResultat(null); setResultatNetToBrut(null); }}
-                      placeholder="Ex: 1000"
-                      className="mt-1 font-mono text-lg"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Le moteur calcule le brut nécessaire, puis décompose en base grille + indemnité supplémentaire.
-                    </p>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-3">
+              <CardContent className="space-y-2 px-4 pb-4">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <Label className="text-xs">Année</Label>
-                    <Select value={annee} onValueChange={(v) => { setAnnee(v); setResultat(null); setResultatNetToBrut(null); }}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
+                    <Label className="text-[10px]">Mois</Label>
+                    <Select value={mois} onValueChange={setMois}>
+                      <SelectTrigger className="h-8 text-sm mt-0.5"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="2024">2024</SelectItem>
-                        <SelectItem value="2025">2025</SelectItem>
-                        <SelectItem value="2026">2026</SelectItem>
-                        <SelectItem value="2027">2027</SelectItem>
-                        <SelectItem value="2028">2028</SelectItem>
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                          <SelectItem key={m} value={String(m)}>{MOIS_NOMS[m]}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-xs">Mois</Label>
-                    <Select value={mois} onValueChange={setMois}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
+                    <Label className="text-[10px]">Année</Label>
+                    <Select value={annee} onValueChange={(v) => { setAnnee(v); clearResult(); }}>
+                      <SelectTrigger className="h-8 text-sm mt-0.5"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {MOIS_OPTIONS.map((m) => (
-                          <SelectItem key={m.value} value={m.value}>
-                            {m.label}
-                          </SelectItem>
+                        {["2024", "2025", "2026", "2027", "2028"].map((y) => (
+                          <SelectItem key={y} value={y}>{y}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
-                <div>
-                  <Label className="text-xs">Heures supplémentaires</Label>
-                  <Input
-                    type="number" min="0" value={heuresSup}
-                    onChange={(e) => setHeuresSup(e.target.value)}
-                    placeholder="0"
-                  />
-                </div>
-
-                {mode === "brut-to-net" && (
-                  <div>
-                    <Label className="text-xs">Primes exceptionnelles (DT)</Label>
+                {/* Net→Brut input */}
+                {mode === "net-to-brut" && (
+                  <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                    <Label className="text-[10px] font-semibold text-blue-800 dark:text-blue-200">Net à payer souhaité (DT)</Label>
                     <Input
-                      type="number" min="0" step="0.001" value={primesExceptionnelles}
-                      onChange={(e) => setPrimesExceptionnelles(e.target.value)}
-                      placeholder="0"
-                      className="font-mono"
+                      type="number" min="0" step="0.001"
+                      value={netSouhaite}
+                      onChange={(e) => { setNetSouhaite(e.target.value); clearResult(); }}
+                      placeholder="Ex: 1000"
+                      className="mt-0.5 h-9 font-mono text-base"
                     />
                   </div>
                 )}
 
-                <Button
-                  onClick={mode === "brut-to-net" ? calculerBrutToNet : calculerNetToBrut}
-                  className="w-full mt-2 gap-2"
-                  disabled={
-                    mode === "brut-to-net"
-                      ? !salaireAuto || salaireAuto <= 0
-                      : !netSouhaite || parseFloat(netSouhaite) <= 0 || !echelle
-                  }
-                >
+                <div>
+                  <Label className="text-[10px]">Heures supp. (optionnel)</Label>
+                  <Input type="number" min="0" value={heuresSup} onChange={(e) => setHeuresSup(e.target.value)} placeholder="0" className="h-8 text-sm" />
+                </div>
+
+                <Button onClick={lancerCalcul} className="w-full gap-2" disabled={!canCalculate}>
                   <Banknote className="h-4 w-4" />
-                  {mode === "brut-to-net" ? "Calculer la fiche de paie" : "Calculer Net → Brut"}
+                  {mode === "brut-to-net" ? "Calculer" : "Calculer Net → Brut"}
                 </Button>
               </CardContent>
             </Card>
           </div>
 
-          {/* RIGHT COLUMN — Results */}
+          {/* ─── RIGHT: RESULT ─── */}
           <div>
             {resultat ? (
-              <FichePaieResult
+              <FichePaiePrintable
                 resultat={resultat}
                 resultatNetToBrut={resultatNetToBrut}
                 echelle={parseInt(echelle)}
@@ -653,15 +480,8 @@ export default function FichePaieConvention() {
             ) : (
               <Card className="h-full flex items-center justify-center min-h-[400px]">
                 <div className="text-center text-muted-foreground">
-                  <Banknote className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  <p>
-                    {mode === "brut-to-net"
-                      ? "Sélectionnez la classification du salarié"
-                      : "Entrez le net souhaité et la classification"}
-                  </p>
-                  <p className="text-sm">
-                    puis cliquez sur « {mode === "brut-to-net" ? "Calculer la fiche de paie" : "Calculer Net → Brut"} »
-                  </p>
+                  <Banknote className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p className="text-sm">Remplissez le formulaire puis cliquez « Calculer »</p>
                 </div>
               </Card>
             )}
@@ -673,10 +493,13 @@ export default function FichePaieConvention() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// COMPOSANT RÉSULTAT — Format aligné sur le moteur principal
+// FICHE DE PAIE — Alignée sur la maquette HTML
+// Deux colonnes : Gains (Exonéré / Soumis) | Retenues (Base / Montant)
+// Net à Payer en bandeau doré
+// Signature en bas
 // ═══════════════════════════════════════════════════════════════════════
 
-function FichePaieResult({
+function FichePaiePrintable({
   resultat,
   resultatNetToBrut,
   echelle,
@@ -704,186 +527,202 @@ function FichePaieResult({
   const gains = resultat.lignes.filter((l) => l.type === "gain");
   const retenues = resultat.lignes.filter((l) => l.type === "retenue");
 
-  // Net→Brut decomposition info
   const isNetToBrut = mode === "net-to-brut" && resultatNetToBrut;
   const salaireBaseGrille = isNetToBrut ? resultatNetToBrut.salaireBaseGrille : 0;
   const indemniteSupp = isNetToBrut ? resultatNetToBrut.indemniteSupplementaire : 0;
 
+  // Build gains list for display
+  const displayGains = isNetToBrut && indemniteSupp > 0
+    ? [
+        { label: `Salaire de base (éch. ${echelle}, échel. ${echelon})`, soumis: salaireBaseGrille, exonere: 0 },
+        ...(indemniteSupp > 0 ? [{ label: "Indemnité supplémentaire", soumis: indemniteSupp, exonere: 0 }] : []),
+        ...gains.filter((l) => l.code !== "SB").map((l) => ({ label: l.labelFr, soumis: l.montant, exonere: 0 })),
+      ]
+    : gains.map((l) => ({ label: l.labelFr, soumis: l.montant, exonere: 0 }));
+
+  const totalExonere = displayGains.reduce((s, g) => s + g.exonere, 0);
+  const totalSoumis = displayGains.reduce((s, g) => s + g.soumis, 0);
+
   return (
-    <div className="space-y-4">
-      {/* Net→Brut decomposition banner */}
+    <div className="space-y-3">
+      {/* Net→Brut banner */}
       {isNetToBrut && indemniteSupp > 0 && (
-        <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
-          <CardContent className="py-4">
-            <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">
-              <ArrowRightLeft className="h-4 w-4" />
-              Décomposition Net → Brut
-            </h3>
-            <div className="grid grid-cols-3 gap-3 text-sm">
-              <div className="p-2 rounded bg-white/60 dark:bg-black/20">
-                <p className="text-xs text-muted-foreground">Base grille</p>
-                <p className="font-mono font-semibold">{formatMontantDT(salaireBaseGrille)}</p>
-              </div>
-              <div className="p-2 rounded bg-white/60 dark:bg-black/20">
-                <p className="text-xs text-muted-foreground">Indemnité suppl.</p>
-                <p className="font-mono font-semibold">{formatMontantDT(indemniteSupp)}</p>
-              </div>
-              <div className="p-2 rounded bg-white/60 dark:bg-black/20">
-                <p className="text-xs text-muted-foreground">Brut total</p>
-                <p className="font-mono font-semibold">{formatMontantDT(resultatNetToBrut!.brutTotal)}</p>
-              </div>
+        <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-sm">
+          <div className="flex items-center gap-2 font-semibold text-blue-800 dark:text-blue-200 mb-1">
+            <ArrowRightLeft className="h-4 w-4" /> Décomposition Net → Brut
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <div className="p-1.5 rounded bg-white/60 dark:bg-black/20">
+              <span className="text-muted-foreground">Base grille</span>
+              <p className="font-mono font-semibold">{formatMontantDT(salaireBaseGrille)}</p>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Le brut est décomposé conformément à la réglementation : le salaire de base correspond à la grille
-              (échelle {echelle}, échelon {echelon}), l'excédent est classé en indemnité supplémentaire.
-            </p>
-          </CardContent>
-        </Card>
+            <div className="p-1.5 rounded bg-white/60 dark:bg-black/20">
+              <span className="text-muted-foreground">Indemnité suppl.</span>
+              <p className="font-mono font-semibold">{formatMontantDT(indemniteSupp)}</p>
+            </div>
+            <div className="p-1.5 rounded bg-white/60 dark:bg-black/20">
+              <span className="text-muted-foreground">Brut total</span>
+              <p className="font-mono font-semibold">{formatMontantDT(resultatNetToBrut!.brutTotal)}</p>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Fiche de paie — même format que le moteur principal */}
-      <div ref={ficheRef} className="print:bg-white print:text-black">
-        <Card className="p-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-card print:bg-white print:text-black">
-          {/* Header — aligné sur le moteur principal */}
-          <div className="flex justify-between items-start border-b-2 border-primary pb-4 mb-6">
-            <div className="flex items-center gap-4">
-              {employeurLogoDataUrl && (
-                <img src={employeurLogoDataUrl} alt="Logo" className="h-14 w-14 object-contain" />
-              )}
+      {/* ─── FICHE DE PAIE (maquette format) ─── */}
+      <div ref={ficheRef}>
+        <div className="bg-white text-[#0B1D35] text-[13px] leading-[1.5] max-w-[780px] mx-auto border border-[#D9DDE3] shadow-sm rounded-lg overflow-hidden print:shadow-none">
+
+          {/* Header */}
+          <div className="flex justify-between items-start px-6 py-5 border-b-2" style={{ borderColor: NAVY }}>
+            <div className="flex items-center gap-3">
+              {employeurLogoDataUrl && <img src={employeurLogoDataUrl} alt="Logo" className="h-14 w-14 object-contain" />}
               <div>
-                <h2 className="text-2xl font-bold text-foreground" style={{ fontFamily: "Montserrat, sans-serif" }}>
-                  Fiche de Paie
-                </h2>
-                {employeurNom && (
-                  <p className="text-sm text-muted-foreground font-medium">{employeurNom}</p>
-                )}
-                <p className="text-sm text-muted-foreground">
+                <h1 className="text-[15px] font-bold" style={{ fontFamily: "Montserrat, sans-serif", color: NAVY }}>
+                  {employeurNom || "Employeur"}
+                </h1>
+                <p className="text-[11px]" style={{ color: SLATE }}>
                   Convention : {conventionName}
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  Période : {resultat.periode.mois}/{resultat.periode.annee}
-                </p>
               </div>
             </div>
-            <div className="text-right text-sm text-muted-foreground">
-              <p className="font-semibold">{resultat.salarie.prénom} {resultat.salarie.nom}</p>
-              <p>Catégorie : {resultat.salarie.categorieAgent}</p>
-              <p>Échelle {echelle} / Échelon {echelon}</p>
-              <p>Régime : {resultat.salarie.regime}</p>
-              <p>Ancienneté : {resultat.salarie.anciennete} ans</p>
+            <div className="text-right">
+              <h2 className="text-[14px] font-bold uppercase tracking-wider" style={{ fontFamily: "Montserrat, sans-serif", color: NAVY }}>
+                Fiche de paie
+              </h2>
+              <p className="text-[12px] font-medium" style={{ color: SLATE }}>
+                {resultat.periode.moisNom} {resultat.periode.annee}
+              </p>
             </div>
           </div>
 
-          {/* Table gains + retenues — même format que le moteur principal */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm mb-6 border-collapse print:border-collapse min-w-[320px]">
-              <thead>
-                <tr className="border-b border-border text-muted-foreground">
-                  <th className="text-left py-2">Désignation</th>
-                  <th className="text-right py-2">Montant</th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* Net→Brut: show decomposed base + indemnité suppl. */}
-                {isNetToBrut && indemniteSupp > 0 ? (
-                  <>
-                    <tr className="border-b border-border">
-                      <td className="py-2">Salaire de base (grille — éch. {echelle}, échel. {echelon})</td>
-                      <td className="text-right py-2 tabular-nums">{formatMontantDT(salaireBaseGrille)}</td>
-                    </tr>
-                    {indemniteSupp > 0 && (
-                      <tr className="border-b border-border">
-                        <td className="py-2">Indemnité supplémentaire</td>
-                        <td className="text-right py-2 tabular-nums">{formatMontantDT(indemniteSupp)}</td>
-                      </tr>
-                    )}
-                    {/* Primes convention (skip the first "SB" line which is the brut total) */}
-                    {gains.filter((l) => l.code !== "SB").map((l) => (
-                      <tr key={l.code} className="border-b border-border">
-                        <td className="py-2">{l.labelFr}</td>
-                        <td className="text-right py-2 tabular-nums">{formatMontantDT(l.montant)}</td>
-                      </tr>
-                    ))}
-                  </>
-                ) : (
-                  <>
-                    {gains.map((l) => (
-                      <tr key={l.code} className="border-b border-border">
-                        <td className="py-2">{l.labelFr}</td>
-                        <td className="text-right py-2 tabular-nums">{formatMontantDT(l.montant)}</td>
-                      </tr>
-                    ))}
-                  </>
-                )}
+          {/* Salarie strip */}
+          <div className="grid grid-cols-4 border-b text-[11px]" style={{ borderColor: HAIRLINE }}>
+            {[
+              { label: "Salarié", value: `${resultat.salarie.prénom} ${resultat.salarie.nom}` },
+              { label: "Catégorie", value: resultat.salarie.categorieAgent },
+              { label: "Échelle / Échelon", value: `${echelle} / ${echelon}` },
+              { label: "Régime", value: resultat.salarie.regime },
+            ].map((item, i) => (
+              <div key={i} className="px-4 py-2 border-r last:border-r-0" style={{ borderColor: HAIRLINE }}>
+                <span className="block text-[10px] uppercase tracking-wider font-semibold" style={{ color: SLATE }}>{item.label}</span>
+                <span className="font-medium">{item.value}</span>
+              </div>
+            ))}
+          </div>
 
-                <tr className="border-b border-border font-semibold">
-                  <td className="py-2">Rémunération brute</td>
-                  <td className="text-right py-2 tabular-nums">{formatMontantDT(resultat.totalBrut)}</td>
-                </tr>
-
-                {/* Retenues */}
-                {retenues.map((l) => (
-                  <tr key={l.code} className="border-b border-border text-destructive">
-                    <td className="py-2">
-                      {l.labelFr}
-                      {l.taux != null && ` (${(l.taux * 100).toFixed(2)}%)`}
-                    </td>
-                    <td className="text-right py-2 tabular-nums">{formatMontantDT(-l.montant)}</td>
+          {/* Body: 2 columns Gains | Retenues */}
+          <div className="grid grid-cols-2 border-b" style={{ borderColor: HAIRLINE }}>
+            {/* Gains column */}
+            <div className="border-r" style={{ borderColor: HAIRLINE }}>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-white px-5 py-1.5" style={{ background: NAVY }}>
+                Gains
+              </div>
+              <table className="w-full border-collapse text-[12px]">
+                <thead>
+                  <tr>
+                    <th className="text-left text-[10px] uppercase tracking-wider font-semibold px-5 py-1.5 border-b" style={{ color: SLATE, borderColor: HAIRLINE }}>Élément</th>
+                    <th className="text-right text-[10px] uppercase tracking-wider font-semibold px-5 py-1.5 border-b" style={{ color: SLATE, borderColor: HAIRLINE }}>Montant</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {displayGains.map((g, i) => (
+                    <tr key={i}>
+                      <td className="px-5 py-1.5 border-b" style={{ borderColor: "#ECEEF0" }}>{g.label}</td>
+                      <td className="text-right px-5 py-1.5 border-b tabular-nums font-medium" style={{ borderColor: "#ECEEF0" }}>
+                        {formatMontantDT(g.soumis + g.exonere)}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="font-semibold" style={{ background: "rgba(11,37,69,0.02)" }}>
+                    <td className="px-5 py-1.5 border-t" style={{ borderColor: HAIRLINE }}>Total gains</td>
+                    <td className="text-right px-5 py-1.5 border-t tabular-nums" style={{ borderColor: HAIRLINE }}>
+                      {formatMontantDT(resultat.totalBrut)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
-          {/* Net à payer — même format que le moteur principal */}
-          <div className="flex justify-between items-center py-4 bg-primary text-primary-foreground px-6 rounded-lg">
-            <span className="text-lg font-bold">Net à Payer</span>
-            <span className="text-2xl font-bold tabular-nums">{formatMontantDT(resultat.netAPayer)}</span>
-          </div>
-
-          {/* Cotisations patronales — affichées (pas imprimés) */}
-          <div className="mt-6">
-            <h3 className="text-sm font-semibold mb-2 text-muted-foreground">
-              Cotisations patronales
-            </h3>
-            <div className="space-y-1">
-              {resultat.cotisationsPatronales.map((c, i) => (
-                <div key={i} className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{c.label}</span>
-                  <span className="font-mono">{formatMontantDT(c.montant)}</span>
-                </div>
-              ))}
-              <Separator />
-              <div className="flex justify-between text-sm font-medium">
-                <span>Total patronal</span>
-                <span className="font-mono">
-                  {formatMontantDT(resultat.totalCotisationsPatronales)}
-                </span>
+            {/* Retenues column */}
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-white px-5 py-1.5" style={{ background: NAVY_MID }}>
+                Retenues
               </div>
+              <table className="w-full border-collapse text-[12px]">
+                <thead>
+                  <tr>
+                    <th className="text-left text-[10px] uppercase tracking-wider font-semibold px-5 py-1.5 border-b" style={{ color: SLATE, borderColor: HAIRLINE }}>Élément</th>
+                    <th className="text-right text-[10px] uppercase tracking-wider font-semibold px-5 py-1.5 border-b" style={{ color: SLATE, borderColor: HAIRLINE }}>Montant</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {retenues.map((r) => (
+                    <tr key={r.code}>
+                      <td className="px-5 py-1.5 border-b" style={{ borderColor: "#ECEEF0", color: "#B91C1C" }}>
+                        {r.labelFr}{r.taux != null ? ` (${(r.taux * 100).toFixed(2)}%)` : ""}
+                      </td>
+                      <td className="text-right px-5 py-1.5 border-b tabular-nums font-medium" style={{ borderColor: "#ECEEF0", color: "#B91C1C" }}>
+                        {formatMontantDT(-r.montant)}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="font-semibold" style={{ background: "rgba(11,37,69,0.02)" }}>
+                    <td className="px-5 py-1.5 border-t" style={{ borderColor: HAIRLINE, color: "#B91C1C" }}>Total retenues</td>
+                    <td className="text-right px-5 py-1.5 border-t tabular-nums" style={{ borderColor: HAIRLINE, color: "#B91C1C" }}>
+                      {formatMontantDT(-resultat.totalRetenues)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
-          {/* Coût total employeur */}
-          <div className="mt-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
-            <div className="flex justify-between font-medium">
-              <span>Coût total employeur</span>
-              <span className="font-mono">
-                {formatMontantDT(resultat.totalBrut + resultat.totalCotisationsPatronales)}
+          {/* Net à Payer — bandeau doré (maquette) */}
+          <div className="flex items-baseline justify-between px-6 py-3 border-b-2" style={{ borderBottomColor: GOLD, background: "rgba(197,151,62,0.06)" }}>
+            <span className="text-[12px] font-bold uppercase tracking-wider" style={{ fontFamily: "Montserrat, sans-serif", color: NAVY }}>
+              Net à Payer
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-[22px] font-bold tabular-nums" style={{ color: NAVY }}>
+                {new Intl.NumberFormat("fr-TN", { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(resultat.netAPayer).replace(/\u00A0/g, " ")}
               </span>
+              <span className="text-[13px] font-semibold" style={{ color: GOLD_DIM }}>DT</span>
             </div>
           </div>
 
-          {/* Pied de page */}
-          <p className="text-xs text-muted-foreground mt-6">
-            Document généré par Le Fiduciaire — Moteur de paie par convention collective le {new Date().toLocaleDateString("fr-TN")}.
-          </p>
-        </Card>
+          {/* Footer: patronal info (no imprimés) */}
+          <div className="grid grid-cols-2 gap-4 px-6 py-2 text-[10px] border-t" style={{ color: SLATE, borderColor: HAIRLINE }}>
+            <div className="pt-1">
+              {resultat.cotisationsPatronales.map((c, i) => (
+                <span key={i}>
+                  {i > 0 && " | "}
+                  <strong>{c.label}</strong> : {formatMontantDT(c.montant)}
+                </span>
+              ))}
+            </div>
+            <div className="text-right pt-1">
+              <strong>Coût total employeur</strong> : {formatMontantDT(resultat.totalBrut + resultat.totalCotisationsPatronales)}
+            </div>
+          </div>
+
+          {/* Signatures */}
+          <div className="grid grid-cols-2 gap-8 px-6 py-6 text-[11px]" style={{ color: SLATE }}>
+            <div className="text-center">
+              <strong>Employeur</strong>
+              <div className="border-t mt-8 pt-1 text-[10px]" style={{ borderColor: HAIRLINE }}>Signature et cachet</div>
+            </div>
+            <div className="text-center">
+              <strong>Salarié</strong>
+              <div className="border-t mt-8 pt-1 text-[10px]" style={{ borderColor: HAIRLINE }}>Lu et approuvé</div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Export PDF — même format que le moteur principal */}
-      <div className="flex justify-end pt-2 no-print">
+      {/* Export PDF */}
+      <div className="flex justify-end gap-2 no-print">
         <Button onClick={onExport} disabled={exportEnCours} className="gap-2">
-          <Download className="w-4 h-4" /> {exportEnCours ? "Export en cours..." : "Exporter en PDF"}
+          <Download className="w-4 h-4" /> {exportEnCours ? "Export..." : "Télécharger PDF"}
         </Button>
       </div>
     </div>
