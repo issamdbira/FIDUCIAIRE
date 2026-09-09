@@ -8,6 +8,7 @@ import { getSmigPourAnnee } from "@/lib/payroll/cnss";
 import { COEFFICIENTS_ACTUALISATION, getCoefficientActualisation } from "@/lib/payroll/coefficients-actualisation";
 import { formatMontantDT } from "@/lib/utils";
 import { validerMontantSalaire } from "@/lib/validation-salaire";
+import PageHeader from "@/components/PageHeader";
 
 /**
  * Calculateur d'actualisation des salaires CNSS
@@ -49,16 +50,12 @@ export default function ActualisationSalaire() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
-      <h2
-        className="text-2xl font-bold text-foreground mb-1"
-        style={{ fontFamily: "Montserrat, sans-serif" }}
-      >
-        Actualisation salariale
-      </h2>
-      <p className="text-muted-foreground text-sm mb-6">
-        Pour calculer le salaire de référence de la pension de retraite, chaque salaire annuel des 10
-        dernières années est plafonné à 6× le SMIG puis actualisé par le coefficient CNSS.
-      </p>
+      <PageHeader
+        titleFr="Actualisation salariale"
+        titleAr="تحديث الأجور"
+        subtitleFr="Pour calculer le salaire de référence de la pension de retraite, chaque salaire annuel des 10 dernières années est plafonné à 6× le SMIG puis actualisé par le coefficient CNSS."
+        subtitleAr="لحساب أجر المرجع لمعاش التقاعد، يُسقّف كل أجر سنوي من السنوات العشر الأخيرة عند 6 أضعاف الحد الأدنى ثم يُحدّث بمعامل الصندوق الوطني."
+      />
 
       <Card className="p-6 rounded-lg shadow-sm border border-border bg-card mb-6">
         <div className="space-y-6">

@@ -15,105 +15,62 @@ import {
   PenTool,
   BarChart3,
 } from "lucide-react";
+import { useLang } from "@/contexts/LangContext";
+import { t } from "@/lib/i18n";
 
+// ── Outil keys for i18n ──
 const OUTILS = [
-  {
-    id: "calculer-salaire",
-    title: "Simulateur de Paie",
-    description: "Brut → Net ou Net → Brut — salaires du secteur privé (CNSS, IRPP, CSS)",
-    icon: DollarSign,
-    href: "/calculateurs/calculer-salaire",
-  },
-  {
-    id: "irpp",
-    title: "Barème IRPP",
-    description: "Calculez votre impôt annuel sur le revenu selon le barème officiel tunisien et votre situation familiale",
-    icon: BarChart3,
-    href: "/calculateurs/irpp",
-  },
-  {
-    id: "retraite-cnss",
-    title: "Calculateur de Retraite",
-    description: "Estimez votre pension de retraite CNSS selon votre ancienneté et salaire de référence",
-    icon: TrendingUp,
-    href: "/calculateurs/retraite-cnss",
-  },
-  {
-    id: "fiche-de-paie",
-    title: "Bulletin de Paie",
-    description: "Générez un bulletin de paie complet : employeur, salarié, éléments de rémunération, détail du calcul et export PDF",
-    icon: PenTool,
-    href: "/fiche-de-paie",
-  },
-  {
-    id: "actualisation-salaire",
-    title: "Actualisation salariale",
-    description: "Actualisez un salaire par le coefficient CNSS de son année (pour le calcul de la pension de retraite)",
-    icon: Calculator,
-    href: "/calculateurs/actualisation-salaire",
-  },
-  {
-    id: "declarations-cnss",
-    title: "Déclaration salaires CNSS",
-    description: "Saisie ou import CSV/Excel, contrôle des données, génération du fichier TXT 122 caractères",
-    icon: ClipboardCheck,
-    href: "/calculateurs/declarations-cnss",
-  },
-  {
-    id: "declarations-neant",
-    title: "Déclarations Néant (I3/I16)",
-    description: "Générez par lot vos déclarations néant — État récapitulatif I3 + Bordereau I16 — avec calibrage PDF",
-    icon: FileX,
-    href: "/calculateurs/declarations-neant",
-  },
-  {
-    id: "testeur-txt-cnss",
-    title: "Validation fichier CNSS",
-    description: "Vérifiez la conformité d'un fichier TXT CNSS au format 122 caractères par ligne",
-    icon: FileText,
-    href: "/calculateurs/testeur-txt-cnss",
-  },
-  {
-    id: "referentiel-avantages-exclus",
-    title: "Avantages exclus CNSS",
-    description: "Consultez les plafonds des avantages exclus de l'assiette CNSS (Décret n° 2003-1098) avec simulateur intégré",
-    icon: BookOpen,
-    href: "/referentiel-avantages-exclus",
-  },
+  { id: "calculer-salaire", titleKey: "outil.simulateur-paie.title" as const, descKey: "outil.simulateur-paie.desc" as const, icon: DollarSign, href: "/calculateurs/calculer-salaire" },
+  { id: "irpp", titleKey: "outil.bareme-irpp.title" as const, descKey: "outil.bareme-irpp.desc" as const, icon: BarChart3, href: "/calculateurs/irpp" },
+  { id: "retraite-cnss", titleKey: "outil.calculateur-retraite.title" as const, descKey: "outil.calculateur-retraite.desc" as const, icon: TrendingUp, href: "/calculateurs/retraite-cnss" },
+  { id: "fiche-de-paie", titleKey: "outil.bulletin-paie.title" as const, descKey: "outil.bulletin-paie.desc" as const, icon: PenTool, href: "/fiche-de-paie" },
+  { id: "actualisation-salaire", titleKey: "outil.actualisation.title" as const, descKey: "outil.actualisation.desc" as const, icon: Calculator, href: "/calculateurs/actualisation-salaire" },
+  { id: "declarations-cnss", titleKey: "outil.declaration-salaires.title" as const, descKey: "outil.declaration-salaires.desc" as const, icon: ClipboardCheck, href: "/calculateurs/declarations-cnss" },
+  { id: "declarations-neant", titleKey: "outil.declarations-neant.title" as const, descKey: "outil.declarations-neant.desc" as const, icon: FileX, href: "/calculateurs/declarations-neant" },
+  { id: "testeur-txt-cnss", titleKey: "outil.validation-fichier.title" as const, descKey: "outil.validation-fichier.desc" as const, icon: FileText, href: "/calculateurs/testeur-txt-cnss" },
+  { id: "referentiel-avantages-exclus", titleKey: "outil.avantages-exclus.title" as const, descKey: "outil.avantages-exclus.desc" as const, icon: BookOpen, href: "/referentiel-avantages-exclus" },
 ];
 
 const POINTS_FORTS = [
   {
     icon: ShieldCheck,
-    title: "Conformité Légale",
-    description: "Textes de loi à jour, gestion des avantages exclus selon le Décret n° 2003-1098 et les barèmes CNSS officiels.",
+    titleKey: "pf.conformite" as const,
+    descriptionFr: "Textes de loi à jour, gestion des avantages exclus selon le Décret n° 2003-1098 et les barèmes CNSS officiels.",
+    descriptionAr: "نصوص قانونية محدّثة، تصرف في المزايا المستثناة حسب الأمر عدد 2003-1098 والجداول الرسمية للصندوق الوطني.",
   },
   {
     icon: Upload,
-    title: "Zéro Saisie Manuelle",
-    description: "Import Excel robuste pour les déclarations de masse. Glissez votre fichier et tout est pré-rempli automatiquement.",
+    titleKey: "pf.zero-saisie" as const,
+    descriptionFr: "Import Excel robuste pour les déclarations de masse. Glissez votre fichier et tout est pré-rempli automatiquement.",
+    descriptionAr: "استيراد Excel متين للتصريحات الجماعية. اسحبوا ملفكم وكل شيء يملأ تلقائياً.",
   },
   {
     icon: FileDown,
-    title: "Documents Prêts à l'Emploi",
-    description: "Génération de PDF I3 et I16 normés, fiches de paie exportables et fichiers TXT conformes au format CNSS.",
+    titleKey: "pf.documents-prets" as const,
+    descriptionFr: "Génération de PDF I3 et I16 normés, bulletins de paie exportables et fichiers TXT conformes au format CNSS.",
+    descriptionAr: "إنتاج PDF معياري I16 وI3، قسائم راتب قابلة للتصدير وملفات TXT مطابقة لتنسيق الصندوق الوطني.",
   },
 ];
 
 export default function Home() {
+  const { lang, isAr } = useLang();
+
+  const arFont = isAr ? { fontFamily: "'Noto Sans Arabic', sans-serif" } : undefined;
+  const frFont = !isAr ? { fontFamily: "Montserrat, sans-serif" } : undefined;
+
   return (
-    <div>
+    <div dir={isAr ? "rtl" : "ltr"}>
       {/* ─── HERO ─── */}
       <section className="relative overflow-hidden">
         <div className="max-w-3xl mx-auto px-4 pt-16 pb-12 text-center">
           <h1
             className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground leading-tight mb-4"
-            style={{ fontFamily: "Montserrat, sans-serif" }}
+            style={isAr ? { fontFamily: "'Noto Sans Arabic', sans-serif" } : { fontFamily: "Montserrat, sans-serif" }}
           >
-            Paie & déclarations sociales en Tunisie
+            {t("hero.title", lang)}
           </h1>
-          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto mb-8">
-            Simulateurs CNSS/IRPP, bulletins de paie, déclarations TXT — tout en quelques clics, sans erreur.
+          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto mb-8" style={arFont}>
+            {t("hero.subtitle", lang)}
           </p>
           <Button
             size="lg"
@@ -124,29 +81,29 @@ export default function Home() {
                 ?.scrollIntoView({ behavior: "smooth" })
             }
           >
-            Accéder aux outils
+            {t("hero.cta", lang)}
           </Button>
         </div>
       </section>
 
-      {/* ─── PROBLÈME / SOLUTION ─── */}
+      {/* ─── POINTS FORTS ─── */}
       <section className="max-w-4xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {POINTS_FORTS.map((pf) => {
             const Icon = pf.icon;
             return (
               <Card
-                key={pf.title}
+                key={pf.titleKey}
                 className="rounded-lg shadow-sm border border-border bg-card p-6"
               >
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                   <Icon className="h-5 w-5 text-primary" />
                 </div>
-                <h3 className="text-base font-semibold text-foreground mb-2">
-                  {pf.title}
+                <h3 className="text-base font-semibold text-foreground mb-2" style={arFont}>
+                  {t(pf.titleKey, lang)}
                 </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {pf.description}
+                <p className="text-sm text-muted-foreground leading-relaxed" style={arFont}>
+                  {isAr ? pf.descriptionAr : pf.descriptionFr}
                 </p>
               </Card>
             );
@@ -158,12 +115,12 @@ export default function Home() {
       <section id="outils" className="max-w-4xl mx-auto px-4 pb-16">
         <h2
           className="text-2xl font-bold text-foreground mb-2"
-          style={{ fontFamily: "Montserrat, sans-serif" }}
+          style={isAr ? { fontFamily: "'Noto Sans Arabic', sans-serif" } : { fontFamily: "Montserrat, sans-serif" }}
         >
-          Outils & simulateurs
+          {t("section.outils", lang)}
         </h2>
-        <p className="text-muted-foreground text-sm mb-6">
-          Sélectionnez un outil pour commencer.
+        <p className="text-muted-foreground text-sm mb-6" style={arFont}>
+          {isAr ? "اختروا أداة للبدء." : "Sélectionnez un outil pour commencer."}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {OUTILS.map((outil) => {
@@ -175,11 +132,11 @@ export default function Home() {
                     <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
                       <Icon className="h-4.5 w-4.5 text-primary" />
                     </div>
-                    <h3 className="text-sm font-semibold text-foreground mb-1">
-                      {outil.title}
+                    <h3 className="text-sm font-semibold text-foreground mb-1" style={arFont}>
+                      {t(outil.titleKey, lang)}
                     </h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      {outil.description}
+                    <p className="text-xs text-muted-foreground leading-relaxed" style={arFont}>
+                      {t(outil.descKey, lang)}
                     </p>
                   </div>
                 </Card>

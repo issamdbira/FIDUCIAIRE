@@ -9,6 +9,7 @@ import { calculerCotisationCNSS } from "@/lib/payroll/cnss";
 import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "@/lib/payroll/irpp";
 import { formatMontantDT } from "@/lib/utils";
 import { validerMontantSalaire } from "@/lib/validation-salaire";
+import PageHeader from "@/components/PageHeader";
 
 /**
  * Calculateur IRPP (Impôt sur le Revenu des Personnes Physiques)
@@ -79,15 +80,12 @@ export default function IRPP() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
-      <h2
-        className="text-2xl font-bold text-foreground mb-1"
-        style={{ fontFamily: "Montserrat, sans-serif" }}
-      >
-        Barème IRPP
-      </h2>
-      <p className="text-muted-foreground text-sm mb-6">
-        Calculez votre impôt annuel sur le revenu des personnes physiques selon le barème officiel et votre situation familiale.
-      </p>
+      <PageHeader
+        titleFr="Barème IRPP"
+        titleAr="جدول الضريبة على الدخل"
+        subtitleFr="Calculez votre impôt annuel sur le revenu des personnes physiques selon le barème officiel et votre situation familiale."
+        subtitleAr="احسبوا ضريبتكم السنوية على الدخل حسب الجدول الرسمي ووضعكم العائلي."
+      />
 
       <Card className="p-6 rounded-lg shadow-sm border border-border bg-card mb-6">
         <div className="space-y-6">

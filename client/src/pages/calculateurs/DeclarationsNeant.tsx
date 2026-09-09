@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Upload, FileSpreadsheet, Trash2, FileDown } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import * as XLSX from "xlsx";
 import {
   PDFDocument,
@@ -353,12 +354,12 @@ export default function DeclarationsNeant() {
     <div className="max-w-3xl mx-auto py-8 px-4">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-foreground mb-1" style={{ fontFamily: "Montserrat, sans-serif" }}>
-          Déclarations Néant (I3/I16)
-        </h2>
-        <p className="text-muted-foreground text-sm">
-          Générez par lot vos déclarations néant (État récapitulatif I3 + Bordereau I16) avec les données employeur.
-        </p>
+      <PageHeader
+        titleFr="Déclarations Néant (I3/I16)"
+        titleAr="تصريحات العدم"
+        subtitleFr="Générez par lot vos déclarations néant (État récapitulatif I3 + Bordereau I16) avec les données employeur."
+        subtitleAr="إنتاج تصريحات العدم بالجملة — حالة تلخيص I3 + جدول I16 — ببيانات المشغل."
+      />
       </div>
 
       {/* A. Saisie manuelle */}

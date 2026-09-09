@@ -9,6 +9,7 @@ import { construireNomFichier, telechargerTexte } from "@/lib/cnss-declarations/
 import { importerCSV, importerExcel, regenererApercu } from "@/lib/cnss-declarations/import";
 import { telechargerZipDeclarations } from "@/lib/cnss-declarations/zip";
 import type { DeclarationCNSS, EmployeurCNSS, SalarieCNSS } from "@/lib/cnss-declarations/types";
+import PageHeader from "@/components/PageHeader";
 
 /**
  * Générateur de déclarations CNSS trimestrielles (fichiers TXT 122 caractères).
@@ -128,15 +129,12 @@ export default function DeclarationsCNSS() {
     <div className="max-w-3xl mx-auto py-8 px-4">
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h2
-            className="text-2xl font-bold text-foreground mb-1"
-            style={{ fontFamily: "Montserrat, sans-serif" }}
-          >
-            Déclaration salaires CNSS
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            Générez vos fichiers de déclaration de salaires CNSS (format TXT 122 caractères) — saisie manuelle ou import CSV/Excel.
-          </p>
+          <PageHeader
+            titleFr="Déclaration salaires CNSS"
+            titleAr="تصريح الأجور"
+            subtitleFr="Générez vos fichiers de déclaration de salaires CNSS (format TXT 122 caractères) — saisie manuelle ou import CSV/Excel."
+            subtitleAr="إنتاج ملفات تصريح الأجور للصندوق الوطني (تنسيق TXT بـ 122 حرفاً) — إدخال يدوي أو استيراد CSV/Excel."
+          />
         </div>
         <Link href="/calculateurs/testeur-txt-cnss">
           <Button variant="outline" size="sm">

@@ -193,3 +193,14 @@
 .dark * {
   scrollbar-color: #475569 transparent;
 }
+
+/* ── RTL support ── */
+[dir="rtl"] {
+  text-align: right;
+}
+[dir="rtl"] .text-left {
+  text-align: right;
+}
+[dir="rtl"] .text-right {
+  text-align: left;
+}

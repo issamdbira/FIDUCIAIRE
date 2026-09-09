@@ -6,6 +6,7 @@ import { Link } from "wouter";
 import { testerFichierTXT } from "@/lib/cnss-declarations/tester";
 import type { TesteurResult } from "@/lib/cnss-declarations/types";
 import { formatMontantDT } from "@/lib/utils";
+import PageHeader from "@/components/PageHeader";
 
 /**
  * Testeur de fichiers TXT CNSS (validation du format 122 caractères/ligne).
@@ -27,15 +28,12 @@ export default function TesteurTXT() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
-      <h2
-        className="text-2xl font-bold text-foreground mb-1"
-        style={{ fontFamily: "Montserrat, sans-serif" }}
-      >
-        Validation fichier CNSS
-      </h2>
-      <p className="text-muted-foreground text-sm mb-6">
-        Importez un ou plusieurs fichiers TXT de déclaration CNSS pour vérifier leur conformité au format 122 caractères/ligne.
-      </p>
+      <PageHeader
+        titleFr="Validation fichier CNSS"
+        titleAr="التحقق من ملف الصندوق الوطني"
+        subtitleFr="Importez un ou plusieurs fichiers TXT de déclaration CNSS pour vérifier leur conformité au format 122 caractères/ligne."
+        subtitleAr="استوردوا ملفاً أو أكثر من ملفات TXT لتصريح الصندوق الوطني للتحقق من مطابقتها لتنسيق 122 حرفاً في السطر."
+      />
 
       <div className="p-4 bg-muted rounded-lg border border-border text-sm text-muted-foreground mb-6">
         <strong>Spécification CNSS 2012</strong> — chaque ligne fait 122 caractères fixes :

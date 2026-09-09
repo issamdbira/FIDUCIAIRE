@@ -8,6 +8,7 @@ import { getSmigPourAnnee } from "@/lib/payroll/cnss";
 import { getCoefficientActualisation } from "@/lib/payroll/coefficients-actualisation";
 import { formatMontantDT } from "@/lib/utils";
 import { validerMontantSalaire } from "@/lib/validation-salaire";
+import PageHeader from "@/components/PageHeader";
 
 /**
  * Calculateur de Retraite CNSS - Salariés du secteur privé
@@ -77,15 +78,12 @@ export default function RetraiteCNSS() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
-      <h2
-        className="text-2xl font-bold text-foreground mb-1"
-        style={{ fontFamily: "Montserrat, sans-serif" }}
-      >
-        Calculateur de Retraite CNSS
-      </h2>
-      <p className="text-muted-foreground text-sm mb-6">
-        Estimez votre pension de retraite (salariés du secteur privé) selon les règles CNSS. Coefficients d'actualisation officiels et SMIG à jour.
-      </p>
+      <PageHeader
+        titleFr="Calculateur de Retraite CNSS"
+        titleAr="حاسبة التقاعد"
+        subtitleFr="Estimez votre pension de retraite (salariés du secteur privé) selon les règles CNSS. Coefficients d'actualisation officiels et SMIG à jour."
+        subtitleAr="قدّروا معاش تقاعدكم (أجير القطاع الخاص) حسب قواعد الصندوق الوطني. معاملات التحديث الرسمية وسقف الحد الأدنى محدّثة."
+      />
 
       <div className="mb-6 p-4 bg-muted rounded-lg border border-border">
         <p className="text-sm text-muted-foreground">

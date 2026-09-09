@@ -11,6 +11,7 @@ import { trouverBrutPourNet } from "@/lib/payroll/netToBrut";
 import type { PayrollResult } from "@/lib/payroll/types";
 import { formatMontantDT } from "@/lib/utils";
 import { validerMontantSalaire } from "@/lib/validation-salaire";
+import PageHeader from "@/components/PageHeader";
 
 /**
  * Calculer un salaire — Brut → Net ou Net → Brut.
@@ -57,15 +58,12 @@ export default function CalculerSalaire() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
-      <h2
-        className="text-2xl font-bold text-foreground mb-1"
-        style={{ fontFamily: "Montserrat, sans-serif" }}
-      >
-        Simulateur de Paie
-      </h2>
-      <p className="text-muted-foreground text-sm mb-6">
-        Passez du brut au net, ou déterminez le brut nécessaire pour obtenir un net souhaité. Barème IRPP et cotisations CNSS/CSS à jour.
-      </p>
+      <PageHeader
+        titleFr="Simulateur de Paie"
+        titleAr="محاكاة الأجر"
+        subtitleFr="Passez du brut au net, ou déterminez le brut nécessaire pour obtenir un net souhaité. Barème IRPP et cotisations CNSS/CSS à jour."
+        subtitleAr="من الخام إلى الصافي أو العكس. جدول الضريبة واشتراكات الضمان الاجتماعي محدّثة."
+      />
 
       {/* Toggle mode */}
       <div className="flex bg-muted rounded-lg p-1 mb-6">

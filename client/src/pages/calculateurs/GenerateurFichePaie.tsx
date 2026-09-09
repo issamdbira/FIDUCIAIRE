@@ -185,7 +185,7 @@ export default function GenerateurFichePaie() {
             Bulletin de Paie
           </h2>
           <p className="text-muted-foreground text-sm mb-6">
-            Parcours guidé en 7 étapes pour générer la fiche de paie d'un salarié avec export PDF.
+            Parcours guidé en 7 étapes pour générer le bulletin de paie d'un salarié avec export PDF.
           </p>
 
           {/* Indicateur d'étapes */}

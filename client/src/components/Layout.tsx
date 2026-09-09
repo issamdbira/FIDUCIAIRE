@@ -17,6 +17,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "./ThemeToggle";
+import LangToggle from "./LangToggle";
+import { useLang } from "@/contexts/LangContext";
+import { t } from "@/lib/i18n";
 import {
   Sheet,
   SheetContent,
@@ -25,46 +28,46 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-// ── Navigation Groups (exact arborescence) ──
+// ── Navigation Groups (keys for i18n) ──
 interface NavChild {
-  label: string;
+  labelKey: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
 }
 
 interface NavGroup {
-  groupLabel: string;
+  groupKey: string;
   items: NavChild[];
 }
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    groupLabel: "Simulateurs",
+    groupKey: "nav.simulateurs",
     items: [
-      { label: "Simulateur de Paie", href: "/calculateurs/calculer-salaire", icon: DollarSign },
-      { label: "Barème IRPP", href: "/calculateurs/irpp", icon: BarChart3 },
-      { label: "Calculateur de Retraite", href: "/calculateurs/retraite-cnss", icon: TrendingUp },
+      { labelKey: "nav.simulateur-paie", href: "/calculateurs/calculer-salaire", icon: DollarSign },
+      { labelKey: "nav.bareme-irpp", href: "/calculateurs/irpp", icon: BarChart3 },
+      { labelKey: "nav.calculateur-retraite", href: "/calculateurs/retraite-cnss", icon: TrendingUp },
     ],
   },
   {
-    groupLabel: "Gestion de la Paie",
+    groupKey: "nav.gestion-paie",
     items: [
-      { label: "Bulletin de Paie", href: "/fiche-de-paie", icon: PenTool },
-      { label: "Actualisation salariale", href: "/calculateurs/actualisation-salaire", icon: ArrowUpDown },
+      { labelKey: "nav.bulletin-paie", href: "/fiche-de-paie", icon: PenTool },
+      { labelKey: "nav.actualisation-salariale", href: "/calculateurs/actualisation-salaire", icon: ArrowUpDown },
     ],
   },
   {
-    groupLabel: "Déclarations Sociales",
+    groupKey: "nav.declarations-sociales",
     items: [
-      { label: "Déclaration salaires CNSS", href: "/calculateurs/declarations-cnss", icon: ClipboardList },
-      { label: "Déclarations Néant (I3/I16)", href: "/calculateurs/declarations-neant", icon: FileX },
-      { label: "Validation fichier CNSS", href: "/calculateurs/testeur-txt-cnss", icon: FileSearch },
+      { labelKey: "nav.declaration-salaires", href: "/calculateurs/declarations-cnss", icon: ClipboardList },
+      { labelKey: "nav.declarations-neant", href: "/calculateurs/declarations-neant", icon: FileX },
+      { labelKey: "nav.validation-fichier", href: "/calculateurs/testeur-txt-cnss", icon: FileSearch },
     ],
   },
   {
-    groupLabel: "Ressources",
+    groupKey: "nav.ressources",
     items: [
-      { label: "Avantages exclus CNSS", href: "/referentiel-avantages-exclus", icon: BookOpen },
+      { labelKey: "nav.avantages-exclus", href: "/referentiel-avantages-exclus", icon: BookOpen },
     ],
   },
 ];
@@ -72,6 +75,7 @@ const NAV_GROUPS: NavGroup[] = [
 // ── Sidebar Navigation (shared between sidebar & sheet) ──
 function NavContent({ onNavigate }: { onNavigate?: () => void }) {
   const [location] = useLocation();
+  const { lang, isAr } = useLang();
 
   return (
     <nav className="flex flex-col gap-1 px-3 py-4">
@@ -86,13 +90,16 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
         }`}
       >
         <HomeIcon className="size-5 shrink-0" />
-        Accueil
+        <span style={isAr ? { fontFamily: "'Noto Sans Arabic', sans-serif" } : undefined}>
+          {t("nav.accueil", lang)}
+        </span>
       </Link>
 
       {NAV_GROUPS.map((group) => (
-        <div key={group.groupLabel} className="mt-3">
-          <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-white/30 mb-1">
-            {group.groupLabel}
+        <div key={group.groupKey} className="mt-3">
+          <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-white/30 mb-1"
+             style={isAr ? { fontFamily: "'Noto Sans Arabic', sans-serif", direction: "rtl" } : undefined}>
+            {t(group.groupKey as any, lang)}
           </p>
           {group.items.map((item) => {
             const Icon = item.icon;
@@ -109,7 +116,9 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
                 }`}
               >
                 <Icon className="size-4 shrink-0" />
-                {item.label}
+                <span style={isAr ? { fontFamily: "'Noto Sans Arabic', sans-serif" } : undefined}>
+                  {t(item.labelKey as any, lang)}
+                </span>
               </Link>
             );
           })}
@@ -122,9 +131,14 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
 // ── Main Layout ──
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [sheetOpen, setSheetOpen] = useState(false);
+  const { isAr } = useLang();
+
+  const logoStyle = isAr
+    ? { fontFamily: "'Noto Sans Arabic', Montserrat, sans-serif" }
+    : { fontFamily: "Montserrat, sans-serif" };
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden" dir={isAr ? "rtl" : "ltr"}>
       {/* ─── Desktop Sidebar (md+) ─── */}
       <aside className="hidden md:flex w-64 shrink-0 flex-col bg-blue-950 h-screen">
         {/* Logo */}
@@ -132,11 +146,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-white/10">
             <Calculator className="size-5 text-white" />
           </div>
-          <span
-            className="text-lg font-bold text-white tracking-tight"
-            style={{ fontFamily: "Montserrat, sans-serif" }}
-          >
-            LE FIDUCIAIRE
+          <span className="text-lg font-bold text-white tracking-tight" style={logoStyle}>
+            {isAr ? "الفيديسيار" : "LE FIDUCIAIRE"}
           </span>
         </div>
 
@@ -145,8 +156,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <NavContent />
         </div>
 
-        {/* Footer: theme toggle */}
-        <div className="border-t border-white/10 px-3 py-3">
+        {/* Footer: lang + theme toggles */}
+        <div className="border-t border-white/10 px-3 py-3 flex items-center justify-between">
+          <LangToggle />
           <ThemeToggle />
         </div>
       </aside>
@@ -159,33 +171,33 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
               <Calculator className="size-4 text-primary-foreground" />
             </div>
-            <span
-              className="text-base font-bold text-foreground"
-              style={{ fontFamily: "Montserrat, sans-serif" }}
-            >
-              LE FIDUCIAIRE
+            <span className="text-base font-bold text-foreground" style={logoStyle}>
+              {isAr ? "الفيديسيار" : "LE FIDUCIAIRE"}
             </span>
           </div>
 
-          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="size-5" />
-                <span className="sr-only">Menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-72 bg-blue-950 border-blue-900 p-0">
-              <SheetHeader className="px-5 py-5 border-b border-white/10">
-                <SheetTitle className="text-white text-left" style={{ fontFamily: "Montserrat, sans-serif" }}>
-                  LE FIDUCIAIRE
-                </SheetTitle>
-              </SheetHeader>
-              <NavContent onNavigate={() => setSheetOpen(false)} />
-              <div className="border-t border-white/10 px-3 py-3">
-                <ThemeToggle />
-              </div>
-            </SheetContent>
-          </Sheet>
+          <div className="flex items-center gap-1">
+            <LangToggle />
+            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="size-5" />
+                  <span className="sr-only">Menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side={isAr ? "right" : "left"} className="w-72 bg-blue-950 border-blue-900 p-0">
+                <SheetHeader className="px-5 py-5 border-b border-white/10">
+                  <SheetTitle className="text-white text-left" style={logoStyle}>
+                    {isAr ? "الفيديسيار" : "LE FIDUCIAIRE"}
+                  </SheetTitle>
+                </SheetHeader>
+                <NavContent onNavigate={() => setSheetOpen(false)} />
+                <div className="border-t border-white/10 px-3 py-3">
+                  <ThemeToggle />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </header>
 
         {/* Page content (scrollable) */}
