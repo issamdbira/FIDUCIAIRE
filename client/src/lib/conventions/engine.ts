@@ -332,3 +332,118 @@ export function getAnneesGrille(convention: ConventionCollective): string[] {
   }
   return Array.from(years).sort();
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// CALCUL INVERSE : Net → Brut (décomposition grille + indemnité suppl.)
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Résultat du calcul Net → Brut pour convention collective.
+ * Le brut est décomposé en :
+ *   - salaireBaseGrille : montant de la grille (échelle × échelon × année)
+ *   - indemniteSupplementaire : excédent du brut au-delà de la grille
+ *   - resultat : le résultat complet de la paie (avec toutes les lignes)
+ */
+export interface ResultatNetToBrut {
+  brutTotal: number;
+  salaireBaseGrille: number;
+  indemniteSupplementaire: number;
+  resultat: ResultatPaieConvention;
+}
+
+/**
+ * Calcule le salaire brut correspondant à un net à payer souhaité,
+ * par recherche dichotomique sur le moteur de convention.
+ *
+ * L'IRPP est un barème progressif, donc net(brut) n'est pas inversible
+ * algébriquement. On réutilise le même moteur que Brut→Net pour garantir
+ * la cohérence entre les deux sens de calcul.
+ *
+ * Le brut trouvé est ensuite décomposé :
+ *   - base grille (échelle × échelon × année) → ligne « Salaire de base »
+ *   - excédent → ligne « Indemnité supplémentaire »
+ *
+ * @param netSouhaite   Le net à payer souhaité (mensuel)
+ * @param convention    La convention collective
+ * @param salarie       Informations du salarié
+ * @param echelle       Numéro d'échelle
+ * @param echelon       Numéro d'échelon
+ * @param annee         Année de référence
+ * @param mois          Mois de paie
+ * @param options       Heures sup, primes exceptionnelles, etc.
+ */
+export function calculerBrutPourNetConvention(
+  netSouhaite: number,
+  convention: ConventionCollective,
+  salarie: SalarieConvention,
+  echelle: number,
+  echelon: number,
+  annee: number,
+  mois: number,
+  options?: {
+    heuresSup?: number;
+    tauxHoraireHS?: number;
+    noteProfessionnelle?: number;
+    primesExceptionnelles?: number;
+  },
+  maxIterations = 60,
+  tolerance = 0.005,
+): ResultatNetToBrut | null {
+  // 1. Obtenir le salaire de base depuis la grille
+  const salaireBaseGrille = chercherSalaireGrille(convention, echelle, echelon, annee);
+  if (salaireBaseGrille === null) return null;
+
+  // 2. Recherche dichotomique du brut qui donne le net souhaité
+  let bas = 0;
+  let haut = Math.max(netSouhaite * 3, 10000);
+
+  const calculerNetPourBrut = (brut: number) => {
+    const elements: ElementsPaieConvention = {
+      salaireBrut: brut,
+      annee,
+      mois,
+      heuresSup: options?.heuresSup,
+      tauxHoraireHS: options?.tauxHoraireHS,
+      noteProfessionnelle: options?.noteProfessionnelle,
+      primesExceptionnelles: options?.primesExceptionnelles,
+    };
+    return calculerPaieConvention(convention, salarie, elements);
+  };
+
+  let dernierResultat = calculerNetPourBrut(haut);
+  // Sécurité : si même la borne haute ne suffit pas, on l'agrandit
+  while (dernierResultat.netAPayer < netSouhaite && haut < 10_000_000) {
+    haut *= 2;
+    dernierResultat = calculerNetPourBrut(haut);
+  }
+
+  for (let i = 0; i < maxIterations; i++) {
+    const milieu = (bas + haut) / 2;
+    dernierResultat = calculerNetPourBrut(milieu);
+    if (Math.abs(dernierResultat.netAPayer - netSouhaite) < tolerance) {
+      const brutTotal = Math.round(milieu * 1000) / 1000;
+      const indemniteSupp = round3(Math.max(0, brutTotal - salaireBaseGrille));
+      return {
+        brutTotal,
+        salaireBaseGrille,
+        indemniteSupplementaire: indemniteSupp,
+        resultat: dernierResultat,
+      };
+    }
+    if (dernierResultat.netAPayer < netSouhaite) {
+      bas = milieu;
+    } else {
+      haut = milieu;
+    }
+  }
+
+  const brutFinal = (bas + haut) / 2;
+  dernierResultat = calculerNetPourBrut(brutFinal);
+  const indemniteSupp = round3(Math.max(0, brutFinal - salaireBaseGrille));
+  return {
+    brutTotal: round3(brutFinal),
+    salaireBaseGrille,
+    indemniteSupplementaire: indemniteSupp,
+    resultat: dernierResultat,
+  };
+}
