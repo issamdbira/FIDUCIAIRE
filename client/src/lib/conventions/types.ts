@@ -161,6 +161,18 @@ export interface PrimeMensuelleStructuree {
   /** Montants par catégorie d'agent et par année */
   montants: Record<string, Record<string, number>>; // { "EXECUTION": { "2024": 75.012, "2026": 78.762 } }
   description?: string;
+  /** Catégories d'agents concernées (vide = toutes) */
+  categoriesConcernees?: string[]; // ["EXECUTION", "MAITRISE"] — si vide, appliquée à toutes
+  /** Ancienneté minimum pour y avoir droit (en années) */
+  ancienneteMin?: number; // 0 par défaut
+  /** Date d'application (ISO) */
+  dateApplication?: string; // "2021-01-01"
+  /** Active ou désactivée (admin) */
+  actif?: boolean; // true par défaut
+  /** Mode de calcul spécial (ex: ancienneté-dépendant) */
+  modeCalcul?: "forfaitaire" | "anciennete_dependant" | "note_dependant";
+  /** Barème ancienneté si modeCalcul = "anciennete_dependant" */
+  baremeAnciennete?: { ancienneteMin: number; ancienneteMax: number; montant: number }[];
 }
 
 // ─── Primes annuelles structurées ────────────────────────────────────
@@ -171,6 +183,14 @@ export interface PrimeAnnuelleStructuree {
   description?: string;
   /** Mode de calcul */
   modeCalcul?: string;        // "pourcentage_salaire" | "forfaitaire" | "note_dependante"
+  /** Catégories d'agents concernées */
+  categoriesConcernees?: string[];
+  /** Ancienneté minimum */
+  ancienneteMin?: number;
+  /** Date d'application */
+  dateApplication?: string;
+  /** Active */
+  actif?: boolean;
 }
 
 // ─── Primes sociales structurées ─────────────────────────────────────
@@ -180,6 +200,14 @@ export interface PrimeSocialeStructuree {
   labelAr?: string;
   description?: string;
   montant?: number;
+  /** Catégories d'agents concernées */
+  categoriesConcernees?: string[];
+  /** Ancienneté minimum */
+  ancienneteMin?: number;
+  /** Date d'application */
+  dateApplication?: string;
+  /** Active */
+  actif?: boolean;
 }
 
 // ─── Registre des conventions ────────────────────────────────────────

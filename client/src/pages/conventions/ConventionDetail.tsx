@@ -1,4 +1,5 @@
 import { useParams, Link } from "wouter";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -13,6 +14,8 @@ import {
   ExternalLink,
   Info,
   TableProperties,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -533,6 +536,9 @@ function GrilleSalarialeTab({
   categories: CategorieAgent[];
   reglesAvancement?: { periodeAvancement: number; tableAnciennete: { ancienneteMin: number; ancienneteMax: number; echelon: number }[] };
 }) {
+  const [showHistorique, setShowHistorique] = useState(false);
+  const currentYear = new Date().getFullYear();
+
   // Collect all years
   const allYears = new Set<string>();
   for (const ligne of grille) {
@@ -540,10 +546,29 @@ function GrilleSalarialeTab({
       allYears.add(y);
     }
   }
-  const years = Array.from(allYears).sort();
+  const sortedAllYears = Array.from(allYears).sort();
+  const years = showHistorique
+    ? sortedAllYears
+    : sortedAllYears.filter((y) => parseInt(y) >= currentYear);
 
   return (
     <div className="space-y-6">
+      {/* Toggle historique */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {showHistorique ? "Toutes les années" : `Années applicables (${currentYear}+)`}
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowHistorique(!showHistorique)}
+          className="gap-1.5"
+        >
+          {showHistorique ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          {showHistorique ? "Masquer historique" : "Afficher historique"}
+        </Button>
+      </div>
+
       {/* Avancement rules */}
       {reglesAvancement && (
         <Card>

@@ -27,6 +27,7 @@ import DeclarationsNeant from "./pages/calculateurs/DeclarationsNeant";
 import ConventionsList from "./pages/conventions/ConventionsList";
 import ConventionDetail from "./pages/conventions/ConventionDetail";
 import FichePaieConvention from "./pages/conventions/FichePaieConvention";
+import AdminConventions from "./pages/conventions/AdminConventions";
 
 function AppRoutes() {
   const routes = (
@@ -50,6 +51,7 @@ function AppRoutes() {
       <Route path="/calculateurs/testeur-txt-cnss" component={TesteurTXT} />
       <Route path="/calculateurs/declarations-neant" component={DeclarationsNeant} />
       <Route path="/fiche-de-paie" component={GenerateurFichePaie} />
+      <Route path="/admin/conventions" component={AdminConventions} />
       <Route path="/conventions/:slug/fiche-paie" component={FichePaieConvention} />
       <Route path="/conventions/:slug" component={ConventionDetail} />
       <Route path="/conventions" component={ConventionsList} />

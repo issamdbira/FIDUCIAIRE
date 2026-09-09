@@ -102,6 +102,10 @@ export const CONVENTION_COMMERCE_GROS: ConventionCollective = {
         CADRES:    { "2021": 72.612, "2023": 77.514, "2024": 82.746, "2026": 86.883, "2027": 91.227, "2028": 95.788 },
       },
       description: "Inclut décret 503/1982 : 5D/mois (exécution), 10D/mois (cadres)",
+      categoriesConcernees: ["EXECUTION", "MAITRISE", "CADRES"],
+      ancienneteMin: 0,
+      dateApplication: "2021-01-01",
+      actif: true,
     },
     {
       code: "PRESENCE",
@@ -113,6 +117,10 @@ export const CONVENTION_COMMERCE_GROS: ConventionCollective = {
         CADRES:    { "2021": 12.4, "2023": 13.237, "2024": 14.13, "2026": 14.836, "2027": 15.578, "2028": 16.357 },
       },
       description: "Montant unique, non différencié par catégorie",
+      categoriesConcernees: ["EXECUTION", "MAITRISE", "CADRES"],
+      ancienneteMin: 0,
+      dateApplication: "2021-01-01",
+      actif: true,
     },
     {
       code: "CAISSE",
@@ -120,10 +128,17 @@ export const CONVENTION_COMMERCE_GROS: ConventionCollective = {
       labelAr: "منحة الصندوق",
       montants: {
         EXECUTION: { "default": 5 },
-        MAITRISE:  { "default": 10 },
-        CADRES:    { "default": 10 },
       },
-      description: "Selon ancienneté : <5ans=5D, 5-10ans=10D, >10ans=15D",
+      description: "Agents de caisse uniquement (exécution). Selon ancienneté : <5ans=5D, 5-10ans=10D, >10ans=15D",
+      categoriesConcernees: ["EXECUTION"],
+      ancienneteMin: 0,
+      modeCalcul: "anciennete_dependant",
+      baremeAnciennete: [
+        { ancienneteMin: 0, ancienneteMax: 4, montant: 5 },
+        { ancienneteMin: 5, ancienneteMax: 9, montant: 10 },
+        { ancienneteMin: 10, ancienneteMax: 999, montant: 15 },
+      ],
+      actif: true,
     },
   ],
 
@@ -134,6 +149,9 @@ export const CONVENTION_COMMERCE_GROS: ConventionCollective = {
       labelAr: "منحة الإنتاجية",
       description: "0-10/20→50%, 10-13→60%, 13-16→75%, 16-18→90%, 18-20→1 mois.",
       modeCalcul: "note_dependante",
+      categoriesConcernees: ["EXECUTION", "MAITRISE", "CADRES"],
+      ancienneteMin: 0,
+      actif: true,
     },
     {
       code: "FIN_ANNEE",
@@ -141,13 +159,16 @@ export const CONVENTION_COMMERCE_GROS: ConventionCollective = {
       labelAr: "منحة نهاية السنة",
       description: "0,5 mois de salaire de base",
       modeCalcul: "pourcentage_salaire",
+      categoriesConcernees: ["EXECUTION", "MAITRISE", "CADRES"],
+      ancienneteMin: 0,
+      actif: true,
     },
   ],
 
   primesSociales: [
-    { code: "SCOLARITE", labelFr: "Indemnité de scolarité", labelAr: "منحة التمدرس", description: "Base: 20D, Secondaire: 30D, Supérieur: 40D" },
-    { code: "RETRAITE", labelFr: "Indemnité de mise en retraite", labelAr: "منحة الإحالة على التقاعد", description: "4 mois de salaire" },
-    { code: "DECES", labelFr: "Assistance décès", labelAr: "إعانة الوفاة", description: "150D (salarié), 100D (famille)", montant: 150 },
+    { code: "SCOLARITE", labelFr: "Indemnité de scolarité", labelAr: "منحة التمدرس", description: "Base: 20D, Secondaire: 30D, Supérieur: 40D", categoriesConcernees: ["EXECUTION", "MAITRISE", "CADRES"], ancienneteMin: 1, actif: true },
+    { code: "RETRAITE", labelFr: "Indemnité de mise en retraite", labelAr: "منحة الإحالة على التقاعد", description: "4 mois de salaire", categoriesConcernees: ["EXECUTION", "MAITRISE", "CADRES"], ancienneteMin: 0, actif: true },
+    { code: "DECES", labelFr: "Assistance décès", labelAr: "إعانة الوفاة", description: "150D (salarié), 100D (famille)", montant: 150, categoriesConcernees: ["EXECUTION", "MAITRISE", "CADRES"], ancienneteMin: 0, actif: true },
   ],
 };
 

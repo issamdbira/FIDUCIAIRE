@@ -119,22 +119,40 @@ export function calculerPaieConvention(
   });
   let totalBrut = elements.salaireBrut;
 
-  // 2. Primes mensuelles de la convention (DONNÉES RÉELLES UNIQUEMENT)
+  // 2. Primes mensuelles de la convention — ÉLIGIBILITÉ CONTRÔLÉE
   if (convention.primesMensuelles) {
     for (const prime of convention.primesMensuelles) {
-      // Prime de caisse : dépend de l'ancienneté
-      if (prime.code === "CAISSE") {
-        let montantCaisse = 5;
-        if (salarie.anciennete >= 5 && salarie.anciennete < 10) montantCaisse = 10;
-        if (salarie.anciennete >= 10) montantCaisse = 15;
-        lignes.push({
-          code: prime.code, labelFr: prime.labelFr,
-          montant: round3(montantCaisse), type: "gain",
-        });
-        totalBrut += montantCaisse;
+      // Vérifier si la prime est active
+      if (prime.actif === false) continue;
+
+      // Vérifier les catégories concernées
+      const cats = prime.categoriesConcernees;
+      if (cats && cats.length > 0 && !cats.includes(salarie.categorieAgent)) continue;
+
+      // Vérifier l'ancienneté minimum
+      const ancienneteMinPrime = prime.ancienneteMin ?? 0;
+      if (salarie.anciennete < ancienneteMinPrime) continue;
+
+      // Prime à barème d'ancienneté
+      if (prime.modeCalcul === "anciennete_dependant" && prime.baremeAnciennete) {
+        let montantPrime = 0;
+        for (const tranche of prime.baremeAnciennete) {
+          if (salarie.anciennete >= tranche.ancienneteMin && salarie.anciennete <= tranche.ancienneteMax) {
+            montantPrime = tranche.montant;
+            break;
+          }
+        }
+        if (montantPrime > 0) {
+          lignes.push({
+            code: prime.code, labelFr: prime.labelFr,
+            montant: round3(montantPrime), type: "gain",
+          });
+          totalBrut += montantPrime;
+        }
         continue;
       }
 
+      // Prime forfaitaire par catégorie/année
       const montant = getMontantPrime(prime, salarie.categorieAgent, elements.annee);
       if (montant > 0) {
         lignes.push({
