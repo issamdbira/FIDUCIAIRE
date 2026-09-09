@@ -2,7 +2,7 @@
 
 **Objectif :** répliquer l'intégralité des calculateurs et informations de secu.tn sur Le Fiduciaire, avec le style moderne (navy #1e3a5f / gold #c9a84c, Montserrat + Inter), en gardant les formules exactes de la source.
 
-**Statut au 19/07/2026 :** 4 pages sur 10 existent dans le code, avec des données parfois provisoires (à vérifier contre secu.tn avant mise en prod).
+**Statut au 05/09/2026 :** 8 pages sur 10 existent dans le code. Les pages manquantes sont : retraite complémentaire CNSS, non-salariés CNSS (retraite + classes), paie retraités (pension), SMIG/SMAG. Les extensions Fiduciaire (fiche de paie, déclarations CNSS, déclarations néant, testeur TXT, référentiel légal, admin) sont toutes implémentées.
 
 ---
 
@@ -13,7 +13,7 @@
 | 1 | Salariés privés CNSS | Calculateur de la paie | `/calculateurs/paie-cnss` | ✅ Fait | À revérifier vs formules 2026 (CSS supprimée) |
 | 2 | Salariés privés CNSS | Calculateur retraite des salariés | `/calculateurs/retraite-cnss` | ⚠️ Fait mais provisoire | Indices d'actualisation codés en dur "exemple 2024-2025" — à remplacer par les vrais indices CNSS |
 | 3 | Salariés privés CNSS | Calculateur retraite complémentaire | `/calculateurs/retraite-complementaire-cnss` | ❌ À faire | — |
-| 4 | Salariés privés CNSS | Calculateur actualisation des salaires | `/calculateurs/actualisation-salaire-cnss` | ❌ À faire | Dépend des mêmes indices que #2 |
+| 4 | Salariés privés CNSS | Calculateur actualisation des salaires | `/calculateurs/actualisation-salaire` | ✅ Fait | Même table d'indices que #2 — configurable via Admin |
 | 5 | Non-salariés CNSS | Calculateur retraite (indépendants) | `/calculateurs/retraite-non-salaries` | ❌ À faire | Catégories de cotisation spécifiques |
 | 6 | Non-salariés CNSS | Classes et cotisations | `/calculateurs/cotisation-non-salaries` | ❌ À faire | Page informative + calcul |
 | 7 | Retraités | Calculateur de la paie des retraités (pension) | `/calculateurs/paie-pension` | ❌ À faire | Net ↔ brut sur pension |
@@ -44,7 +44,7 @@ Ordre choisi pour l'efficacité : corriger l'existant avant d'empiler du neuf de
   - ⚠️ Table SMIG incomplète (années 2016-2019 manquantes) — à compléter avant mise en production.
 
 ### Phase 2 — Compléter le bloc "Salariés privés CNSS" (réutilise les indices de la Phase 1)
-- [ ] Calculateur actualisation des salaires (même table d'indices que RetraiteCNSS)
+- [x] Calculateur actualisation des salaires (même table d'indices que RetraiteCNSS) — **Fait 07/08/2026**
 - [ ] Calculateur retraite complémentaire
 
 ### Phase 3 — Non-salariés CNSS
@@ -56,11 +56,13 @@ Ordre choisi pour l'efficacité : corriger l'existant avant d'empiler du neuf de
 - [ ] Page SMIG / SMAG
 
 ### Phase 5 — Finitions transverses
-- [ ] Mettre à jour `LETTRE_ORIENTATION_TECHNIQUE.md` (obsolète depuis mai 2026)
-- [ ] Retirer/masquer CNRPS de `Home.tsx` (hors périmètre)
-- [ ] Navigation par catégorie entre calculateurs (absente actuellement)
-- [ ] Vérifier responsive mobile
-- [ ] (Optionnel, non prioritaire) FR/AR, export PDF, mode sombre
+- [x] Mettre à jour `LETTRE_ORIENTATION_TECHNIQUE.md` — **Fait 05/09/2026**
+- [x] Retirer/masquer CNRPS de `Home.tsx` (hors périmètre) — **Fait** (CNRPS retiré)
+- [x] Navigation par catégorie entre calculateurs — **Fait** (sidebar avec groupes NAV_GROUPS)
+- [x] Vérifier responsive mobile — **Fait** (sidebar Sheet mobile)
+- [x] Mode sombre — **Fait** (ThemeContext + ThemeToggle)
+- [ ] FR/AR (internationalisation)
+- [ ] Export PDF généralisé (hors fiche de paie déjà faite)
 
 ---
 
@@ -77,7 +79,7 @@ Ordre choisi pour l'efficacité : corriger l'existant avant d'empiler du neuf de
 
 Mettre à jour ce fichier au fur et à mesure : cocher les cases, ajouter une ligne "Dernière mise à jour" en bas.
 
-**Dernière mise à jour :** 19/07/2026 — Phase 1 terminée (audit + corrections PaieCNSS, RetraiteCNSS, IRPP). Volet 2 démarré (moteur de paie central).
+**Dernière mise à jour :** 05/09/2026 — Phase 1 terminée. Phase 2 partiellement terminée (actualisation faite, retraite complémentaire restante). Volet 2 terminé (moteur de paie + fiche de paie + déclarations + admin). Nettoyage de code effectué (encodage utils.ts, francisation NotFound/ErrorBoundary, suppression base-frappe-reference, nettoyage package.json).
 
 ---
 

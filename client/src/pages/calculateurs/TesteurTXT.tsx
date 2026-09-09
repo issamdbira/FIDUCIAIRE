@@ -31,10 +31,10 @@ export default function TesteurTXT() {
         className="text-2xl font-bold text-foreground mb-1"
         style={{ fontFamily: "Montserrat, sans-serif" }}
       >
-        Testeur de Fichier TXT CNSS
+        Validation fichier CNSS
       </h2>
       <p className="text-muted-foreground text-sm mb-6">
-        Importez un ou plusieurs fichiers TXT générés (par ce site ou tout autre outil) pour vérifier leur conformité au format CNSS 122 caractères/ligne.
+        Importez un ou plusieurs fichiers TXT de déclaration CNSS pour vérifier leur conformité au format 122 caractères/ligne.
       </p>
 
       <div className="p-4 bg-muted rounded-lg border border-border text-sm text-muted-foreground mb-6">

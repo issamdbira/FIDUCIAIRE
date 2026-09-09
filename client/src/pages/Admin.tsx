@@ -165,7 +165,7 @@ export default function Admin() {
         <div className="max-w-3xl mx-auto space-y-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
-              Paramétrage centralisé
+              Paramétrage — Barèmes & Taux
             </h1>
             <p className="text-muted-foreground">
               Tous les simulateurs du site utilisent ces valeurs. Une modification ici s'applique

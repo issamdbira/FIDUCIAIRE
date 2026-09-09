@@ -19,64 +19,64 @@ import {
 const OUTILS = [
   {
     id: "calculer-salaire",
-    title: "Calculer un salaire",
-    description: "Brut → Net ou Net → Brut, pour les salariés du secteur privé (CNSS)",
+    title: "Simulateur de Paie",
+    description: "Brut → Net ou Net → Brut — salaires du secteur privé (CNSS, IRPP, CSS)",
     icon: DollarSign,
     href: "/calculateurs/calculer-salaire",
   },
   {
     id: "irpp",
-    title: "Impôt sur le revenu (IRPP)",
-    description: "Estimez votre IRPP annuel selon votre situation familiale",
+    title: "Barème IRPP",
+    description: "Calculez votre impôt annuel sur le revenu selon le barème officiel tunisien et votre situation familiale",
     icon: BarChart3,
     href: "/calculateurs/irpp",
   },
   {
     id: "retraite-cnss",
-    title: "Estimer sa retraite",
-    description: "Estimez votre pension de retraite selon votre ancienneté et salaire",
+    title: "Calculateur de Retraite",
+    description: "Estimez votre pension de retraite CNSS selon votre ancienneté et salaire de référence",
     icon: TrendingUp,
     href: "/calculateurs/retraite-cnss",
   },
   {
     id: "fiche-de-paie",
-    title: "Générer une fiche de paie",
-    description: "Employeur, logo, salarié, éléments de rémunération, détail du calcul et export PDF",
+    title: "Bulletin de Paie",
+    description: "Générez un bulletin de paie complet : employeur, salarié, éléments de rémunération, détail du calcul et export PDF",
     icon: PenTool,
     href: "/fiche-de-paie",
   },
   {
     id: "actualisation-salaire",
-    title: "Actualisation des salaires",
-    description: "Actualisez un salaire par le coefficient CNSS de son année (pour le calcul de retraite)",
+    title: "Actualisation salariale",
+    description: "Actualisez un salaire par le coefficient CNSS de son année (pour le calcul de la pension de retraite)",
     icon: Calculator,
     href: "/calculateurs/actualisation-salaire",
   },
   {
     id: "declarations-cnss",
-    title: "Déclaration CNSS",
-    description: "Saisie ou import CSV/Excel, contrôle des données, génération et test du fichier TXT",
+    title: "Déclaration salaires CNSS",
+    description: "Saisie ou import CSV/Excel, contrôle des données, génération du fichier TXT 122 caractères",
     icon: ClipboardCheck,
     href: "/calculateurs/declarations-cnss",
   },
   {
     id: "declarations-neant",
-    title: "Déclarations Néant",
-    description: "Générez par lot vos déclarations néant (État I3 + Bordereau I16) avec calibrage PDF",
+    title: "Déclarations Néant (I3/I16)",
+    description: "Générez par lot vos déclarations néant — État récapitulatif I3 + Bordereau I16 — avec calibrage PDF",
     icon: FileX,
     href: "/calculateurs/declarations-neant",
   },
   {
     id: "testeur-txt-cnss",
-    title: "Testeur de fichier TXT",
-    description: "Vérifiez la conformité d'un fichier TXT CNSS 122 caractères",
+    title: "Validation fichier CNSS",
+    description: "Vérifiez la conformité d'un fichier TXT CNSS au format 122 caractères par ligne",
     icon: FileText,
     href: "/calculateurs/testeur-txt-cnss",
   },
   {
     id: "referentiel-avantages-exclus",
-    title: "Référentiel légal",
-    description: "Consultez les plafonds des avantages exclus de l'assiette CNSS (Décret n° 2003-1098)",
+    title: "Avantages exclus CNSS",
+    description: "Consultez les plafonds des avantages exclus de l'assiette CNSS (Décret n° 2003-1098) avec simulateur intégré",
     icon: BookOpen,
     href: "/referentiel-avantages-exclus",
   },
@@ -110,12 +110,10 @@ export default function Home() {
             className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground leading-tight mb-4"
             style={{ fontFamily: "Montserrat, sans-serif" }}
           >
-            Simplifiez votre gestion de paie et vos déclarations sociales en
-            Tunisie.
+            Paie & déclarations sociales en Tunisie
           </h1>
           <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto mb-8">
-            Générez vos fiches de paie, simulez vos impôts et exportez vos
-            déclarations CNSS sans erreur et en quelques clics.
+            Simulateurs CNSS/IRPP, bulletins de paie, déclarations TXT — tout en quelques clics, sans erreur.
           </p>
           <Button
             size="lg"
@@ -126,7 +124,7 @@ export default function Home() {
                 ?.scrollIntoView({ behavior: "smooth" })
             }
           >
-            Accéder à l'espace de travail
+            Accéder aux outils
           </Button>
         </div>
       </section>
@@ -162,7 +160,7 @@ export default function Home() {
           className="text-2xl font-bold text-foreground mb-2"
           style={{ fontFamily: "Montserrat, sans-serif" }}
         >
-          Outils
+          Outils & simulateurs
         </h2>
         <p className="text-muted-foreground text-sm mb-6">
           Sélectionnez un outil pour commencer.

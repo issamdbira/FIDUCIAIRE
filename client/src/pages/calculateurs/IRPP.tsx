@@ -83,10 +83,10 @@ export default function IRPP() {
         className="text-2xl font-bold text-foreground mb-1"
         style={{ fontFamily: "Montserrat, sans-serif" }}
       >
-        Calculateur IRPP
+        Barème IRPP
       </h2>
       <p className="text-muted-foreground text-sm mb-6">
-        Calculez votre impôt annuel sur le revenu selon votre situation familiale et vos déductions. Barème IRPP officiel tunisien.
+        Calculez votre impôt annuel sur le revenu des personnes physiques selon le barème officiel et votre situation familiale.
       </p>
 
       <Card className="p-6 rounded-lg shadow-sm border border-border bg-card mb-6">

@@ -46,7 +46,7 @@ export default function PaieCNSS() {
         className="text-2xl font-bold text-foreground mb-1"
         style={{ fontFamily: "Montserrat, sans-serif" }}
       >
-        Calculateur de Paie CNSS
+        Simulateur de Paie CNSS
       </h2>
       <p className="text-muted-foreground text-sm mb-6">
         Calculez votre salaire net à partir du brut selon la réglementation tunisienne. CNSS, IRPP et CSS inclus.

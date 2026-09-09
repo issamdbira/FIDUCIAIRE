@@ -39,32 +39,32 @@ interface NavGroup {
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    groupLabel: "Simulateurs RH",
+    groupLabel: "Simulateurs",
     items: [
-      { label: "Calculer un salaire (Brut/Net)", href: "/calculateurs/calculer-salaire", icon: DollarSign },
-      { label: "Impôt sur le revenu (IRPP)", href: "/calculateurs/irpp", icon: BarChart3 },
-      { label: "Estimer sa retraite", href: "/calculateurs/retraite-cnss", icon: TrendingUp },
+      { label: "Simulateur de Paie", href: "/calculateurs/calculer-salaire", icon: DollarSign },
+      { label: "Barème IRPP", href: "/calculateurs/irpp", icon: BarChart3 },
+      { label: "Calculateur de Retraite", href: "/calculateurs/retraite-cnss", icon: TrendingUp },
     ],
   },
   {
     groupLabel: "Gestion de la Paie",
     items: [
-      { label: "Générer une fiche de paie", href: "/fiche-de-paie", icon: PenTool },
-      { label: "Actualisation des salaires", href: "/calculateurs/actualisation-salaire", icon: ArrowUpDown },
+      { label: "Bulletin de Paie", href: "/fiche-de-paie", icon: PenTool },
+      { label: "Actualisation salariale", href: "/calculateurs/actualisation-salaire", icon: ArrowUpDown },
     ],
   },
   {
     groupLabel: "Déclarations Sociales",
     items: [
-      { label: "Déclaration CNSS (Saisie & Import)", href: "/calculateurs/declarations-cnss", icon: ClipboardList },
-      { label: "Déclarations Néant", href: "/calculateurs/declarations-neant", icon: FileX },
-      { label: "Testeur de fichier TXT", href: "/calculateurs/testeur-txt-cnss", icon: FileSearch },
+      { label: "Déclaration salaires CNSS", href: "/calculateurs/declarations-cnss", icon: ClipboardList },
+      { label: "Déclarations Néant (I3/I16)", href: "/calculateurs/declarations-neant", icon: FileX },
+      { label: "Validation fichier CNSS", href: "/calculateurs/testeur-txt-cnss", icon: FileSearch },
     ],
   },
   {
     groupLabel: "Ressources",
     items: [
-      { label: "Référentiel légal", href: "/referentiel-avantages-exclus", icon: BookOpen },
+      { label: "Avantages exclus CNSS", href: "/referentiel-avantages-exclus", icon: BookOpen },
     ],
   },
 ];

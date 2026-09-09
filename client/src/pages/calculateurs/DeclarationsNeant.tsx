@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -183,7 +183,7 @@ export default function DeclarationsNeant() {
     reset,
     formState: { errors },
   } = useForm<NeantItem>({
-    resolver: zodResolver(neantItemSchema) as any,
+    resolver: zodResolver(neantItemSchema) as Resolver<NeantItem>,
     defaultValues: {
       matricule: "",
       raisonSociale: "",
@@ -221,7 +221,7 @@ export default function DeclarationsNeant() {
       lieu: "Tunis",
       dateDocument: todayStr,
     });
-    toast.success(`Declaration ajoutee : ${data.matricule}`);
+    toast.success(`Déclaration ajoutée : ${data.matricule}`);
   };
 
   const removeItem = (index: number) => {
@@ -354,10 +354,10 @@ export default function DeclarationsNeant() {
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-foreground mb-1" style={{ fontFamily: "Montserrat, sans-serif" }}>
-          Declarations Neant
+          Déclarations Néant (I3/I16)
         </h2>
         <p className="text-muted-foreground text-sm">
-          Generez par lot vos declarations neant (Etat Recapitulatif I3 + Bordereau I16) en injectant les donnees employeur.
+          Générez par lot vos déclarations néant (État récapitulatif I3 + Bordereau I16) avec les données employeur.
         </p>
       </div>
 
@@ -365,7 +365,7 @@ export default function DeclarationsNeant() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-foreground">Saisie manuelle</CardTitle>
-          <CardDescription>Ajoutez une declaration a la liste avant generation.</CardDescription>
+          <CardDescription>Ajoutez une déclaration à la liste avant génération.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
@@ -399,14 +399,14 @@ export default function DeclarationsNeant() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="annee">Annee</Label>
+                <Label htmlFor="annee">Année</Label>
                 <Input id="annee" type="number" min={currentYear - 1} max={currentYear + 1} {...register("annee", { valueAsNumber: true })} />
                 {errors.annee && <p className="text-sm text-destructive">{errors.annee.message}</p>}
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="lieu">Fait a (Lieu)</Label>
+                <Label htmlFor="lieu">Fait à (Lieu)</Label>
                 <Input id="lieu" placeholder="Tunis" {...register("lieu")} />
                 {errors.lieu && <p className="text-sm text-destructive">{errors.lieu.message}</p>}
               </div>
@@ -439,7 +439,7 @@ export default function DeclarationsNeant() {
           >
             <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
             <p className="text-sm text-muted-foreground">
-              {dragOver ? "Deposez le fichier ici" : "Glissez un fichier .xlsx ici ou cliquez pour selectionner"}
+              {dragOver ? "Déposez le fichier ici" : "Glissez un fichier .xlsx ici ou cliquez pour sélectionner"}
             </p>
             <input id="excel-input-neant" type="file" accept=".xlsx,.xls" className="hidden" onChange={onFileSelect} />
           </div>
@@ -449,7 +449,7 @@ export default function DeclarationsNeant() {
       {/* C. Liste + Generation */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-foreground">Liste des declarations ({items.length})</CardTitle>
+          <CardTitle className="text-foreground">Liste des déclarations ({items.length})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {items.length > 0 && (
@@ -462,7 +462,7 @@ export default function DeclarationsNeant() {
                     <th className="pb-2 pr-3 font-semibold text-foreground">Raison sociale</th>
                     <th className="pb-2 pr-3 font-semibold text-foreground">Adresse</th>
                     <th className="pb-2 pr-3 font-semibold text-foreground">Trim.</th>
-                    <th className="pb-2 pr-3 font-semibold text-foreground">Annee</th>
+                    <th className="pb-2 pr-3 font-semibold text-foreground">Année</th>
                     <th className="pb-2 pr-3 font-semibold text-foreground">Lieu</th>
                     <th className="pb-2 pr-3 font-semibold text-foreground">Date</th>
                     <th className="pb-2 font-semibold text-foreground" />
@@ -500,7 +500,7 @@ export default function DeclarationsNeant() {
 
           <Button className="w-full py-5" size="lg" disabled={items.length === 0 || isGenerating} onClick={generatePDF}>
             <FileDown className="mr-2 h-5 w-5" />
-            {isGenerating ? "Generation..." : "Generer les declarations Neant"}
+            {isGenerating ? "Génération…" : "Générer les déclarations Néant"}
           </Button>
         </CardContent>
       </Card>

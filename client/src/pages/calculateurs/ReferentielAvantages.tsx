@@ -353,7 +353,7 @@ export default function ReferentielAvantages() {
             className="text-2xl font-bold text-foreground mb-1"
             style={{ fontFamily: "Montserrat, sans-serif" }}
           >
-            Référentiel des avantages exclus de l'assiette des cotisations sociales
+            Avantages exclus de l'assiette CNSS
           </h2>
           <p className="text-muted-foreground text-sm mb-2">
             Décret n° 2003-1098 du 19 mai 2003 (JORT n°41 du 23/05/2003), fixant la liste des 24

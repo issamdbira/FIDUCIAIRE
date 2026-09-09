@@ -132,10 +132,10 @@ export default function DeclarationsCNSS() {
             className="text-2xl font-bold text-foreground mb-1"
             style={{ fontFamily: "Montserrat, sans-serif" }}
           >
-            Déclaration CNSS
+            Déclaration salaires CNSS
           </h2>
           <p className="text-muted-foreground text-sm">
-            Générez vos fichiers de déclaration CNSS (format TXT 122 caractères) — saisie manuelle ou import CSV/Excel. Traitement 100% local.
+            Générez vos fichiers de déclaration de salaires CNSS (format TXT 122 caractères) — saisie manuelle ou import CSV/Excel.
           </p>
         </div>
         <Link href="/calculateurs/testeur-txt-cnss">

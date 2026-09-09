@@ -81,10 +81,10 @@ export default function RetraiteCNSS() {
         className="text-2xl font-bold text-foreground mb-1"
         style={{ fontFamily: "Montserrat, sans-serif" }}
       >
-        Estimer sa retraite
+        Calculateur de Retraite CNSS
       </h2>
       <p className="text-muted-foreground text-sm mb-6">
-        Estimez votre pension de retraite (salariés du secteur privé) selon les règles CNSS. Le calcul utilise les coefficients d'actualisation officiels.
+        Estimez votre pension de retraite (salariés du secteur privé) selon les règles CNSS. Coefficients d'actualisation officiels et SMIG à jour.
       </p>
 
       <div className="mb-6 p-4 bg-muted rounded-lg border border-border">

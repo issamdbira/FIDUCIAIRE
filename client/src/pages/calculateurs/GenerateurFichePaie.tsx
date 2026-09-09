@@ -182,7 +182,7 @@ export default function GenerateurFichePaie() {
             className="text-2xl font-bold text-foreground mb-1"
             style={{ fontFamily: "Montserrat, sans-serif" }}
           >
-            Générer une Fiche de Paie
+            Bulletin de Paie
           </h2>
           <p className="text-muted-foreground text-sm mb-6">
             Parcours guidé en 7 étapes pour générer la fiche de paie d'un salarié avec export PDF.

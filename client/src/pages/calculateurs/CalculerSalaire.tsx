@@ -61,10 +61,10 @@ export default function CalculerSalaire() {
         className="text-2xl font-bold text-foreground mb-1"
         style={{ fontFamily: "Montserrat, sans-serif" }}
       >
-        Calculer un salaire
+        Simulateur de Paie
       </h2>
       <p className="text-muted-foreground text-sm mb-6">
-        Passez du brut au net, ou déterminez le brut nécessaire pour obtenir un net souhaité. Calcul basé sur la réglementation tunisienne en vigueur.
+        Passez du brut au net, ou déterminez le brut nécessaire pour obtenir un net souhaité. Barème IRPP et cotisations CNSS/CSS à jour.
       </p>
 
       {/* Toggle mode */}

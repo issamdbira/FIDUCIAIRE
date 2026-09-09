@@ -53,11 +53,11 @@ export default function ActualisationSalaire() {
         className="text-2xl font-bold text-foreground mb-1"
         style={{ fontFamily: "Montserrat, sans-serif" }}
       >
-        Actualisation des Salaires
+        Actualisation salariale
       </h2>
       <p className="text-muted-foreground text-sm mb-6">
-        Pour calculer le salaire de référence de la pension, chaque salaire annuel des 10
-        dernières années est plafonné à 6× le SMIG puis actualisé par un coefficient.
+        Pour calculer le salaire de référence de la pension de retraite, chaque salaire annuel des 10
+        dernières années est plafonné à 6× le SMIG puis actualisé par le coefficient CNSS.
       </p>
 
       <Card className="p-6 rounded-lg shadow-sm border border-border bg-card mb-6">
