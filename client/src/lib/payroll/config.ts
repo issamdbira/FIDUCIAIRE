@@ -54,8 +54,8 @@ export const CONFIG_PAR_DEFAUT: PayrollConfig = {
   cnssSalarialAgricole: 0.0699,
   cnssPatronalAgricole: 0.1248,
 
-  cssActive: true,
-  cssTaux: 0.005,
+  cssActive: false, // CSS supprimée par la Loi de finances 2026 (art. 23) — source : secu.tn
+  cssTaux: 0,         // était 0.005 (0,5 %) avant 2026
   cssSeuilExonerationAnnuel: 5000,
 
   baremeIRPP: [

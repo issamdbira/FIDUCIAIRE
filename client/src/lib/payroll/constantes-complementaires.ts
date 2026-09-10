@@ -28,7 +28,7 @@ export const PRIME_PRESENCE_DEFAUT = 2.080;
 // Taux horaire par défaut selon le régime (40h ou 48h/semaine)
 export const TAUX_HORAIRE_PAR_REGIME: Record<40 | 48, number> = {
   40: 2.714,
-  48: 2.668,
+  48: 2.667, // SMIG 2026 horaire 48h : 554.736 / 208 = 2.667 DT (source : cnss.ts SMIG_48H_PAR_ANNEE[2026])
 };
 
 // Taux "accident du travail" : variable selon le risque du secteur (0.5% à 4.0%)
