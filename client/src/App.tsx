@@ -28,6 +28,7 @@ import ConventionsList from "./pages/conventions/ConventionsList";
 import ConventionDetail from "./pages/conventions/ConventionDetail";
 import FichePaieConvention from "./pages/conventions/FichePaieConvention";
 import AdminConventions from "./pages/conventions/AdminConventions";
+import RegimesSociaux from "./pages/RegimesSociaux";
 
 function AppRoutes() {
   const routes = (
@@ -44,6 +45,7 @@ function AppRoutes() {
       <Route path="/calculateurs/calculer-salaire" component={CalculerSalaire} />
       <Route path="/referentiel-avantages-exclus" component={ReferentielAvantages} />
       <Route path="/formulaires-cnss" component={FormulairesCNSS} />
+      <Route path="/regimes-sociaux" component={RegimesSociaux} />
       <Route path="/calculateurs/retraite-cnss" component={RetraiteCNSS} />
       <Route path="/calculateurs/irpp" component={IRPP} />
       <Route path="/calculateurs/actualisation-salaire" component={ActualisationSalaire} />

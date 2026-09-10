@@ -18,6 +18,7 @@ import {
   ArrowRight,
   Mail,
   Building2,
+  Shield,
 } from "lucide-react";
 
 /**
@@ -100,6 +101,13 @@ const OUTILS = [
     description: "Formulaires officiels de déclaration CNSS avec aide au remplissage.",
     icon: ScrollText,
     href: "/formulaires-cnss",
+  },
+  {
+    id: "regimes-sociaux",
+    title: "Régimes sociaux",
+    description: "CNSS, CNRPS, CNAM : cotisations, barème IRPP, SMIG/SMAG, prestations.",
+    icon: Shield,
+    href: "/regimes-sociaux",
   },
 ];
 
