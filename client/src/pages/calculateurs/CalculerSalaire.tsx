@@ -202,7 +202,7 @@ export default function CalculerSalaire() {
               </table>
               </div>
 
-              <CalculationSource source="Barème IRPP 2025 (Loi de finances 2025), taux CNSS 9,68 %/17,07 % (depuis janv. 2025), Décret n° 2003-1098 (avantages exclus)" verified="2025-01-01" />
+              <CalculationSource source="Barème IRPP 2025 (Loi de finances 2025, art. 3), taux CNSS 9,68 %/17,07 % (depuis janv. 2025)" reference="Décret n° 2003-1098 du 19 mai 2003 (JORT n° 41 du 23/05/2003)" limit="plafond global 5 % (art. 3) pour avantages exclus" verified="2025-01-01" />
             </Card>
           )}
         </div>

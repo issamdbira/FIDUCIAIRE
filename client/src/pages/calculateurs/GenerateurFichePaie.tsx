@@ -949,7 +949,7 @@ export default function GenerateurFichePaie() {
                   <span className="text-2xl font-bold tabular-nums">{formatMontantDT(resultat.netAPayer)}</span>
                 </div>
 
-                <CalculationSource source="Barème IRPP 2025, taux CNSS selon secteur (Décret n° 2003-1098 pour avantages exclus), CSS supprimée depuis 2026" verified="2025-01-01" />
+                <CalculationSource source="Barème IRPP 2025 (Loi de finances 2025, art. 3), taux CNSS selon secteur" reference="Décret n° 2003-1098 du 19 mai 2003 (JORT n° 41 du 23/05/2003)" limit="CSS supprimée depuis 2026 (LF 2026, art. 23), plafond avantages exclus 5 % (art. 3)" verified="2025-01-01" />
 
                 {champsAffiches.modePaiement && (
                   <div className="mt-4 text-sm text-muted-foreground">

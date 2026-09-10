@@ -145,7 +145,7 @@ export default function ActualisationSalaire() {
               </table>
               </div>
 
-              <CalculationSource source="Coefficients d'actualisation CNSS publiés par le ministère des Affaires sociales le 19/07/2024, plafond 6 × SMIG" verified="2024-07-19" />
+              <CalculationSource source="Coefficients d'actualisation CNSS publiés par le ministère des Affaires sociales" reference="Arrêté du 19/07/2024 — coefficients CNSS 1961–2029" limit="plafond 6 × SMIG" verified="2024-07-19" />
 
               <div className="mt-6 p-4 bg-muted rounded-lg border border-border">
                 <p className="text-sm text-muted-foreground">

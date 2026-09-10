@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
+import { useMemo } from "react";
 import {
   DollarSign,
   BarChart3,
@@ -12,14 +13,16 @@ import {
   FileSearch,
   BookOpen,
   ScrollText,
-  ShieldCheck,
-  Upload,
-  FileDown,
+  Shield,
   ArrowRight,
   Mail,
   Building2,
-  Shield,
+  Calculator,
+  FileText,
+  Landmark,
 } from "lucide-react";
+import { runPayrollEngine } from "@/lib/payroll/engine";
+import type { PayrollInput } from "@/lib/payroll/types";
 
 /**
  * Home — Hub Central (Boîte à Outils)
@@ -29,112 +32,156 @@ import {
  * uniquement le logo + thème + admin.
  */
 
-/* ─── Outils fonctionnels (tous ont une route réelle) ─── */
+/* ─── Groupes d'outils (MOD1 + MOD2) ─── */
 
-const OUTILS = [
+interface Outil {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  href: string;
+}
+
+interface GroupeOutils {
+  titre: string;
+  icon: React.ComponentType<{ className?: string }>;
+  outils: Outil[];
+}
+
+const GROUPES_OUTILS: GroupeOutils[] = [
   {
-    id: "calculer-salaire",
-    title: "Calculer un salaire",
-    description: "Du brut au net ou inversement — cotisations sécurité sociale (CNSS), impôt sur le revenu (IRPP), contribution sociale de solidarité (CSS) et avantages exclus.",
-    icon: DollarSign,
-    href: "/calculateurs/calculer-salaire",
+    titre: "Calculs & simulations",
+    icon: Calculator,
+    outils: [
+      {
+        id: "calculer-salaire",
+        title: "Calculer un salaire",
+        description: "Obtenir le net à payer avec le détail CNSS, IRPP et CSS.",
+        icon: DollarSign,
+        href: "/calculateurs/calculer-salaire",
+      },
+      {
+        id: "irpp",
+        title: "Impôt sur le revenu (IRPP)",
+        description: "Calculer l'IRPP exact selon le barème 2025 en vigueur.",
+        icon: BarChart3,
+        href: "/calculateurs/irpp",
+      },
+      {
+        id: "retraite-cnss",
+        title: "Estimer sa retraite",
+        description: "Connaître sa pension estimée selon les règles CNSS actuelles.",
+        icon: TrendingUp,
+        href: "/calculateurs/retraite-cnss",
+      },
+      {
+        id: "actualisation-salaire",
+        title: "Actualisation des salaires",
+        description: "Recalculer un salaire ancien aux coefficients CNSS en vigueur.",
+        icon: ArrowUpDown,
+        href: "/calculateurs/actualisation-salaire",
+      },
+    ],
   },
   {
-    id: "irpp",
-    title: "Impôt sur le revenu (IRPP)",
-    description: "Estimez votre impôt sur le revenu annuel selon le barème progressif tunisien.",
-    icon: BarChart3,
-    href: "/calculateurs/irpp",
+    titre: "Documents & déclarations",
+    icon: FileText,
+    outils: [
+      {
+        id: "fiche-de-paie",
+        title: "Générer une fiche de paie",
+        description: "Produire un bulletin conforme et exportable en PDF.",
+        icon: PenTool,
+        href: "/fiche-de-paie",
+      },
+      {
+        id: "declarations-cnss",
+        title: "Déclaration CNSS",
+        description: "Contrôler les salariés et produire le fichier CNSS prêt à transmettre.",
+        icon: ClipboardList,
+        href: "/calculateurs/declarations-cnss",
+      },
+      {
+        id: "declarations-neant",
+        title: "Déclarations Néant",
+        description: "Générer par lot les déclarations néant, sans ressaisie.",
+        icon: FileX,
+        href: "/calculateurs/declarations-neant",
+      },
+      {
+        id: "testeur-txt",
+        title: "Testeur de fichier TXT",
+        description: "Vérifier que votre fichier CNSS est conforme avant transmission.",
+        icon: FileSearch,
+        href: "/calculateurs/testeur-txt-cnss",
+      },
+      {
+        id: "formulaires-cnss",
+        title: "Formulaires CNSS",
+        description: "Accéder au bon formulaire CNSS immédiatement, sans recherche.",
+        icon: ScrollText,
+        href: "/formulaires-cnss",
+      },
+    ],
   },
   {
-    id: "retraite-cnss",
-    title: "Estimer sa retraite",
-    description: "Estimez votre pension de retraite selon les règles de la sécurité sociale (CNSS).",
-    icon: TrendingUp,
-    href: "/calculateurs/retraite-cnss",
-  },
-  {
-    id: "fiche-de-paie",
-    title: "Générer une fiche de paie",
-    description: "Employeur, logo, salarié, éléments de rémunération, détail du calcul et export PDF.",
-    icon: PenTool,
-    href: "/fiche-de-paie",
-  },
-  {
-    id: "actualisation-salaire",
-    title: "Actualisation des salaires",
-    description: "Actualisez un salaire par le coefficient CNSS de son année (calcul de retraite).",
-    icon: ArrowUpDown,
-    href: "/calculateurs/actualisation-salaire",
-  },
-  {
-    id: "declarations-cnss",
-    title: "Déclaration CNSS",
-    description: "Saisie ou import CSV/Excel, contrôle des données, génération du fichier TXT.",
-    icon: ClipboardList,
-    href: "/calculateurs/declarations-cnss",
-  },
-  {
-    id: "declarations-neant",
-    title: "Déclarations Néant",
-    description: "Générez par lot vos déclarations néant (État I3 + Bordereau I16) avec calibrage PDF.",
-    icon: FileX,
-    href: "/calculateurs/declarations-neant",
-  },
-  {
-    id: "testeur-txt",
-    title: "Testeur de fichier TXT",
-    description: "Vérifiez la conformité d'un fichier TXT CNSS 122 caractères.",
-    icon: FileSearch,
-    href: "/calculateurs/testeur-txt-cnss",
-  },
-  {
-    id: "referentiel-avantages",
-    title: "Référentiel légal",
-    description: "Consultez les plafonds des avantages exclus (Décret n° 2003-1098).",
-    icon: BookOpen,
-    href: "/referentiel-avantages-exclus",
-  },
-  {
-    id: "formulaires-cnss",
-    title: "Formulaires CNSS",
-    description: "Formulaires officiels de déclaration CNSS avec aide au remplissage.",
-    icon: ScrollText,
-    href: "/formulaires-cnss",
-  },
-  {
-    id: "regimes-sociaux",
-    title: "Régimes sociaux",
-    description: "CNSS, CNRPS, CNAM : cotisations, barème IRPP, salaire minimum garanti (SMIG) / salaire minimum agricole garanti (SMAG), prestations.",
-    icon: Shield,
-    href: "/regimes-sociaux",
+    titre: "Références",
+    icon: Landmark,
+    outils: [
+      {
+        id: "referentiel-avantages",
+        title: "Référentiel légal",
+        description: "Vérifier les plafonds et conditions avant d'appliquer un avantage.",
+        icon: BookOpen,
+        href: "/referentiel-avantages-exclus",
+      },
+      {
+        id: "regimes-sociaux",
+        title: "Régimes sociaux",
+        description: "Comparer les cotisations et prestations des principaux régimes tunisiens.",
+        icon: Shield,
+        href: "/regimes-sociaux",
+      },
+    ],
   },
 ];
 
-const POINTS_FORTS = [
-  {
-    icon: ShieldCheck,
-    title: "Spécialité paie & CNSS",
-    description:
-      "Brut↔net, IRPP, retraite, déclarations CNSS — les calculs réglementaires tunisiens, sans erreur.",
-  },
-  {
-    icon: Upload,
-    title: "Conformité réglementaire",
-    description:
-      "Barèmes à jour, référentiel Décret 2003-1098, formulaires CNSS — chaque résultat cite sa source juridique.",
-  },
-  {
-    icon: FileDown,
-    title: "Export opérationnel",
-    description:
-      "Fiches de paie PDF, fichiers TXT CNSS, déclarations néant I3/I16 — prêts à déposer.",
-  },
-];
+const TOTAL_OUTILS = GROUPES_OUTILS.reduce((n, g) => n + g.outils.length, 0);
+
+/* ─── Aperçu de calcul réel (MOD3) ─── */
+
+function useApercuCalcul() {
+  return useMemo(() => {
+    const input: PayrollInput = {
+      employeur: { nom: "Exemple", secteur: "non_agricole" },
+      salarie: {
+        nom: "Dupont",
+        prenom: "Ahmed",
+        chefFamille: false,
+        enfants: 0,
+        etudiants: 0,
+        infirmes: 0,
+      },
+      periode: { mois: 1, annee: 2026 },
+      elements: [
+        {
+          id: "salaire-base",
+          type: "salaire_base",
+          label: "Salaire de base",
+          montant: 2500,
+          traitement: "standard",
+        },
+      ],
+    };
+    return runPayrollEngine(input);
+  }, []);
+}
 
 /* ─── Composant ─── */
 
 export default function Home() {
+  const apercu = useApercuCalcul();
+
   return (
     <div className="min-h-screen bg-background">
       {/* ═══════════════ HERO ═══════════════ */}
@@ -153,7 +200,7 @@ export default function Home() {
           <div className="flex items-center justify-center gap-2 mb-8">
             <span className="h-1.5 w-1.5 rounded-full bg-gold" />
             <span className="text-sm font-medium text-gold">
-              {OUTILS.length} outils disponibles
+              {TOTAL_OUTILS} outils disponibles
             </span>
             <span className="h-1.5 w-1.5 rounded-full bg-gold" />
           </div>
@@ -175,33 +222,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══════════════ POINTS FORTS ═══════════════ */}
-      <section className="max-w-4xl mx-auto px-4 -mt-8 relative z-10 mb-14">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {POINTS_FORTS.map((pf) => {
-            const Icon = pf.icon;
-            return (
-              <Card
-                key={pf.title}
-                className="rounded-xl shadow-md border border-border bg-card p-6"
-              >
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <Icon className="h-5 w-5 text-primary" />
-                </div>
-                <h3 className="text-sm font-semibold text-foreground mb-2">
-                  {pf.title}
-                </h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {pf.description}
-                </p>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ═══════════════ OUTILS — Hub Central ═══════════════ */}
-      <section id="outils" className="max-w-5xl mx-auto px-4 pb-16">
+      {/* ═══════════════ OUTILS — Groupes (MOD1 + MOD2) ═══════════════ */}
+      <section id="outils" className="max-w-5xl mx-auto px-4 pt-14 pb-10">
         <h2
           className="text-2xl font-bold text-foreground mb-2"
           style={{ fontFamily: "Montserrat, sans-serif" }}
@@ -211,28 +233,135 @@ export default function Home() {
         <p className="text-muted-foreground text-sm mb-8">
           Sélectionnez un outil pour commencer.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {OUTILS.map((outil) => {
-            const Icon = outil.icon;
-            return (
-              <Link key={outil.id} href={outil.href}>
-                <Card className="h-full hover:shadow-md transition-shadow cursor-pointer rounded-lg shadow-sm border border-border bg-card group">
-                  <div className="p-5">
-                    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                      <Icon className="h-4.5 w-4.5 text-primary" />
-                    </div>
-                    <h3 className="text-sm font-semibold text-foreground mb-1">
-                      {outil.title}
-                    </h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      {outil.description}
-                    </p>
-                  </div>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
+
+        {GROUPES_OUTILS.map((groupe) => {
+          const GroupeIcon = groupe.icon;
+          return (
+            <div key={groupe.titre} className="mb-10">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
+                  <GroupeIcon className="h-4 w-4 text-primary" />
+                </div>
+                <h3
+                  className="text-base font-semibold text-foreground"
+                  style={{ fontFamily: "Montserrat, sans-serif" }}
+                >
+                  {groupe.titre}
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {groupe.outils.map((outil) => {
+                  const Icon = outil.icon;
+                  return (
+                    <Link key={outil.id} href={outil.href}>
+                      <Card className="h-full hover:shadow-md transition-shadow cursor-pointer rounded-lg shadow-sm border border-border bg-card group">
+                        <div className="p-5">
+                          <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                            <Icon className="h-4.5 w-4.5 text-primary" />
+                          </div>
+                          <h4 className="text-sm font-semibold text-foreground mb-1">
+                            {outil.title}
+                          </h4>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            {outil.description}
+                          </p>
+                        </div>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </section>
+
+      {/* ═══════════════ APERÇU CALCUL RÉEL (MOD3) ═══════════════ */}
+      <section className="max-w-5xl mx-auto px-4 pb-14">
+        <h2
+          className="text-2xl font-bold text-foreground mb-2"
+          style={{ fontFamily: "Montserrat, sans-serif" }}
+        >
+          Aperçu d'un calcul de paie
+        </h2>
+        <p className="text-muted-foreground text-sm mb-6">
+          Exemple réel pour un salaire brut de 2 500 DT — célibataire, secteur non agricole, 2026.
+          Calculé par le moteur de l'application, pas des valeurs statiques.
+        </p>
+        <Card className="rounded-xl shadow-md border border-border bg-card overflow-hidden">
+          <div className="p-6">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 pr-4 text-muted-foreground font-medium">Élément</th>
+                    <th className="text-right py-3 text-muted-foreground font-medium">Valeur</th>
+                  </tr>
+                </thead>
+                <tbody className="text-foreground">
+                  <tr className="border-b border-border/50">
+                    <td className="py-2.5 pr-4 font-medium">Salaire brut</td>
+                    <td className="py-2.5 text-right font-semibold tabular-nums">
+                      {apercu.totalRemunerationBrute.toLocaleString("fr-TN", { minimumFractionDigits: 3 })} DT
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-2.5 pr-4 text-muted-foreground">CNSS salarié (9,68 %)</td>
+                    <td className="py-2.5 text-right text-red-600 dark:text-red-400 tabular-nums">
+                      −{apercu.cotisationCNSS.toLocaleString("fr-TN", { minimumFractionDigits: 3 })} DT
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-2.5 pr-4 text-muted-foreground">CSS (supprimée 2026)</td>
+                    <td className="py-2.5 text-right tabular-nums">
+                      0,000 DT
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-2.5 pr-4 text-muted-foreground">IRPP mensuel</td>
+                    <td className="py-2.5 text-right text-red-600 dark:text-red-400 tabular-nums">
+                      −{apercu.irppMensuel.toLocaleString("fr-TN", { minimumFractionDigits: 3 })} DT
+                    </td>
+                  </tr>
+                  <tr className="border-b-0 bg-primary/5">
+                    <td className="py-3 pr-4 font-bold text-primary">Net à payer</td>
+                    <td className="py-3 text-right font-bold text-primary text-base tabular-nums">
+                      {apercu.netAPayer.toLocaleString("fr-TN", { minimumFractionDigits: 3 })} DT
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            {/* Coût employeur */}
+            <div className="mt-5 pt-4 border-t border-border/50 flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Coût total employeur (brut + patronal 17,07 %)</span>
+              <span className="font-semibold text-foreground tabular-nums">
+                {(
+                  apercu.totalRemunerationBrute + apercu.cotisationPatronale
+                ).toLocaleString("fr-TN", { minimumFractionDigits: 3 })} DT
+              </span>
+            </div>
+            {/* Détail cascade */}
+            <div className="mt-4 pt-3 border-t border-border/30 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-muted-foreground">
+              <div>
+                <span className="block font-medium text-foreground/70">Base CNSS</span>
+                {apercu.baseCNSS.toLocaleString("fr-TN", { minimumFractionDigits: 3 })} DT
+              </div>
+              <div>
+                <span className="block font-medium text-foreground/70">Frais pro (10 %)</span>
+                {apercu.fraisProfessionnelsMensuel.toLocaleString("fr-TN", { minimumFractionDigits: 3 })} DT
+              </div>
+              <div>
+                <span className="block font-medium text-foreground/70">Assiette IRPP/mois</span>
+                {apercu.assietteImposableNetteMensuelle.toLocaleString("fr-TN", { minimumFractionDigits: 3 })} DT
+              </div>
+              <div>
+                <span className="block font-medium text-foreground/70">Patronal CNSS</span>
+                {apercu.cotisationPatronale.toLocaleString("fr-TN", { minimumFractionDigits: 3 })} DT
+              </div>
+            </div>
+          </div>
+        </Card>
       </section>
 
       {/* ═══════════════ CONVENTIONS COLLECTIVES ═══════════════ */}

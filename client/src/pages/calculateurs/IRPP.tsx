@@ -283,7 +283,7 @@ export default function IRPP() {
               </table>
               </div>
 
-              <CalculationSource source="Barème IRPP 2025 — Loi de finances 2025, art. 3 (tranches 0-40 %), frais professionnels 10 % plafonnés à 2 000 DT/an" verified="2025-01-01" />
+              <CalculationSource source="Barème IRPP 2025 (Loi de finances 2025, art. 3), 8 tranches progressives 0–40 %" reference="Code de l'impôt sur le revenu, art. 3 (modifié par LF 2025)" limit="frais professionnels 10 % plafonnés à 2 000 DT/an" verified="2025-01-01" />
 
               <div className="mt-6 p-4 bg-muted rounded-lg border border-border">
                 <p className="text-sm text-muted-foreground">

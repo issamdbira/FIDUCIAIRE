@@ -205,7 +205,7 @@ export default function RetraiteCNSS() {
                 </p>
               )}
 
-              <CalculationSource source="Règles CNSS — taux 4 %/an (10 prem. ans) puis 2 %/an, max 80 %, plafond 6 × SMIG, coefficients d'actualisation publiés le 19/07/2024" verified="2025-03-30" />
+              <CalculationSource source="Règles CNSS — taux 4 %/an (10 prem. ans) puis 2 %/an, max 80 %" reference="Circulaire CNSS — calcul de pension, réf. coefficients 19/07/2024" limit="plafond 6 × SMIG, durée validée max 80 %" verified="2025-03-30" />
 
               <div className="mt-6 p-4 bg-muted rounded-lg border border-border">
                 <p className="text-sm text-muted-foreground">
