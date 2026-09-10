@@ -38,7 +38,7 @@ const neantItemSchema = z.object({
     .string()
     .min(1, "Le matricule est obligatoire")
     .regex(/^\d{8}-\d{2}$/, "Format invalide (ex: 12345678-99)"),
-  raisonSociale: z.string().min(2, "Minimum 2 caracteres"),
+  raisonSociale: z.string().min(2, "Minimum 2 caractères"),
   adresse: z.string().default(""),
   trimestre: z.number().min(1).max(4),
   annee: z
@@ -77,7 +77,7 @@ function formatDate(d: string): string {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// INJECTION I3 — Reperes exacts valides (Portrait, sans rotation)
+// INJECTION I3 — Repères exacts valides (Portrait, sans rotation)
 // ══════════════════════════════════════════════════════════════════════
 function fillI3(page: PDFPage, data: NeantItem, font: PDFFont) {
   const s = 11;
@@ -97,19 +97,19 @@ function fillI3(page: PDFPage, data: NeantItem, font: PDFFont) {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// INJECTION I16 — Reperes exacts (Paysage, avec compensation rotation)
+// INJECTION I16 — Repères exacts (Paysage, avec compensation rotation)
 // ══════════════════════════════════════════════════════════════════════
 function fillI16(page: PDFPage, data: NeantItem, font: PDFFont) {
   const s = 11;
   const c = rgb(0, 0, 0);
 
-  // Detecter la rotation interne de la page
+  // Détecter la rotation interne de la page
   const angle = page.getRotation().angle;
   const { width: pw, height: ph } = page.getSize();
 
   // Helper : injecte un texte en compensant la rotation de la page
-  // Les coordonnees (x, y) sont celles du repere visuel (identiques a l'I3).
-  // Si la page est pivotee, on convertit (x,y) visuel -> (ix,iy) interne
+  // Les coordonnées (x, y) sont celles du repère visuel (identiques à l'I3).
+  // Si la page est pivotée, on convertit (x,y) visuel -> (ix,iy) interne
   // et on contre-rotate le texte pour qu'il paraisse horizontal.
   const stamp = (text: string, x: number, y: number, size: number) => {
     if (angle === 0) {
@@ -201,11 +201,11 @@ export default function DeclarationsNeant() {
     async function load() {
       try {
         const [r1, r2] = await Promise.all([fetch("/I3.pdf"), fetch("/I16.pdf")]);
-        if (!r1.ok || !r2.ok) { toast.error("Modeles PDF introuvables"); return; }
+        if (!r1.ok || !r2.ok) { toast.error("Modèles PDF introuvables"); return; }
         setI3Bytes(await r1.arrayBuffer());
         setI16Bytes(await r2.arrayBuffer());
       } catch {
-        toast.error("Erreur chargement des modeles PDF");
+        toast.error("Erreur chargement des modèles PDF");
       }
     }
     load();
@@ -222,7 +222,7 @@ export default function DeclarationsNeant() {
       lieu: "Tunis",
       dateDocument: todayStr,
     });
-    toast.success(`Declaration ajoutee : ${data.matricule}`);
+    toast.success(`Déclaration ajoutée : ${data.matricule}`);
   };
 
   const removeItem = (index: number) => {
@@ -230,7 +230,7 @@ export default function DeclarationsNeant() {
   };
 
   // ── Excel Import ──
-  // Colonnes: A=Matricule, B=Raison Sociale, C=Trimestre, D=Annee, E=Adresse, F=Lieu, G=Date
+  // Colonnes : A=Matricule, B=Raison Sociale, C=Trimestre, D=Année, E=Adresse, F=Lieu, G=Date
   const processExcelFile = useCallback(
     async (file: File) => {
       try {
@@ -286,9 +286,9 @@ export default function DeclarationsNeant() {
 
         if (imported.length > 0) {
           setItems((prev) => [...prev, ...imported]);
-          toast.success(`${imported.length} declaration(s) importee(s)`);
+          toast.success(`${imported.length} déclaration(s) importée(s)`);
         } else {
-          toast.error("Aucune donnee valide dans le fichier Excel");
+          toast.error("Aucune donnée valide dans le fichier Excel");
         }
       } catch {
         toast.error("Erreur lecture du fichier Excel");
@@ -342,9 +342,9 @@ export default function DeclarationsNeant() {
       a.click();
       URL.revokeObjectURL(url);
 
-      toast.success(`${items.length} declaration(s) generee(s) : I3 + I16`);
+      toast.success(`${items.length} déclaration(s) générée(s) : I3 + I16`);
     } catch {
-      toast.error("Erreur lors de la generation du PDF");
+      toast.error("Erreur lors de la génération du PDF");
     } finally {
       setIsGenerating(false);
     }
@@ -356,10 +356,10 @@ export default function DeclarationsNeant() {
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-foreground mb-1" style={{ fontFamily: "Montserrat, sans-serif" }}>
-          Declarations Neant
+          Déclarations Néant
         </h2>
         <p className="text-muted-foreground text-sm">
-          Generez par lot vos declarations neant (Etat Recapitulatif I3 + Bordereau I16) en injectant les donnees employeur.
+          Générez par lot vos déclarations néant (État Récapitulatif I3 + Bordereau I16) en injectant les données employeur.
         </p>
       </div>
 
@@ -367,7 +367,7 @@ export default function DeclarationsNeant() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-foreground">Saisie manuelle</CardTitle>
-          <CardDescription>Ajoutez une declaration a la liste avant generation.</CardDescription>
+          <CardDescription>Ajoutez une déclaration à la liste avant génération.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
@@ -401,14 +401,14 @@ export default function DeclarationsNeant() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="annee">Annee</Label>
+                <Label htmlFor="annee">Année</Label>
                 <Input id="annee" type="number" min={currentYear - 1} max={currentYear + 1} {...register("annee", { valueAsNumber: true })} />
                 {errors.annee && <p className="text-sm text-destructive">{errors.annee.message}</p>}
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="lieu">Fait a (Lieu)</Label>
+                <Label htmlFor="lieu">Fait à (Lieu)</Label>
                 <Input id="lieu" placeholder="Tunis" {...register("lieu")} />
                 {errors.lieu && <p className="text-sm text-destructive">{errors.lieu.message}</p>}
               </div>
@@ -418,7 +418,7 @@ export default function DeclarationsNeant() {
                 {errors.dateDocument && <p className="text-sm text-destructive">{errors.dateDocument.message}</p>}
               </div>
             </div>
-            <Button type="submit">Ajouter a la liste</Button>
+            <Button type="submit">Ajouter à la liste</Button>
           </form>
         </CardContent>
       </Card>
@@ -427,7 +427,7 @@ export default function DeclarationsNeant() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-foreground">Import Excel</CardTitle>
-          <CardDescription>Colonnes : A=Matricule, B=Raison Sociale, C=Trimestre, D=Annee, E=Adresse, F=Lieu, G=Date.</CardDescription>
+          <CardDescription>Colonnes : A=Matricule, B=Raison Sociale, C=Trimestre, D=Année, E=Adresse, F=Lieu, G=Date.</CardDescription>
         </CardHeader>
         <CardContent>
           <div
@@ -441,7 +441,7 @@ export default function DeclarationsNeant() {
           >
             <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
             <p className="text-sm text-muted-foreground">
-              {dragOver ? "Deposez le fichier ici" : "Glissez un fichier .xlsx ici ou cliquez pour selectionner"}
+              {dragOver ? "Déposez le fichier ici" : "Glissez un fichier .xlsx ici ou cliquez pour sélectionner"}
             </p>
             <input id="excel-input-neant" type="file" accept=".xlsx,.xls" className="hidden" onChange={onFileSelect} />
           </div>
@@ -451,7 +451,7 @@ export default function DeclarationsNeant() {
       {/* C. Liste + Generation */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-foreground">Liste des declarations ({items.length})</CardTitle>
+          <CardTitle className="text-foreground">Liste des déclarations ({items.length})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {items.length > 0 && (
@@ -464,7 +464,7 @@ export default function DeclarationsNeant() {
                     <th className="pb-2 pr-3 font-semibold text-foreground">Raison sociale</th>
                     <th className="pb-2 pr-3 font-semibold text-foreground">Adresse</th>
                     <th className="pb-2 pr-3 font-semibold text-foreground">Trim.</th>
-                    <th className="pb-2 pr-3 font-semibold text-foreground">Annee</th>
+                    <th className="pb-2 pr-3 font-semibold text-foreground">Année</th>
                     <th className="pb-2 pr-3 font-semibold text-foreground">Lieu</th>
                     <th className="pb-2 pr-3 font-semibold text-foreground">Date</th>
                     <th className="pb-2 font-semibold text-foreground" />
@@ -496,13 +496,13 @@ export default function DeclarationsNeant() {
           {items.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-6">
               <FileSpreadsheet className="mx-auto h-8 w-8 mb-2" />
-              Aucune declaration dans la liste. Utilisez le formulaire ou importez un Excel.
+              Aucune déclaration dans la liste. Utilisez le formulaire ou importez un Excel.
             </p>
           )}
 
           <Button className="w-full py-5" size="lg" disabled={items.length === 0 || isGenerating} onClick={generatePDF}>
             <FileDown className="mr-2 h-5 w-5" />
-            {isGenerating ? "Generation..." : "Generer les declarations Neant"}
+            {isGenerating ? "Génération…" : "Générer les déclarations Néant"}
           </Button>
         </CardContent>
       </Card>

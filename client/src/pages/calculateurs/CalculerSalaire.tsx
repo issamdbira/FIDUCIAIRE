@@ -12,6 +12,7 @@ import { trouverBrutPourNet } from "@/lib/payroll/netToBrut";
 import type { PayrollResult } from "@/lib/payroll/types";
 import { formatMontantDT } from "@/lib/utils";
 import { validerMontantSalaire } from "@/lib/validation-salaire";
+import CalculationSource from "@/components/CalculationSource";
 
 /**
  * Calculer un salaire — Brut → Net ou Net → Brut.
@@ -115,7 +116,7 @@ export default function CalculerSalaire() {
             </div>
 
             <div className="border-t border-border pt-6">
-              <h3 className="font-semibold text-foreground mb-4">Situation familiale (pour l'IRPP)</h3>
+              <h3 className="font-semibold text-foreground mb-4">Situation familiale (pour l'impôt sur le revenu — IRPP)</h3>
               <div className="flex items-center gap-3 mb-4">
                 <Checkbox id="chef" checked={chefFamille} onCheckedChange={(c) => setChefFamille(c as boolean)} />
                 <Label htmlFor="chef" className="cursor-pointer">Chef de famille</Label>
@@ -165,7 +166,7 @@ export default function CalculerSalaire() {
                     <td className="py-3 text-right tabular-nums font-medium">{formatMontantDT(resultat.totalRemunerationBrute)}</td>
                   </tr>
                   <tr className="border-b border-slate-200 dark:border-slate-700">
-                    <td className="py-3 text-sm text-slate-600 dark:text-slate-400">Cotisation CNSS</td>
+                    <td className="py-3 text-sm text-slate-600 dark:text-slate-400">Cotisation sécurité sociale (CNSS)</td>
                     <td className="py-3 text-right tabular-nums font-medium text-destructive">{formatMontantDT(-resultat.cotisationCNSS)}</td>
                   </tr>
                   <tr className="border-b border-slate-200 dark:border-slate-700">
@@ -188,7 +189,7 @@ export default function CalculerSalaire() {
                   </tr>
                   {resultat.css > 0 && (
                     <tr className="border-b border-slate-200 dark:border-slate-700">
-                      <td className="py-3 text-sm text-slate-600 dark:text-slate-400">CSS</td>
+                      <td className="py-3 text-sm text-slate-600 dark:text-slate-400">Contribution sociale de solidarité (CSS)</td>
                       <td className="py-3 text-right tabular-nums font-medium text-destructive">{formatMontantDT(-resultat.css)}</td>
                     </tr>
                   )}
@@ -200,6 +201,8 @@ export default function CalculerSalaire() {
                 </tbody>
               </table>
               </div>
+
+              <CalculationSource source="Barème IRPP 2025 (Loi de finances 2025), taux CNSS 9,68 %/17,07 % (depuis janv. 2025), Décret n° 2003-1098 (avantages exclus)" verified="2025-01-01" />
             </Card>
           )}
         </div>

@@ -9,6 +9,7 @@ import { COEFFICIENTS_ACTUALISATION, getCoefficientActualisation } from "@/lib/p
 import { formatMontantDT } from "@/lib/utils";
 import { validerMontantSalaire } from "@/lib/validation-salaire";
 import BackToTools from "@/components/BackToTools";
+import CalculationSource from "@/components/CalculationSource";
 
 /**
  * Calculateur d'actualisation des salaires CNSS
@@ -65,7 +66,7 @@ export default function ActualisationSalaire() {
       </h2>
       <p className="text-muted-foreground text-sm mb-6">
         Pour calculer le salaire de référence de la pension, chaque salaire annuel des 10
-        dernières années est plafonné à 6× le SMIG puis actualisé par un coefficient.
+        dernières années est plafonné à 6× le salaire minimum garanti (SMIG) puis actualisé par un coefficient.
       </p>
 
       <div className="grid md:grid-cols-[380px_1fr] gap-6">
@@ -144,12 +145,14 @@ export default function ActualisationSalaire() {
               </table>
               </div>
 
+              <CalculationSource source="Coefficients d'actualisation CNSS publiés par le ministère des Affaires sociales le 19/07/2024, plafond 6 × SMIG" verified="2024-07-19" />
+
               <div className="mt-6 p-4 bg-muted rounded-lg border border-border">
                 <p className="text-sm text-muted-foreground">
                   <strong>Source :</strong> coefficients publiés par le ministère des affaires
                   sociales le 19/07/2024. Répétez ce calcul pour les 10 dernières années puis faites
                   la moyenne pour obtenir le salaire de référence utilisé dans le calculateur de
-                  retraite CNSS.
+                  retraite de la sécurité sociale (CNSS).
                 </p>
               </div>
             </Card>

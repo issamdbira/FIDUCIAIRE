@@ -35,21 +35,21 @@ const OUTILS = [
   {
     id: "calculer-salaire",
     title: "Calculer un salaire",
-    description: "Brut → Net ou Net → Brut, avec CNSS, IRPP, CSS et avantages exclus (Décret 2003-1098).",
+    description: "Du brut au net ou inversement — cotisations sécurité sociale (CNSS), impôt sur le revenu (IRPP), contribution sociale de solidarité (CSS) et avantages exclus.",
     icon: DollarSign,
     href: "/calculateurs/calculer-salaire",
   },
   {
     id: "irpp",
     title: "Impôt sur le revenu (IRPP)",
-    description: "Estimez votre IRPP annuel selon le barème progressif et votre situation familiale.",
+    description: "Estimez votre impôt sur le revenu annuel selon le barème progressif tunisien.",
     icon: BarChart3,
     href: "/calculateurs/irpp",
   },
   {
     id: "retraite-cnss",
     title: "Estimer sa retraite",
-    description: "Estimez votre pension de retraite selon votre ancienneté et salaire actualisé.",
+    description: "Estimez votre pension de retraite selon les règles de la sécurité sociale (CNSS).",
     icon: TrendingUp,
     href: "/calculateurs/retraite-cnss",
   },
@@ -105,7 +105,7 @@ const OUTILS = [
   {
     id: "regimes-sociaux",
     title: "Régimes sociaux",
-    description: "CNSS, CNRPS, CNAM : cotisations, barème IRPP, SMIG/SMAG, prestations.",
+    description: "CNSS, CNRPS, CNAM : cotisations, barème IRPP, salaire minimum garanti (SMIG) / salaire minimum agricole garanti (SMAG), prestations.",
     icon: Shield,
     href: "/regimes-sociaux",
   },
@@ -114,21 +114,21 @@ const OUTILS = [
 const POINTS_FORTS = [
   {
     icon: ShieldCheck,
-    title: "Conformité Légale",
+    title: "Spécialité paie & CNSS",
     description:
-      "Textes de loi à jour, gestion des avantages exclus selon le Décret n° 2003-1098 et les barèmes CNSS officiels.",
+      "Brut↔net, IRPP, retraite, déclarations CNSS — les calculs réglementaires tunisiens, sans erreur.",
   },
   {
     icon: Upload,
-    title: "Zéro Saisie Manuelle",
+    title: "Conformité réglementaire",
     description:
-      "Import Excel robuste pour les déclarations de masse. Glissez votre fichier et tout est pré-rempli.",
+      "Barèmes à jour, référentiel Décret 2003-1098, formulaires CNSS — chaque résultat cite sa source juridique.",
   },
   {
     icon: FileDown,
-    title: "Documents Prêts à l'Emploi",
+    title: "Export opérationnel",
     description:
-      "Génération de PDF I3 et I16 normés, fiches de paie exportables et fichiers TXT conformes CNSS.",
+      "Fiches de paie PDF, fichiers TXT CNSS, déclarations néant I3/I16 — prêts à déposer.",
   },
 ];
 
@@ -138,21 +138,29 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* ═══════════════ HERO ═══════════════ */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-primary to-background">
+      <section className="relative overflow-hidden bg-gradient-to-b from-primary to-primary/80">
         <div className="max-w-3xl mx-auto px-4 pt-16 pb-14 text-center">
           <h1
             className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-5"
             style={{ fontFamily: "Montserrat, sans-serif" }}
           >
-            Paie et déclarations sociales tunisiennes, simplifiées.
+            La boîte à outils de gestion tunisienne.
           </h1>
-          <p className="text-primary-foreground/80 text-base sm:text-lg max-w-2xl mx-auto mb-8">
-            Calculez vos salaires, générez vos fiches de paie et exportez vos
-            déclarations CNSS — sans erreur et en quelques clics.
+          <p className="text-white/80 text-base sm:text-lg max-w-2xl mx-auto mb-6">
+            Paie, CNSS et IRPP — la spécialité maison — réunis dans des outils prêts à l'emploi.
           </p>
+          {/* Proof line */}
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <span className="h-1.5 w-1.5 rounded-full bg-gold" />
+            <span className="text-sm font-medium text-gold">
+              {OUTILS.length} outils disponibles
+            </span>
+            <span className="h-1.5 w-1.5 rounded-full bg-gold" />
+          </div>
           <Button
             size="lg"
-            className="bg-white text-primary hover:bg-white/90 font-semibold px-8"
+            variant="outline"
+            className="border-gold text-gold hover:bg-gold hover:text-primary font-semibold px-8"
             onClick={() =>
               document
                 .getElementById("outils")
@@ -162,6 +170,8 @@ export default function Home() {
             Accéder aux outils
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
+          {/* Gold decorative line */}
+          <div className="mt-10 mx-auto w-24 h-px bg-gold" />
         </div>
       </section>
 
@@ -286,7 +296,7 @@ export default function Home() {
       <footer className="border-t border-border py-8">
         <div className="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
-            Le Fiduciaire — Plateforme de gestion de paie et conformité sociale tunisienne.
+            Le Fiduciaire — La boîte à outils de gestion tunisienne.
           </p>
           <div className="flex items-center gap-4">
             <Link href="/conventions">

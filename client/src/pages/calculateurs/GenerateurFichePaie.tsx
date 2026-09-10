@@ -19,6 +19,7 @@ import { formatMontantDT } from "@/lib/utils";
 import { validerMontantSalaire } from "@/lib/validation-salaire";
 import { toast } from "sonner";
 import BackToTools from "@/components/BackToTools";
+import CalculationSource from "@/components/CalculationSource";
 
 /**
  * Générateur de fiche de paie — MVP (couches 2 et 3).
@@ -239,7 +240,7 @@ export default function GenerateurFichePaie() {
                   <Input value={employeur.nom} onChange={(e) => setEmployeur({ ...employeur, nom: e.target.value })} />
                 </div>
                 <div>
-                  <Label className="mb-2 block">Matricule CNSS employeur</Label>
+                  <Label className="mb-2 block">Matricule sécurité sociale (CNSS) employeur</Label>
                   <Input value={employeur.matriculeCNSS} onChange={(e) => setEmployeur({ ...employeur, matriculeCNSS: e.target.value })} />
                 </div>
                 <div>
@@ -348,7 +349,7 @@ export default function GenerateurFichePaie() {
               </div>
 
               <div className="border-t border-border pt-4">
-                <h3 className="font-semibold text-foreground mb-3">Situation familiale (pour l'IRPP)</h3>
+                <h3 className="font-semibold text-foreground mb-3">Situation familiale (pour l'impôt sur le revenu — IRPP)</h3>
                 <div className="flex items-center gap-3 mb-3">
                   <Checkbox
                     id="chef"
@@ -560,7 +561,7 @@ export default function GenerateurFichePaie() {
               <div className="p-4 bg-muted/50 rounded-lg space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase">Avantage qualitatif (exclusion conditionnelle, décret 1098-2003)</p>
                 <p className="text-xs text-muted-foreground">
-                  Ces 15 points n'ont pas de plafond SMIG calculable. L'employeur déclare le montant sous réserve de respecter la condition légale.
+                  Ces 15 points n'ont pas de plafond salaire minimum garanti (SMIG) calculable. L'employeur déclare le montant sous réserve de respecter la condition légale.
                   {avantagesExclusDeclares.length > 0 && (
                     <> — <strong>{avantagesExclusDeclares.length} avantage(s) exclus déclaré(s)</strong> pour le contrôle du plafond 5% (art. 3)</>
                   )}
@@ -809,7 +810,7 @@ export default function GenerateurFichePaie() {
                 </div>
                 {resultat.css > 0 && (
                   <div className="flex justify-between text-destructive">
-                    <span>CSS</span>
+                    <span>Contribution sociale de solidarité (CSS)</span>
                     <span className="tabular-nums">{formatMontantDT(-resultat.css)}</span>
                   </div>
                 )}
@@ -947,6 +948,8 @@ export default function GenerateurFichePaie() {
                   <span className="text-lg font-bold">Net à Payer</span>
                   <span className="text-2xl font-bold tabular-nums">{formatMontantDT(resultat.netAPayer)}</span>
                 </div>
+
+                <CalculationSource source="Barème IRPP 2025, taux CNSS selon secteur (Décret n° 2003-1098 pour avantages exclus), CSS supprimée depuis 2026" verified="2025-01-01" />
 
                 {champsAffiches.modePaiement && (
                   <div className="mt-4 text-sm text-muted-foreground">

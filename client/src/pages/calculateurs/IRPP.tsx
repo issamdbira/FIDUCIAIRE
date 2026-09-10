@@ -10,6 +10,7 @@ import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPA
 import { formatMontantDT } from "@/lib/utils";
 import { validerMontantSalaire } from "@/lib/validation-salaire";
 import BackToTools from "@/components/BackToTools";
+import CalculationSource from "@/components/CalculationSource";
 
 /**
  * Calculateur IRPP (Impôt sur le Revenu des Personnes Physiques)
@@ -91,7 +92,7 @@ export default function IRPP() {
         className="text-2xl font-bold text-foreground mb-1"
         style={{ fontFamily: "Montserrat, sans-serif" }}
       >
-        Calculateur IRPP
+        Calculateur impôt sur le revenu (IRPP)
       </h2>
       <p className="text-muted-foreground text-sm mb-6">
         Calculez votre impôt annuel sur le revenu selon votre situation familiale et vos déductions. Barème IRPP officiel tunisien.
@@ -245,7 +246,7 @@ export default function IRPP() {
                     <td className="py-3 text-right tabular-nums font-medium">{formatMontantDT(result.revenuAnnuel)}</td>
                   </tr>
                   <tr className="border-b border-slate-200 dark:border-slate-700">
-                    <td className="py-3 text-sm text-slate-600 dark:text-slate-400">Cotisations CNSS (9.68%)</td>
+                    <td className="py-3 text-sm text-slate-600 dark:text-slate-400">Cotisations sécurité sociale (CNSS) (9.68%)</td>
                     <td className="py-3 text-right tabular-nums font-medium text-destructive">{formatMontantDT(-result.cotisationsCNSS)}</td>
                   </tr>
                   <tr className="border-b border-slate-200 dark:border-slate-700">
@@ -281,6 +282,8 @@ export default function IRPP() {
                 </tbody>
               </table>
               </div>
+
+              <CalculationSource source="Barème IRPP 2025 — Loi de finances 2025, art. 3 (tranches 0-40 %), frais professionnels 10 % plafonnés à 2 000 DT/an" verified="2025-01-01" />
 
               <div className="mt-6 p-4 bg-muted rounded-lg border border-border">
                 <p className="text-sm text-muted-foreground">

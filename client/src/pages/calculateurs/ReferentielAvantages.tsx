@@ -12,6 +12,7 @@ import { Link } from "wouter";
 import { getPointAvantageSMIG, simulerAvantage } from "@/lib/payroll/avantages-exclus";
 import { formatMontantDT } from "@/lib/utils";
 import BackToTools from "@/components/BackToTools";
+import CalculationSource from "@/components/CalculationSource";
 
 /**
  * Référentiel des avantages exclus de l'assiette des cotisations sociales
@@ -375,6 +376,7 @@ export default function ReferentielAvantages() {
               l'entreprise — à l'exception des points 16, 17, 18, 19, 23 et 24, qui ne sont pas
               comptabilisés dans ce plafond de 5% (badge "Hors plafond 5%" ci-dessous).
             </p>
+            <CalculationSource source="Décret n° 2003-1098 du 19 mai 2003 (JORT n° 41 du 23/05/2003), plafond global 5 % (art. 3)" verified="2003-05-23" />
           </Card>
 
           {/* Recherche */}

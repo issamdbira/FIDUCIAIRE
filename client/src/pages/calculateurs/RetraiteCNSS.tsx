@@ -9,6 +9,7 @@ import { getCoefficientActualisation } from "@/lib/payroll/coefficients-actualis
 import { formatMontantDT } from "@/lib/utils";
 import { validerMontantSalaire } from "@/lib/validation-salaire";
 import BackToTools from "@/components/BackToTools";
+import CalculationSource from "@/components/CalculationSource";
 
 /**
  * Calculateur de Retraite CNSS - Salariés du secteur privé
@@ -92,7 +93,7 @@ export default function RetraiteCNSS() {
         Estimer sa retraite
       </h2>
       <p className="text-muted-foreground text-sm mb-6">
-        Estimez votre pension de retraite (salariés du secteur privé) selon les règles CNSS. Le calcul utilise les coefficients d'actualisation officiels.
+        Estimez votre pension de retraite (salariés du secteur privé) selon les règles de la sécurité sociale (CNSS). Le calcul utilise les coefficients d'actualisation officiels.
       </p>
 
       <div className="grid md:grid-cols-[380px_1fr] gap-6">
@@ -203,6 +204,8 @@ export default function RetraiteCNSS() {
                   <span className="tabular-nums">{formatMontantDT(result.pensionMinimaleApplicable)}</span> a été appliquée.
                 </p>
               )}
+
+              <CalculationSource source="Règles CNSS — taux 4 %/an (10 prem. ans) puis 2 %/an, max 80 %, plafond 6 × SMIG, coefficients d'actualisation publiés le 19/07/2024" verified="2025-03-30" />
 
               <div className="mt-6 p-4 bg-muted rounded-lg border border-border">
                 <p className="text-sm text-muted-foreground">
