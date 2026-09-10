@@ -39,6 +39,7 @@ import {
   EyeOff,
   ChevronDown,
   ChevronRight,
+  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { CONVENTIONS, getConventionBySlug } from "@/lib/conventions/data/index";
@@ -84,10 +85,78 @@ interface EditingRow {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// AUTH — réutilise le même mot de passe que /admin
+// ═══════════════════════════════════════════════════════════════════════
+
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "fiduciaire2026";
+const SESSION_KEY = "fiduciaire_admin_auth";
+
+function isAdminAuthenticated(): boolean {
+  try { return sessionStorage.getItem(SESSION_KEY) === "true"; } catch { return false; }
+}
+function authenticateAdmin(): void {
+  try { sessionStorage.setItem(SESSION_KEY, "true"); } catch {}
+}
+
+function AdminConventionsLogin({ onAuth }: { onAuth: () => void }) {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(false);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === ADMIN_PASSWORD) { authenticateAdmin(); onAuth(); }
+    else { setError(true); }
+  };
+  return (
+    <div className="max-w-sm mx-auto py-20 px-4">
+      <Card className="p-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-card">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <Lock className="h-5 w-5 text-primary" />
+          </div>
+          <h1 className="text-xl font-bold text-primary" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            Admin — Conventions collectives
+          </h1>
+        </div>
+        <p className="text-sm text-muted-foreground mb-6">
+          Gestion des primes, grilles et catégories par convention.
+        </p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="conv-admin-pwd">Mot de passe</Label>
+            <Input
+              id="conv-admin-pwd"
+              type="password"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setError(false); }}
+              placeholder="Entrez le mot de passe"
+              className="mt-1"
+            />
+            {error && <p className="text-xs text-destructive mt-1">Mot de passe incorrect</p>}
+          </div>
+          <Button type="submit" className="w-full gap-2">
+            <Lock className="w-4 h-4" /> Connexion
+          </Button>
+        </form>
+      </Card>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════
 
 export default function AdminConventions() {
+  const [authed, setAuthed] = useState(isAdminAuthenticated);
+
+  if (!authed) {
+    return <AdminConventionsLogin onAuth={() => setAuthed(true)} />;
+  }
+
+  return <AdminConventionsPanel />;
+}
+
+function AdminConventionsPanel() {
   // ─── Convention selector ────────────────────────────────────────────
   const [selectedSlug, setSelectedSlug] = useState<string>(
     CONVENTIONS[0]?.slug ?? ""
