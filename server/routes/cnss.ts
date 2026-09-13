@@ -21,6 +21,7 @@ import {
   getMoisTrimestre,
 } from "../lib/cnss-export.js";
 import { storeFile } from "../lib/document-generator.js";
+import { auditLog, AUDIT_ACTIONS } from "../lib/audit-log.js";
 
 const router = Router();
 
@@ -318,6 +319,8 @@ router.patch("/:ws/declarations/:id/generer", requireAuth, async (req: Request, 
       include: { client_company: { select: { id: true, raisonSociale: true, matriculeCnss: true } } },
     });
 
+    await auditLog({ workspaceId: ws, userId: req.user!.userId, action: AUDIT_ACTIONS.CNSS_GENERATE, entity: "CNSSDeclaration", entityId: id, details: JSON.stringify({ trimestre: decl.trimestre, filename }) });
+
     return res.json({ declaration: updated, document: doc, filename });
   } catch (err) { console.error("[cnss] generer:", err); return res.status(500).json({ error: "Erreur interne" }); }
 });
@@ -341,6 +344,7 @@ router.patch("/:ws/declarations/:id/archiver", requireAuth, async (req: Request,
       data: { statut: "ARCHIVEE", archivedBy: req.user!.userId, dateArchivage: new Date() },
       include: { client_company: { select: { id: true, raisonSociale: true, matriculeCnss: true } } },
     });
+    await auditLog({ workspaceId: ws, userId: req.user!.userId, action: AUDIT_ACTIONS.CNSS_ARCHIVE, entity: "CNSSDeclaration", entityId: id, details: JSON.stringify({ trimestre: decl.trimestre }) });
     return res.json(updated);
   } catch (err) { console.error("[cnss] archiver:", err); return res.status(500).json({ error: "Erreur interne" }); }
 });

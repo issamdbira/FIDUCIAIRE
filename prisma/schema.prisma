@@ -1,5 +1,5 @@
 // =============================================================================
-// Le Fiduciaire — Prisma Schema (Phase 7) — Déclarations CNSS
+// Le Fiduciaire — Prisma Schema (Phase 8) — Professionnalisation
 // =============================================================================
 
 generator client {
@@ -19,6 +19,7 @@ enum RoleUtilisateur {
   PROPRIETAIRE   // Propriétaire fiduciaire — accès global
   GESTIONNAIRE   // Gestionnaire paie/comptable — accès limité par workspace
   LECTEUR        // Lecture seule
+  CLIENT_VIEWER  // Client lecteur — accès limité à ses propres données
 }
 
 enum StatutValidation {
@@ -843,6 +844,11 @@ model PayrollPeriod {
 
   note             String?             // Note libre
 
+  // Phase 8 — Paie complémentaire
+  isComplementary  Boolean             @default(false)  // True si paie complémentaire (régularisation)
+  parentPeriodId   String?             // Période parente si complémentaire
+  motifComplement  String?             // Motif de la régularisation
+
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
@@ -980,6 +986,7 @@ enum TypeDocument {
   EXPORT_EXCEL    // Export Excel des données de paie
   EXPORT_CSV      // Export CSV des données de paie
   EXPORT_CNSS     // Export fichier CNSS
+  RAPPORT_GROUPE  // Rapport groupé (tous bulletins d'une période)
   ATTESTATION     // Attestation divers
 }
 
@@ -1086,4 +1093,28 @@ model CNSSDeclaration {
   @@index([statut])
   @@index([annee, numeroTrimestre])
   @@map("cnss_declarations")
+}
+
+// =============================================================================
+// Phase 8 — Professionnalisation (AuditLog)
+// =============================================================================
+
+model AuditLog {
+  id              String    @id @default(cuid())
+  workspaceId     String    // Workspace concerné
+  userId          String?   // Utilisateur ayant effectué l'action
+  action          String    // Code action (ex: PERIOD_CLOSE, CNSS_GENERATE, COMPLEMENTARY_CREATE)
+  entity          String    // Entité concernée (ex: PayrollPeriod, CNSSDeclaration)
+  entityId        String?   // ID de l'entité
+  details         String?   // Détails JSON ou texte
+  ipAddress       String?   // Adresse IP
+
+  createdAt       DateTime  @default(now())
+
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([action])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }

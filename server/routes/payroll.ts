@@ -6,6 +6,7 @@ import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { calculateMassPayroll } from "../lib/payroll-engine.js";
+import { auditLog, AUDIT_ACTIONS } from "../lib/audit-log.js";
 
 const router = Router();
 
@@ -166,6 +167,7 @@ router.patch("/:ws/periods/:id/validate", requireAuth, async (req: Request, res:
       where: { id },
       data: { statut: "VALIDATED", validatedBy: req.user!.userId, dateValidation: new Date() },
     });
+    await auditLog({ workspaceId: ws, userId: req.user!.userId, action: AUDIT_ACTIONS.PERIOD_VALIDATE, entity: "PayrollPeriod", entityId: id, details: JSON.stringify({ mois: period.mois, annee: period.annee }) });
     return res.json(updated);
   } catch (err) { console.error("[payroll] validate:", err); return res.status(500).json({ error: "Erreur interne" }); }
 });
@@ -188,6 +190,7 @@ router.patch("/:ws/periods/:id/close", requireAuth, async (req: Request, res: Re
       where: { id },
       data: { statut: "CLOSED", closedBy: req.user!.userId, dateCloture: new Date() },
     });
+    await auditLog({ workspaceId: ws, userId: req.user!.userId, action: AUDIT_ACTIONS.PERIOD_CLOSE, entity: "PayrollPeriod", entityId: id, details: JSON.stringify({ mois: period.mois, annee: period.annee }) });
     return res.json(updated);
   } catch (err) { console.error("[payroll] close:", err); return res.status(500).json({ error: "Erreur interne" }); }
 });
@@ -267,6 +270,96 @@ router.patch("/:ws/anomalies/:id/resolve", requireAuth, async (req: Request, res
     });
     return res.json(updated);
   } catch (err) { console.error("[payroll] resolve anomaly:", err); return res.status(500).json({ error: "Erreur interne" }); }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/payroll/periods/:id/complementary — Créer paie complémentaire
+// ---------------------------------------------------------------------------
+router.post("/periods/:id/complementary", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { workspaceId, motifComplement, note } = req.body;
+    if (!workspaceId) return res.status(400).json({ error: "workspaceId requis" });
+    if (!motifComplement) return res.status(400).json({ error: "motifComplement requis" });
+
+    if (!(await checkWs(req.user!.userId, req.user!.role, workspaceId))) return res.status(403).json({ error: "Accès refusé" });
+
+    // La période parente doit être clôturée
+    const parentPeriod = await prisma.payrollPeriod.findUnique({ where: { id } });
+    if (!parentPeriod || parentPeriod.workspaceId !== workspaceId) return res.status(404).json({ error: "Période parente introuvable" });
+    if (parentPeriod.statut !== "CLOSED") return res.status(400).json({ error: `Période parente non clôturée — statut: ${parentPeriod.statut}` });
+
+    // Créer la période complémentaire (même mois/année, isComplementary=true)
+    // Utiliser un mois "virtuel" — on ajoute 0.5 au mois via un flag ou on accepte le doublon
+    // Puisque la contrainte unique est sur (ws, client, annee, mois), on ne peut pas créer
+    // une deuxième période avec le même mois. Solution: on ajoute isComplementary à la période
+    // existante et on crée une nouvelle période avec le même mois mais en modifiant la contrainte.
+    // En pratique, on crée une nouvelle période avec isComplementary=true, et on retire la
+    // contrainte unique pour les périodes complémentaires.
+    // Pour simplifier, on crée une nouvelle PayrollPeriod en désactivant l'unicité via un workaround:
+    // on utilise le même mois mais on note la période comme complémentaire.
+
+    // Vérifier s'il existe déjà une complémentaire
+    const existingComp = await prisma.payrollPeriod.findFirst({
+      where: {
+        workspaceId,
+        clientCompanyId: parentPeriod.clientCompanyId,
+        isComplementary: true,
+        parentPeriodId: id,
+      },
+    });
+    if (existingComp) return res.status(409).json({ error: "Paie complémentaire déjà existante", period: existingComp });
+
+    // Pour contourner la contrainte unique, on utilise un mois "virtuel" (mois + 100)
+    // qui sera interprété comme mois complémentaire. Le vrai mois est stocké dans les données.
+    const compPeriod = await prisma.payrollPeriod.create({
+      data: {
+        workspaceId,
+        clientCompanyId: parentPeriod.clientCompanyId,
+        mois: parentPeriod.mois + 100, // Mois virtuel pour contourner unique constraint
+        annee: parentPeriod.annee,
+        isComplementary: true,
+        parentPeriodId: id,
+        motifComplement,
+        note: note || null,
+        openedBy: req.user!.userId,
+        statut: "OPEN",
+      },
+    });
+
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: AUDIT_ACTIONS.COMPLEMENTARY_CREATE,
+      entity: "PayrollPeriod",
+      entityId: compPeriod.id,
+      details: JSON.stringify({ parentPeriodId: id, mois: parentPeriod.mois, annee: parentPeriod.annee, motifComplement }),
+    });
+
+    return res.status(201).json({ complementaryPeriod: compPeriod, parentPeriodId: id });
+  } catch (err) { console.error("[payroll] complementary:", err); return res.status(500).json({ error: "Erreur interne" }); }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/payroll/:ws/audit — Lister audit logs
+// ---------------------------------------------------------------------------
+router.get("/:ws/audit", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { ws } = req.params;
+    if (req.user!.role !== "PROPRIETAIRE") return res.status(403).json({ error: "Rôle PROPRIETAIRE requis" });
+
+    const where: Record<string, unknown> = { workspaceId: ws };
+    if (req.query.action) where.action = req.query.action;
+    if (req.query.entity) where.entity = req.query.entity;
+    if (req.query.entityId) where.entityId = req.query.entityId;
+
+    const logs = await prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+    return res.json(logs);
+  } catch (err) { console.error("[payroll] audit:", err); return res.status(500).json({ error: "Erreur interne" }); }
 });
 
 export default router;
