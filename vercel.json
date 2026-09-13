@@ -2,13 +2,23 @@
   "buildCommand": "pnpm run build",
   "outputDirectory": "dist/public",
   "devCommand": "pnpm run dev",
+  "installCommand": "pnpm install",
   "env": {
     "NODE_ENV": "production"
   },
+  "functions": {
+    "api/index.ts": {
+      "runtime": "@vercel/node",
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index" }
+  ],
   "routes": [
     { "handle": "filesystem" },
     {
-      "src": "^/(?!.*\\.).*$",
+      "src": "^/(?!api/)(?!.*\\.).*$",
       "dest": "/index.html"
     }
   ]

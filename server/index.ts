@@ -28,85 +28,96 @@ import prisma from "./lib/prisma.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
-const server = createServer(app);
+// ---------------------------------------------------------------------------
+// Create Express app (réutilisable en local ET en serverless Vercel)
+// ---------------------------------------------------------------------------
+
+export function createApp() {
+  const app = express();
+
+  // Middleware
+  app.use(cors({
+    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    credentials: true,
+  }));
+  app.use(express.json());
+
+  // API Routes
+  app.use("/api/auth", authRoutes);
+  app.use("/api/config", configRoutes);
+  app.use("/api/clients", clientRoutes);
+  app.use("/api/contracts", contractRoutes);
+  app.use("/api/conventions", conventionRoutes);
+  app.use("/api/calendars", calendarRoutes);
+  app.use("/api/regles", regleRoutes);
+  app.use("/api/attendance", attendanceRoutes);
+  app.use("/api/payroll", payrollRoutes);
+  app.use("/api/documents", documentRoutes);
+  app.use("/api/cnss", cnssRoutes);
+  app.use("/api/reports", reportRoutes);
+  app.use("/api/dashboard", dashboardRoutes);
+
+  // Health check
+  app.get("/api/health", async (_req, res) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      res.json({ status: "ok", database: "connected", timestamp: new Date().toISOString() });
+    } catch {
+      res.status(503).json({ status: "error", database: "disconnected" });
+    }
+  });
+
+  return app;
+}
+
+const app = createApp();
 
 // ---------------------------------------------------------------------------
-// Middleware
+// Static files (production — local only, pas en serverless Vercel)
 // ---------------------------------------------------------------------------
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || "http://localhost:3000",
-  credentials: true,
-}));
-app.use(express.json());
+if (process.env.VERCEL !== "1") {
+  const staticPath =
+    process.env.NODE_ENV === "production"
+      ? path.resolve(__dirname, "public")
+      : path.resolve(__dirname, "..", "dist", "public");
 
-// ---------------------------------------------------------------------------
-// API Routes
-// ---------------------------------------------------------------------------
-app.use("/api/auth", authRoutes);
-app.use("/api/config", configRoutes);
-app.use("/api/clients", clientRoutes);
-app.use("/api/contracts", contractRoutes);
-app.use("/api/conventions", conventionRoutes);
-app.use("/api/calendars", calendarRoutes);
-app.use("/api/regles", regleRoutes);
-app.use("/api/attendance", attendanceRoutes);
-app.use("/api/payroll", payrollRoutes);
-app.use("/api/documents", documentRoutes);
-app.use("/api/cnss", cnssRoutes);
-app.use("/api/reports", reportRoutes);
-app.use("/api/dashboard", dashboardRoutes);
+  app.use(express.static(staticPath));
 
-// Health check
-app.get("/api/health", async (_req, res) => {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    res.json({ status: "ok", database: "connected", timestamp: new Date().toISOString() });
-  } catch {
-    res.status(503).json({ status: "error", database: "disconnected" });
-  }
-});
+  // SPA fallback — serve index.html for all non-API routes
+  app.get("*", (_req, res) => {
+    if (_req.path.startsWith("/api/")) {
+      return res.status(404).json({ error: "Route non trouvée" });
+    }
+    res.sendFile(path.join(staticPath, "index.html"));
+  });
+}
 
 // ---------------------------------------------------------------------------
-// Static files (production)
+// Start (local only — Vercel utilise api/index.ts à la place)
 // ---------------------------------------------------------------------------
-const staticPath =
-  process.env.NODE_ENV === "production"
-    ? path.resolve(__dirname, "public")
-    : path.resolve(__dirname, "..", "dist", "public");
+if (process.env.VERCEL !== "1") {
+  const server = createServer(app);
+  const PORT = process.env.PORT || 3001;
 
-app.use(express.static(staticPath));
+  server.listen(PORT, () => {
+    console.log(`🚀 Le Fiduciaire API — http://localhost:${PORT}/`);
+    console.log(`   Auth:        /api/auth/*`);
+    console.log(`   Config:      /api/config/*`);
+    console.log(`   Clients:     /api/clients/*`);
+    console.log(`   Contrats:    /api/contracts/*`);
+    console.log(`   Conventions: /api/conventions/*`);
+    console.log(`   Calendriers: /api/calendars/*`);
+    console.log(`   Règles:      /api/regles/*`);
+    console.log(`   Pointage:    /api/attendance/*`);
+    console.log(`   Paie:        /api/payroll/*`);
+    console.log(`   Documents:   /api/documents/*`);
+    console.log(`   CNSS:        /api/cnss/*`);
+    console.log(`   Rapports:    /api/reports/*`);
+    console.log(`   Dashboard:   /api/dashboard/*`);
+    console.log(`   Health:      /api/health`);
+  });
 
-// SPA fallback — serve index.html for all non-API routes
-app.get("*", (_req, res) => {
-  // Ne pas servir index.html pour les routes API
-  if (_req.path.startsWith("/api/")) {
-    return res.status(404).json({ error: "Route non trouvée" });
-  }
-  res.sendFile(path.join(staticPath, "index.html"));
-});
+  export { server };
+}
 
-// ---------------------------------------------------------------------------
-// Start
-// ---------------------------------------------------------------------------
-const PORT = process.env.PORT || 3001;
-
-server.listen(PORT, () => {
-  console.log(`🚀 Le Fiduciaire API — http://localhost:${PORT}/`);
-  console.log(`   Auth:        /api/auth/*`);
-  console.log(`   Config:      /api/config/*`);
-  console.log(`   Clients:     /api/clients/*`);
-  console.log(`   Contrats:    /api/contracts/*`);
-  console.log(`   Conventions: /api/conventions/*`);
-  console.log(`   Calendriers: /api/calendars/*`);
-  console.log(`   Règles:      /api/regles/*`);
-  console.log(`   Pointage:    /api/attendance/*`);
-  console.log(`   Paie:        /api/payroll/*`);
-  console.log(`   Documents:   /api/documents/*`);
-  console.log(`   CNSS:        /api/cnss/*`);
-  console.log(`   Rapports:    /api/reports/*`);
-  console.log(`   Dashboard:   /api/dashboard/*`);
-  console.log(`   Health:      /api/health`);
-});
-
-export { app, server };
+export { app };
