@@ -7,9 +7,10 @@
 
 ## Stack technique
 - React 19 + TypeScript + Vite 7.1 + Tailwind CSS 4 + shadcn/ui + Wouter routing
-- **Serveur** : Vite SSR / Vercel serverless (`server/index.ts`)
-- **Base de données** : Neon PostgreSQL (à connecter — Phase 1)
-- **ORM** : Prisma (schéma existant `prisma/schema.prisma` — à enrichir)
+- **Serveur** : Express + Vite SSR / Vercel serverless (`server/index.ts`)
+- **Base de données** : Neon PostgreSQL (connectée — Phase 1 terminée)
+- **ORM** : Prisma 6.19 (schéma `prisma/schema.prisma`, migration appliquée)
+- **Auth** : bcryptjs + JWT + sessions DB (roles PROPRIETAIRE/GESTIONNAIRE/LECTEUR)
 - **Identité visuelle** : navy `#1e3a5f` / gold `#c9a84c` / Montserrat-Inter
 
 ## Architecture actuelle
@@ -22,15 +23,42 @@ repo/
 │   ├── pages/                # Pages (Home, Admin, calculateurs/, conventions/, guides/)
 │   ├── components/           # Composants UI (CalculationSource, Layout, ThemeToggle)
 │   └── contexts/             # ThemeContext
-├── server/index.ts           # Serveur Vite SSR
-├── prisma/schema.prisma      # Schéma DB (existe, à enrichir)
+├── server/
+│   ├── index.ts              # Express + API routes + SSR
+│   ├── lib/prisma.ts         # Client Prisma singleton (Neon serverless)
+│   ├── lib/auth.ts           # bcrypt + JWT (sign/verify/hash)
+│   └── routes/
+│       ├── auth.ts           # /api/auth/* (register, login, logout, me, pending, validate)
+│       └── config.ts         # /api/config/* (GET/PUT/POST reset par workspace)
+├── prisma/
+│   ├── schema.prisma         # 8 tables (users, sessions, workspaces, workspace_members, payroll_configs, tranches_irpp, contacts, employees)
+│   ├── seed.ts               # 2 utilisateurs + workspace + config par défaut
+│   └── migrations/           # 20260912235826_init_auth_payroll
 └── public/formulaires/       # PDFs locaux CNSS
 ```
 
-## Persistence actuelle
-- `localStorage` : config paie (key `fiduciaire_payroll_config`)
-- `sessionStorage` : session admin (mdp `fiduciaire2026`)
-- Statique `.ts` : conventions collectives, grilles salariales, coefficients
+## Persistence
+- **Base de données Neon** : users, sessions, workspaces, payroll_configs, tranches_irpp
+- **localStorage (fallback)** : config paie côté client (sera migré en Phase 2)
+- **Statique .ts** : conventions collectives, grilles salariales, coefficients
+
+## Tables DB (Neon PostgreSQL)
+| Table | Description |
+|---|---|
+| `users` | Utilisateurs avec rôles (PROPRIETAIRE/GESTIONNAIRE/LECTEUR) + statut validation |
+| `sessions` | Sessions JWT (token, expiration) |
+| `workspaces` | Entreprises clientes de la fiduciaire |
+| `workspace_members` | Lien utilisateur ↔ workspace avec rôle |
+| `payroll_configs` | Config paie par workspace (CNSS, CSS, IRPP, déductions) |
+| `tranches_irpp` | Barème IRPP par config (8 tranches, ordre garanti) |
+| `contacts` | Contacts (clients/fournisseurs) |
+| `employees` | Employés/salariés |
+
+## Utilisateurs seedés
+| Email | Rôle | Mot de passe |
+|---|---|---|
+| proprietaire@lefiduciaire.tn | PROPRIETAIRE | Fiduciaire2026! |
+| gestionnaire@lefiduciaire.tn | GESTIONNAIRE | Gestion2026! |
 
 ## Valeurs de calcul vérifiées (2026-09-13)
 - Barème IRPP : 8 tranches (0–40%) — CORRECT
@@ -50,4 +78,4 @@ repo/
 - Admin : `/admin` et `/admin/conventions` (mdp `fiduciaire2026`)
 
 ## Dernière mise à jour
-- 2026-09-13 : Accueil 3 groupes outils + descriptions résultat + aperçu calcul réel + CalculationSource enrichi
+- 2026-09-13 : Phase 1 — Neon + Prisma + auth JWT + roles + sessions + config paie DB
