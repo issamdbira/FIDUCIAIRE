@@ -1,3 +1,6 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateEnum
 CREATE TYPE "RoleUtilisateur" AS ENUM ('PROPRIETAIRE', 'GESTIONNAIRE', 'LECTEUR');
 
@@ -102,17 +105,6 @@ CREATE TABLE "tranches_irpp" (
 );
 
 -- CreateTable
-CREATE TABLE "contacts" (
-    "id" TEXT NOT NULL,
-    "workspaceId" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "type" "ContactType" NOT NULL,
-    "matriculeFiscal" TEXT,
-
-    CONSTRAINT "contacts_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "employees" (
     "id" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
@@ -125,6 +117,17 @@ CREATE TABLE "employees" (
     "isActive" BOOLEAN NOT NULL DEFAULT true,
 
     CONSTRAINT "employees_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "contacts" (
+    "id" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "type" "ContactType" NOT NULL,
+    "matriculeFiscal" TEXT,
+
+    CONSTRAINT "contacts_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -155,7 +158,8 @@ ALTER TABLE "payroll_configs" ADD CONSTRAINT "payroll_configs_workspaceId_fkey" 
 ALTER TABLE "tranches_irpp" ADD CONSTRAINT "tranches_irpp_payrollConfigId_fkey" FOREIGN KEY ("payrollConfigId") REFERENCES "payroll_configs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "contacts" ADD CONSTRAINT "contacts_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "workspaces"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "employees" ADD CONSTRAINT "employees_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "workspaces"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "employees" ADD CONSTRAINT "employees_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "workspaces"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "contacts" ADD CONSTRAINT "contacts_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "workspaces"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

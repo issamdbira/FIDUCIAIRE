@@ -1,15 +1,15 @@
-/**
- * Prisma Client — singleton pour Neon serverless.
- * Évite de créer multiples connexions en dev (HMR).
- */
+// =============================================================================
+// Le Fiduciaire — Prisma Client singleton (Neon PostgreSQL)
+// =============================================================================
+
 import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
+    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
   });
 
 if (process.env.NODE_ENV !== "production") {

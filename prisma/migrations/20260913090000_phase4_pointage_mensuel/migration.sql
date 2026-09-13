@@ -1,0 +1,3 @@
+-- Phase 4 — Pointage Mensuel (appliquée via prisma db push le 2026-09-13)
+-- Enums, tables: attendance_imports, attendance_summaries, payroll_variables
+-- Relations ajoutées sur workspaces, client_companies, employees

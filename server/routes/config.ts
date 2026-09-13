@@ -1,154 +1,230 @@
-/**
- * Routes config paie — /api/config/*
- *
- * GET  /api/config/:workspaceId    — lire la config paie d'un workspace
- * PUT  /api/config/:workspaceId    — mettre à jour la config paie
- * POST /api/config/:workspaceId/reset — réinitialiser aux valeurs par défaut
- */
-import { Router, type Request, type Response } from "express";
-import prisma from "../lib/prisma";
-import { verifyToken, type JwtPayload } from "../lib/auth";
+// =============================================================================
+// Le Fiduciaire — Payroll Config Routes
+// GET | PUT | reset — avec fallback localStorage
+// =============================================================================
 
-const configRouter = Router();
+import { Router, Request, Response } from "express";
+import prisma from "../lib/prisma.js";
+import { requireAuth, requireWorkspaceAccess } from "../middleware/auth.js";
 
-function extractUser(req: Request): JwtPayload | null {
-  const auth = req.headers.authorization;
-  if (!auth?.startsWith("Bearer ")) return null;
-  return verifyToken(auth.slice(7));
-}
+const router = Router();
 
-// ─── GET /:workspaceId ───
+// ---------------------------------------------------------------------------
+// IRPP barème 2026 — 8 tranches (fallback)
+// ---------------------------------------------------------------------------
+const IRPP_BAREME_2026 = [
+  { min: 0, max: 5000, taux: 0, deduction: 0, ordre: 1 },
+  { min: 5000, max: 10000, taux: 0.26, deduction: 1300, ordre: 2 },
+  { min: 10000, max: 20000, taux: 0.28, deduction: 1500, ordre: 3 },
+  { min: 20000, max: 30000, taux: 0.32, deduction: 2300, ordre: 4 },
+  { min: 30000, max: 50000, taux: 0.36, deduction: 3500, ordre: 5 },
+  { min: 50000, max: 75000, taux: 0.39, deduction: 5000, ordre: 6 },
+  { min: 75000, max: 100000, taux: 0.40, deduction: 5750, ordre: 7 },
+  { min: 100000, max: null, taux: 0.40, deduction: 5750, ordre: 8 },
+];
 
-configRouter.get("/:workspaceId", async (req: Request, res: Response) => {
+// ---------------------------------------------------------------------------
+// GET /api/config/:workspaceId — Lecture config (Neon d'abord, fallback client)
+// ---------------------------------------------------------------------------
+router.get("/:workspaceId", requireAuth, async (req: Request, res: Response) => {
   try {
-    const payload = extractUser(req);
-    if (!payload) return res.status(401).json({ error: "Non authentifié" });
-
     const { workspaceId } = req.params;
-    let config = await prisma.payrollConfig.findUnique({
+
+    // Vérifier l'accès au workspace
+    if (req.user!.role !== "PROPRIETAIRE") {
+      const membership = await prisma.workspace_members.findUnique({
+        where: { userId_workspaceId: { userId: req.user!.userId, workspaceId } },
+      });
+      if (!membership) {
+        return res.status(403).json({ error: "Accès refusé — workspace non attribué" });
+      }
+    }
+
+    const config = await prisma.payrollConfig.findUnique({
       where: { workspaceId },
-      include: { tranchesIRPP: { orderBy: { ordre: "asc" } } },
+      include: { tranches_irpp: { orderBy: { ordre: "asc" } } },
     });
 
-    // Si pas de config, créer avec les valeurs par défaut
     if (!config) {
-      const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
-      if (!workspace) return res.status(404).json({ error: "Workspace introuvable" });
-
-      config = await prisma.payrollConfig.create({
-        data: {
-          workspaceId,
-          tranchesIRPP: {
-            create: [
-              { min: 0, max: 5000, taux: 0, ordre: 1 },
-              { min: 5000, max: 10000, taux: 0.15, ordre: 2 },
-              { min: 10000, max: 20000, taux: 0.25, ordre: 3 },
-              { min: 20000, max: 30000, taux: 0.30, ordre: 4 },
-              { min: 30000, max: 40000, taux: 0.33, ordre: 5 },
-              { min: 40000, max: 50000, taux: 0.36, ordre: 6 },
-              { min: 50000, max: 70000, taux: 0.38, ordre: 7 },
-              { min: 70000, max: null, taux: 0.40, ordre: 8 },
-            ],
-          },
-        },
-        include: { tranchesIRPP: { orderBy: { ordre: "asc" } } },
+      // Aucune config en base — retourner le fallback par défaut
+      return res.json({
+        source: "fallback",
+        workspaceId,
+        cnssSalarialNonAgricole: 0.0968,
+        cnssPatronalNonAgricole: 0.1707,
+        cnssSalarialAgricole: 0.0699,
+        cnssPatronalAgricole: 0.1248,
+        cssActive: false,
+        cssTaux: 0,
+        cssSeuilExonerationAnnuel: 5000,
+        fraisProTauxActifs: 0.10,
+        fraisProPlafondActifsAnnuel: 2000,
+        fraisProTauxRetraites: 0.25,
+        deductionChefFamille: 300,
+        deductionEnfant: 100,
+        deductionEtudiant: 1000,
+        plafondNombreEnfantsEtudiants: 4,
+        deductionInfirme: 2000,
+        parentsEnChargeActif: false,
+        parentsEnChargeTaux: 0.05,
+        parentsEnChargePlafondParAnnuel: 450,
+        tranchesIrpp: IRPP_BAREME_2026,
       });
     }
 
-    return res.json(config);
-  } catch (err) {
-    console.error("config get error:", err);
-    return res.status(500).json({ error: "Erreur serveur" });
+    return res.json({
+      source: "neon",
+      ...config,
+      tranchesIrpp: config.tranches_irpp,
+    });
+  } catch (error) {
+    console.error("[config] GET error:", error);
+    return res.status(500).json({ error: "Erreur interne" });
   }
 });
 
-// ─── PUT /:workspaceId ───
-
-configRouter.put("/:workspaceId", async (req: Request, res: Response) => {
+// ---------------------------------------------------------------------------
+// PUT /api/config/:workspaceId — Mise à jour config
+// ---------------------------------------------------------------------------
+router.put("/:workspaceId", requireAuth, async (req: Request, res: Response) => {
   try {
-    const payload = extractUser(req);
-    if (!payload) return res.status(401).json({ error: "Non authentifié" });
-    if (payload.role === "LECTEUR") return res.status(403).json({ error: "Accès lecture uniquement" });
-
     const { workspaceId } = req.params;
+
+    // Vérifier l'accès (PROPRIETAIRE ou GESTIONNAIRE du workspace)
+    if (req.user!.role !== "PROPRIETAIRE") {
+      const membership = await prisma.workspace_members.findUnique({
+        where: { userId_workspaceId: { userId: req.user!.userId, workspaceId } },
+      });
+      if (!membership || membership.role === "LECTEUR") {
+        return res.status(403).json({ error: "Accès refusé — droits insuffisants" });
+      }
+    }
+
     const data = req.body;
 
-    // Séparer les tranches IRPP du reste
-    const { tranchesIRPP, ...configFields } = data;
-
+    // Upsert config
     const config = await prisma.payrollConfig.upsert({
       where: { workspaceId },
-      update: configFields,
-      create: { workspaceId, ...configFields },
-      include: { tranchesIRPP: { orderBy: { ordre: "asc" } } },
+      create: {
+        workspaceId,
+        cnssSalarialNonAgricole: data.cnssSalarialNonAgricole ?? 0.0968,
+        cnssPatronalNonAgricole: data.cnssPatronalNonAgricole ?? 0.1707,
+        cnssSalarialAgricole: data.cnssSalarialAgricole ?? 0.0699,
+        cnssPatronalAgricole: data.cnssPatronalAgricole ?? 0.1248,
+        cssActive: data.cssActive ?? false,
+        cssTaux: data.cssTaux ?? 0,
+        cssSeuilExonerationAnnuel: data.cssSeuilExonerationAnnuel ?? 5000,
+        fraisProTauxActifs: data.fraisProTauxActifs ?? 0.10,
+        fraisProPlafondActifsAnnuel: data.fraisProPlafondActifsAnnuel ?? 2000,
+        fraisProTauxRetraites: data.fraisProTauxRetraites ?? 0.25,
+        deductionChefFamille: data.deductionChefFamille ?? 300,
+        deductionEnfant: data.deductionEnfant ?? 100,
+        deductionEtudiant: data.deductionEtudiant ?? 1000,
+        plafondNombreEnfantsEtudiants: data.plafondNombreEnfantsEtudiants ?? 4,
+        deductionInfirme: data.deductionInfirme ?? 2000,
+        parentsEnChargeActif: data.parentsEnChargeActif ?? false,
+        parentsEnChargeTaux: data.parentsEnChargeTaux ?? 0.05,
+        parentsEnChargePlafondParAnnuel: data.parentsEnChargePlafondParAnnuel ?? 450,
+      },
+      update: {
+        cnssSalarialNonAgricole: data.cnssSalarialNonAgricole,
+        cnssPatronalNonAgricole: data.cnssPatronalNonAgricole,
+        cnssSalarialAgricole: data.cnssSalarialAgricole,
+        cnssPatronalAgricole: data.cnssPatronalAgricole,
+        cssActive: data.cssActive,
+        cssTaux: data.cssTaux,
+        cssSeuilExonerationAnnuel: data.cssSeuilExonerationAnnuel,
+        fraisProTauxActifs: data.fraisProTauxActifs,
+        fraisProPlafondActifsAnnuel: data.fraisProPlafondActifsAnnuel,
+        fraisProTauxRetraites: data.fraisProTauxRetraites,
+        deductionChefFamille: data.deductionChefFamille,
+        deductionEnfant: data.deductionEnfant,
+        deductionEtudiant: data.deductionEtudiant,
+        plafondNombreEnfantsEtudiants: data.plafondNombreEnfantsEtudiants,
+        deductionInfirme: data.deductionInfirme,
+        parentsEnChargeActif: data.parentsEnChargeActif,
+        parentsEnChargeTaux: data.parentsEnChargeTaux,
+        parentsEnChargePlafondParAnnuel: data.parentsEnChargePlafondParAnnuel,
+      },
     });
 
-    // Si des tranches IRPP sont fournies, les remplacer
-    if (tranchesIRPP && Array.isArray(tranchesIRPP)) {
-      await prisma.trancheIRPP.deleteMany({ where: { payrollConfigId: config.id } });
-      await prisma.trancheIRPP.createMany({
-        data: tranchesIRPP.map((t: any, i: number) => ({
+    // Upsert tranches IRPP si fournies
+    if (data.tranchesIrpp && Array.isArray(data.tranchesIrpp)) {
+      // Supprimer les anciennes et recréer
+      await prisma.tranches_irpp.deleteMany({ where: { payrollConfigId: config.id } });
+      await prisma.tranches_irpp.createMany({
+        data: data.tranchesIrpp.map((t: any) => ({
           payrollConfigId: config.id,
           min: t.min,
-          max: t.max ?? null,
+          max: t.max,
           taux: t.taux,
-          ordre: i + 1,
+          ordre: t.ordre,
         })),
       });
     }
 
-    const refreshed = await prisma.payrollConfig.findUnique({
-      where: { id: config.id },
-      include: { tranchesIRPP: { orderBy: { ordre: "asc" } } },
+    const result = await prisma.payrollConfig.findUnique({
+      where: { workspaceId },
+      include: { tranches_irpp: { orderBy: { ordre: "asc" } } },
     });
 
-    return res.json(refreshed);
-  } catch (err) {
-    console.error("config put error:", err);
-    return res.status(500).json({ error: "Erreur serveur" });
+    return res.json({ source: "neon", ...result, tranchesIrpp: result!.tranches_irpp });
+  } catch (error) {
+    console.error("[config] PUT error:", error);
+    return res.status(500).json({ error: "Erreur interne" });
   }
 });
 
-// ─── POST /:workspaceId/reset ───
-
-configRouter.post("/:workspaceId/reset", async (req: Request, res: Response) => {
+// ---------------------------------------------------------------------------
+// POST /api/config/:workspaceId/reset — Réinitialiser aux valeurs par défaut
+// ---------------------------------------------------------------------------
+router.post("/:workspaceId/reset", requireAuth, async (req: Request, res: Response) => {
   try {
-    const payload = extractUser(req);
-    if (!payload) return res.status(401).json({ error: "Non authentifié" });
-    if (payload.role !== "PROPRIETAIRE" && payload.role !== "GESTIONNAIRE") {
-      return res.status(403).json({ error: "Accès insuffisant" });
-    }
-
     const { workspaceId } = req.params;
 
-    // Supprimer l'ancienne config (cascade supprime les tranches)
-    await prisma.payrollConfig.deleteMany({ where: { workspaceId } });
+    // Vérifier l'accès
+    if (req.user!.role !== "PROPRIETAIRE") {
+      const membership = await prisma.workspace_members.findUnique({
+        where: { userId_workspaceId: { userId: req.user!.userId, workspaceId } },
+      });
+      if (!membership) {
+        return res.status(403).json({ error: "Accès refusé" });
+      }
+    }
+
+    // Supprimer la config existante
+    const existing = await prisma.payrollConfig.findUnique({ where: { workspaceId } });
+    if (existing) {
+      await prisma.tranches_irpp.deleteMany({ where: { payrollConfigId: existing.id } });
+      await prisma.payrollConfig.delete({ where: { workspaceId } });
+    }
 
     // Recréer avec les valeurs par défaut
     const config = await prisma.payrollConfig.create({
-      data: {
-        workspaceId,
-        tranchesIRPP: {
-          create: [
-            { min: 0, max: 5000, taux: 0, ordre: 1 },
-            { min: 5000, max: 10000, taux: 0.15, ordre: 2 },
-            { min: 10000, max: 20000, taux: 0.25, ordre: 3 },
-            { min: 20000, max: 30000, taux: 0.30, ordre: 4 },
-            { min: 30000, max: 40000, taux: 0.33, ordre: 5 },
-            { min: 40000, max: 50000, taux: 0.36, ordre: 6 },
-            { min: 50000, max: 70000, taux: 0.38, ordre: 7 },
-            { min: 70000, max: null, taux: 0.40, ordre: 8 },
-          ],
-        },
-      },
-      include: { tranchesIRPP: { orderBy: { ordre: "asc" } } },
+      data: { workspaceId },
     });
 
-    return res.json(config);
-  } catch (err) {
-    console.error("config reset error:", err);
-    return res.status(500).json({ error: "Erreur serveur" });
+    // Créer les tranches IRPP par défaut
+    await prisma.tranches_irpp.createMany({
+      data: IRPP_BAREME_2026.map((t) => ({
+        payrollConfigId: config.id,
+        min: t.min,
+        max: t.max,
+        taux: t.taux,
+        ordre: t.ordre,
+      })),
+    });
+
+    const result = await prisma.payrollConfig.findUnique({
+      where: { workspaceId },
+      include: { tranches_irpp: { orderBy: { ordre: "asc" } } },
+    });
+
+    return res.json({ source: "neon", ...result, tranchesIrpp: result!.tranches_irpp });
+  } catch (error) {
+    console.error("[config] reset error:", error);
+    return res.status(500).json({ error: "Erreur interne" });
   }
 });
 
-export default configRouter;
+export default router;
