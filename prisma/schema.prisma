@@ -7,15 +7,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum WorkspaceMemberRole {
-  OWNER
-  ACCOUNTANT
-  HR_ADMIN
+// ─── Rôles ───
+
+enum RoleUtilisateur {
+  PROPRIETAIRE    // propriétaire de la fiduciaire — accès global
+  GESTIONNAIRE    // gestionnaire de paie / comptable — accès par workspace
+  LECTEUR        // accès consultation uniquement (futur portail client)
 }
 
-enum ContactType {
-  CLIENT
-  VENDOR
+enum StatutValidation {
+  EN_ATTENTE      // inscrit, en attente de validation par un PROPRIETAIRE
+  VALIDE          // validé, accès actif
+  REFUSE          // refusé par un PROPRIETAIRE
+  SUSPENDU        // suspendu temporairement
 }
 
 enum CivilStatus {
@@ -25,42 +29,136 @@ enum CivilStatus {
   VEUF
 }
 
+enum ContactType {
+  CLIENT
+  VENDOR
+}
+
+// ─── Utilisateurs & Auth ───
+
+model User {
+  id           String           @id @default(uuid())
+  email        String           @unique
+  passwordHash String
+  fullName     String
+  role         RoleUtilisateur  @default(GESTIONNAIRE)
+  statut       StatutValidation @default(EN_ATTENTE)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  sessions         Session[]
+  workspaceMembers WorkspaceMember[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ─── Workspaces (entreprises clientes de la fiduciaire) ───
+
 model Workspace {
-  id               String   @id @default(uuid())
-  name             String
-  matriculeCnss    String
-  codeExploitation  String
-  matriculeFiscal  String
-  address          String
-  tauxAtMp         Float
-  createdAt        DateTime @default(now())
+  id                String   @id @default(uuid())
+  name              String
+  matriculeCnss     String?
+  codeExploitation  String?
+  matriculeFiscal   String?
+  address           String?
+  tauxAtMp          Float    @default(0.01)
+  secteur           String   @default("non_agricole") // "non_agricole" | "agricole"
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   members   WorkspaceMember[]
   contacts  Contact[]
   employees Employee[]
-}
+  payrollConfig PayrollConfig?
 
-model User {
-  id           String             @id @default(uuid())
-  email        String             @unique
-  passwordHash String
-  fullName     String
-
-  workspaces WorkspaceMember[]
-
-  @@map("users")
+  @@map("workspaces")
 }
 
 model WorkspaceMember {
   userId      String
   workspaceId String
-  role        WorkspaceMemberRole
+  role        RoleUtilisateur @default(GESTIONNAIRE)
+  joinedAt    DateTime        @default(now())
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@id([userId, workspaceId])
+  @@map("workspace_members")
 }
+
+// ─── Config paie par workspace ───
+
+model PayrollConfig {
+  id          String @id @default(uuid())
+  workspaceId String @unique
+
+  // CNSS
+  cnssSalarialNonAgricole  Float @default(0.0968)
+  cnssPatronalNonAgricole  Float @default(0.1707)
+  cnssSalarialAgricole     Float @default(0.0699)
+  cnssPatronalAgricole     Float @default(0.1248)
+
+  // CSS
+  cssActive               Boolean @default(false)
+  cssTaux                 Float   @default(0)
+  cssSeuilExonerationAnnuel Int   @default(5000)
+
+  // Frais professionnels
+  fraisProTauxActifs         Float @default(0.10)
+  fraisProPlafondActifsAnnuel Int  @default(2000)
+  fraisProTauxRetraites      Float @default(0.25)
+
+  // Déductions familiales (annuelles)
+  deductionChefFamille           Int @default(300)
+  deductionEnfant                Int @default(100)
+  deductionEtudiant              Int @default(1000)
+  plafondNombreEnfantsEtudiants Int @default(4)
+  deductionInfirme               Int @default(2000)
+
+  // Parents à charge
+  parentsEnChargeActif          Boolean @default(false)
+  parentsEnChargeTaux           Float   @default(0.05)
+  parentsEnChargePlafondParAnnuel Int   @default(450)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tranchesIRPP TrancheIRPP[]
+
+  @@map("payroll_configs")
+}
+
+// ─── Barème IRPP (tranches stockées séparément pour flexibilité) ───
+
+model TrancheIRPP {
+  id             String   @id @default(uuid())
+  payrollConfigId String
+  min            Int
+  max            Int?     // null = infini
+  taux           Float
+  ordre          Int      // pour garantir l'ordre d'application
+
+  payrollConfig PayrollConfig @relation(fields: [payrollConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([payrollConfigId, ordre])
+  @@map("tranches_irpp")
+}
+
+// ─── Contacts & Employés (existants, conservés) ───
 
 model Contact {
   id              String      @id @default(uuid())
