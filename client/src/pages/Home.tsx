@@ -20,6 +20,8 @@ import {
   Calculator,
   FileText,
   Landmark,
+  LayoutDashboard,
+  FileSearch2,
 } from "lucide-react";
 import { runPayrollEngine } from "@/lib/payroll/engine";
 import type { PayrollInput } from "@/lib/payroll/types";
@@ -141,6 +143,33 @@ const GROUPES_OUTILS: GroupeOutils[] = [
         description: "Comparer les cotisations et prestations des principaux régimes tunisiens.",
         icon: Shield,
         href: "/regimes-sociaux",
+      },
+    ],
+  },
+  {
+    titre: "Pilotage & gestion",
+    icon: LayoutDashboard,
+    outils: [
+      {
+        id: "dashboard-cabinet",
+        title: "Tableau de bord cabinet",
+        description: "Vue d'ensemble : clients, masse salariale, déclarations CNSS, audit.",
+        icon: LayoutDashboard,
+        href: "/dashboard/cabinet",
+      },
+      {
+        id: "dashboard-workspace",
+        title: "Tableau de bord workspace",
+        description: "Effectifs, masse salariale, répartition CNSS et alertes actives.",
+        icon: BarChart3,
+        href: "/dashboard/workspace",
+      },
+      {
+        id: "audit-log",
+        title: "Journal d'audit",
+        description: "Traçabilité complète : clôtures, validations, exports, avec filtres.",
+        icon: FileSearch2,
+        href: "/dashboard/audit",
       },
     ],
   },

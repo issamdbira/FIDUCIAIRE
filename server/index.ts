@@ -1,6 +1,6 @@
 // =============================================================================
-// Le Fiduciaire — API Server (Phase 8)
-// Express + Prisma + JWT Auth + CORS + Clients + Contrats + Refs + Paie + Docs + CNSS + Reports
+// Le Fiduciaire — API Server (Phase 9)
+// Express + Prisma + JWT Auth + CORS + Clients + Contrats + Refs + Paie + Docs + CNSS + Reports + Dashboard
 // =============================================================================
 
 import "dotenv/config";
@@ -22,6 +22,7 @@ import payrollRoutes from "./routes/payroll.js";
 import documentRoutes from "./routes/documents.js";
 import cnssRoutes from "./routes/cnss.js";
 import reportRoutes from "./routes/reports.js";
+import dashboardRoutes from "./routes/dashboard.js";
 import prisma from "./lib/prisma.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,6 +55,7 @@ app.use("/api/payroll", payrollRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/cnss", cnssRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // Health check
 app.get("/api/health", async (_req, res) => {
@@ -103,6 +105,7 @@ server.listen(PORT, () => {
   console.log(`   Documents:   /api/documents/*`);
   console.log(`   CNSS:        /api/cnss/*`);
   console.log(`   Rapports:    /api/reports/*`);
+  console.log(`   Dashboard:   /api/dashboard/*`);
   console.log(`   Health:      /api/health`);
 });
 

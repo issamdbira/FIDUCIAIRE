@@ -189,7 +189,8 @@ async function main() {
   await test("1. Audit log — PERIOD_CLOSE", async () => {
     const logs = await get(`/payroll/${WS}/audit?action=PERIOD_CLOSE`, propToken);
     if (logs.status !== 200) throw new Error(`Status ${logs.status}`);
-    const closeLogs = logs.data.filter((l: any) => l.action === "PERIOD_CLOSE" && l.entityId === periodId);
+    const auditData = logs.data.data || logs.data;
+    const closeLogs = auditData.filter((l: any) => l.action === "PERIOD_CLOSE" && l.entityId === periodId);
     if (!closeLogs.length) throw new Error("Aucun audit log PERIOD_CLOSE");
     return `${closeLogs.length} log(s) PERIOD_CLOSE`;
   })();
@@ -198,7 +199,8 @@ async function main() {
   await test("2. Audit log — PERIOD_VALIDATE", async () => {
     const logs = await get(`/payroll/${WS}/audit?action=PERIOD_VALIDATE`, propToken);
     if (logs.status !== 200) throw new Error(`Status ${logs.status}`);
-    const valLogs = logs.data.filter((l: any) => l.action === "PERIOD_VALIDATE" && l.entityId === periodId);
+    const auditData = logs.data.data || logs.data;
+    const valLogs = auditData.filter((l: any) => l.action === "PERIOD_VALIDATE" && l.entityId === periodId);
     if (!valLogs.length) throw new Error("Aucun audit log PERIOD_VALIDATE");
     return `${valLogs.length} log(s) PERIOD_VALIDATE`;
   })();
@@ -239,7 +241,8 @@ async function main() {
   await test("6. Audit log — COMPLEMENTARY_CREATE", async () => {
     const logs = await get(`/payroll/${WS}/audit?action=COMPLEMENTARY_CREATE`, propToken);
     if (logs.status !== 200) throw new Error(`Status ${logs.status}`);
-    const compLogs = logs.data.filter((l: any) => l.action === "COMPLEMENTARY_CREATE");
+    const auditData = logs.data.data || logs.data;
+    const compLogs = auditData.filter((l: any) => l.action === "COMPLEMENTARY_CREATE");
     if (!compLogs.length) throw new Error("Aucun audit log COMPLEMENTARY_CREATE");
     return `${compLogs.length} log(s)`;
   })();
@@ -280,7 +283,8 @@ async function main() {
   await test("11. Audit log — RAPPORT_GROUPE_GENERATE", async () => {
     const logs = await get(`/payroll/${WS}/audit?action=RAPPORT_GROUPE_GENERATE`, propToken);
     if (logs.status !== 200) throw new Error(`Status ${logs.status}`);
-    const rLogs = logs.data.filter((l: any) => l.action === "RAPPORT_GROUPE_GENERATE");
+    const auditData = logs.data.data || logs.data;
+    const rLogs = auditData.filter((l: any) => l.action === "RAPPORT_GROUPE_GENERATE");
     if (!rLogs.length) throw new Error("Aucun audit log RAPPORT_GROUPE_GENERATE");
     return `${rLogs.length} log(s)`;
   })();
@@ -309,7 +313,8 @@ async function main() {
   // 14. Audit log detail structure
   await test("14. Audit log — structure détaillée", async () => {
     const logs = await get(`/payroll/${WS}/audit?action=PERIOD_CLOSE`, propToken);
-    const log = logs.data[0];
+    const auditData = logs.data.data || logs.data;
+    const log = auditData[0];
     if (!log.id || !log.workspaceId || !log.userId || !log.action || !log.entity || !log.entityId || !log.createdAt) {
       throw new Error("Champs manquants dans audit log");
     }

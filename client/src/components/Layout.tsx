@@ -4,6 +4,9 @@ import {
   Calculator,
   Menu,
   ShieldCheck,
+  LayoutDashboard,
+  BarChart3,
+  FileSearch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "./ThemeToggle";
@@ -46,10 +49,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
 
-          {/* Right side : Theme toggle + Admin (desktop) */}
+          {/* Right side : Theme toggle + Dashboard + Admin (desktop) */}
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex items-center gap-2">
               <ThemeToggle />
+              <Link href="/dashboard/cabinet">
+                <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-primary">
+                  <LayoutDashboard className="size-4" />
+                  <span className="hidden md:inline">Dashboard</span>
+                </Button>
+              </Link>
               <Link href="/admin">
                 <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-primary">
                   <ShieldCheck className="size-4" />
@@ -92,6 +101,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               }`}
             >
               Accueil
+            </Link>
+            <div className="pt-2 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pilotage</div>
+            <Link
+              href="/dashboard/cabinet"
+              onClick={() => setSheetOpen(false)}
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors"
+            >
+              <LayoutDashboard className="size-4" /> Tableau de bord
+            </Link>
+            <Link
+              href="/dashboard/workspace"
+              onClick={() => setSheetOpen(false)}
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors"
+            >
+              <BarChart3 className="size-4" /> Workspace
+            </Link>
+            <Link
+              href="/dashboard/audit"
+              onClick={() => setSheetOpen(false)}
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors"
+            >
+              <FileSearch className="size-4" /> Journal d'audit
             </Link>
           </div>
 

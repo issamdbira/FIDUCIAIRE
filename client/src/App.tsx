@@ -29,6 +29,9 @@ import ConventionDetail from "./pages/conventions/ConventionDetail";
 import FichePaieConvention from "./pages/conventions/FichePaieConvention";
 import AdminConventions from "./pages/conventions/AdminConventions";
 import RegimesSociaux from "./pages/RegimesSociaux";
+import DashboardCabinet from "./pages/DashboardCabinet";
+import DashboardWorkspace from "./pages/DashboardWorkspace";
+import AuditLog from "./pages/AuditLog";
 
 function AppRoutes() {
   const routes = (
@@ -57,6 +60,9 @@ function AppRoutes() {
       <Route path="/conventions/:slug/fiche-paie" component={FichePaieConvention} />
       <Route path="/conventions/:slug" component={ConventionDetail} />
       <Route path="/conventions" component={ConventionsList} />
+      <Route path="/dashboard/cabinet" component={DashboardCabinet} />
+      <Route path="/dashboard/workspace" component={DashboardWorkspace} />
+      <Route path="/dashboard/audit" component={AuditLog} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

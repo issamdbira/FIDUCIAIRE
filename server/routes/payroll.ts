@@ -341,7 +341,7 @@ router.post("/periods/:id/complementary", requireAuth, async (req: Request, res:
 });
 
 // ---------------------------------------------------------------------------
-// GET /api/payroll/:ws/audit — Lister audit logs
+// GET /api/payroll/:ws/audit — Lister audit logs (filtres combinés)
 // ---------------------------------------------------------------------------
 router.get("/:ws/audit", requireAuth, async (req: Request, res: Response) => {
   try {
@@ -349,16 +349,31 @@ router.get("/:ws/audit", requireAuth, async (req: Request, res: Response) => {
     if (req.user!.role !== "PROPRIETAIRE") return res.status(403).json({ error: "Rôle PROPRIETAIRE requis" });
 
     const where: Record<string, unknown> = { workspaceId: ws };
+    // Filtres combinés (intersection AND)
     if (req.query.action) where.action = req.query.action;
     if (req.query.entity) where.entity = req.query.entity;
     if (req.query.entityId) where.entityId = req.query.entityId;
+    if (req.query.userId) where.userId = req.query.userId;
+    // Filtre période (depuis / jusqu'au)
+    const createdAt: Record<string, Date> = {};
+    if (req.query.from) createdAt.gte = new Date(req.query.from as string);
+    if (req.query.to) createdAt.lte = new Date(req.query.to as string);
+    if (Object.keys(createdAt).length > 0) where.createdAt = createdAt;
 
-    const logs = await prisma.auditLog.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      take: 100,
-    });
-    return res.json(logs);
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 100));
+    const skip = (page - 1) * limit;
+
+    const [logs, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        skip,
+      }),
+      prisma.auditLog.count({ where }),
+    ]);
+    return res.json({ data: logs, total, page, limit });
   } catch (err) { console.error("[payroll] audit:", err); return res.status(500).json({ error: "Erreur interne" }); }
 });
 
