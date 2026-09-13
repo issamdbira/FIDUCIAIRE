@@ -3,7 +3,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import About from "./pages/About";
@@ -32,6 +34,7 @@ import RegimesSociaux from "./pages/RegimesSociaux";
 import DashboardCabinet from "./pages/DashboardCabinet";
 import DashboardWorkspace from "./pages/DashboardWorkspace";
 import AuditLog from "./pages/AuditLog";
+import Login from "./pages/Login";
 
 function AppRoutes() {
   const routes = (
@@ -44,7 +47,7 @@ function AppRoutes() {
       <Route path="/guides/comprendre-calculer-irpp-tunisie" component={GuideIRPP} />
       <Route path="/guides/controle-fichier-declaration-cnss-txt" component={GuideFichierTXT} />
       <Route path="/guides/cotisations-cnss-taux-salariaux-patronaux" component={GuideCotisationsCNSS} />
-      <Route path="/admin" component={Admin} />
+      <Route path="/login" component={Login} />
       <Route path="/calculateurs/calculer-salaire" component={CalculerSalaire} />
       <Route path="/referentiel-avantages-exclus" component={ReferentielAvantages} />
       <Route path="/formulaires-cnss" component={FormulairesCNSS} />
@@ -56,13 +59,34 @@ function AppRoutes() {
       <Route path="/calculateurs/testeur-txt-cnss" component={TesteurTXT} />
       <Route path="/calculateurs/declarations-neant" component={DeclarationsNeant} />
       <Route path="/fiche-de-paie" component={GenerateurFichePaie} />
-      <Route path="/admin/conventions" component={AdminConventions} />
+      <Route path="/admin">
+        <ProtectedRoute>
+          <Admin />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/admin/conventions">
+        <ProtectedRoute>
+          <AdminConventions />
+        </ProtectedRoute>
+      </Route>
       <Route path="/conventions/:slug/fiche-paie" component={FichePaieConvention} />
       <Route path="/conventions/:slug" component={ConventionDetail} />
       <Route path="/conventions" component={ConventionsList} />
-      <Route path="/dashboard/cabinet" component={DashboardCabinet} />
-      <Route path="/dashboard/workspace" component={DashboardWorkspace} />
-      <Route path="/dashboard/audit" component={AuditLog} />
+      <Route path="/dashboard/cabinet">
+        <ProtectedRoute roles={["PROPRIETAIRE", "GESTIONNAIRE"]}>
+          <DashboardCabinet />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/dashboard/workspace">
+        <ProtectedRoute>
+          <DashboardWorkspace />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/dashboard/audit">
+        <ProtectedRoute>
+          <AuditLog />
+        </ProtectedRoute>
+      </Route>
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
@@ -75,10 +99,12 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light" switchable>
-        <TooltipProvider>
-          <Toaster />
-          <AppRoutes />
-        </TooltipProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <AppRoutes />
+          </TooltipProvider>
+        </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
