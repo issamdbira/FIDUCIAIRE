@@ -113,13 +113,14 @@ try {
   // __dirname/__filename are needed by Prisma's CJS runtime.
   const outFile = path.resolve(FUNC_DIR, "index.mjs");
   const bundleCode = fs.readFileSync(outFile, "utf8");
+  // NOTE: Do NOT re-import fileURLToPath or path here — they are already
+  // imported in the temp entry file (as _fu, _dn, _pj) and bundled by esbuild.
+  // Re-declaring them causes: SyntaxError: Identifier '_fu' has already been declared
   const requirePolyfill = [
     `import{createRequire as _cr}from"module";`,
-    `import{fileURLToPath as _fu}from"url";`,
-    `import _p from"path";`,
     `const require=_cr(import.meta.url);`,
     `const __filename=_fu(import.meta.url);`,
-    `const __dirname=_p.dirname(__filename);`,
+    `const __dirname=_dn(__filename);`,
     `\n`,
   ].join("");
   fs.writeFileSync(outFile, requirePolyfill + bundleCode);
