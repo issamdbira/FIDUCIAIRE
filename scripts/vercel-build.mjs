@@ -41,6 +41,13 @@ console.log("⚡ Step 4: Bundling API serverless function...");
 // so any module-load-time error is caught and returned as JSON.
 const tempEntry = path.resolve(ROOT, ".vercel-temp-entry.mjs");
 fs.writeFileSync(tempEntry, `
+import { fileURLToPath as _fu } from "url";
+import { dirname as _dn, join as _pj } from "path";
+
+// Tell Prisma where to find the query engine binary in the Lambda environment
+const __fnDir = _dn(_fu(import.meta.url));
+process.env.PRISMA_QUERY_ENGINE_LIBRARY = _pj(__fnDir, "libquery_engine-rhel-openssl-3.A.x.so.node").replace("3.A.x", "3.0.x");
+
 let app = null;
 let initError = null;
 let initPromise = null;
