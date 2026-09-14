@@ -94,7 +94,8 @@ fs.writeFileSync(
     routes: [
       { handle: "filesystem" },
       { src: "/api/(.*)", dest: "/api/$1" },
-      { src: "^/(?!.*\\\\.).*$", dest: "/index.html" },
+      { handle: "filesystem" },
+      { src: "/(.*)", dest: "/index.html" },
     ],
   }, null, 2) + "\n"
 );
