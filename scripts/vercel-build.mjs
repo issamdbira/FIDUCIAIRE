@@ -38,34 +38,42 @@ console.log("⚡ Step 4: Bundling API serverless function...");
 
 // Create a temporary entry file that imports createApp and exports the handler
 // IMPORTANT: import from .ts — esbuild bundles TypeScript natively.
-// The old import "../server/index.js" was WRONG (no .js file exists).
-// Wrap with try/catch to surface initialization errors in the HTTP response
-// instead of getting a generic FUNCTION_INVOCATION_FAILED from Vercel.
+// Use LAZY initialization: createApp() is called on the first request,
+// not at module load time. This prevents module-load-time errors from
+// causing FUNCTION_INVOCATION_FAILED, and lets us return the actual error.
 const tempEntry = path.resolve(ROOT, ".vercel-temp-entry.mjs");
 fs.writeFileSync(tempEntry, `
 import { createApp } from "./server/index.ts";
 
-let app;
-let initError;
-try {
-  app = createApp();
-} catch (err) {
-  initError = err;
-  console.error("❌ FATAL: createApp() failed during module init:", err);
+let app = null;
+let initError = null;
+
+function getApp() {
+  if (app) return app;
+  if (initError) return null;
+  try {
+    app = createApp();
+    return app;
+  } catch (err) {
+    initError = err;
+    console.error("❌ createApp() failed:", err?.message || err);
+    return null;
+  }
 }
 
 export default function handler(req, res) {
-  if (initError) {
+  const application = getApp();
+  if (!application) {
     res.statusCode = 500;
     res.setHeader("content-type", "application/json");
     res.end(JSON.stringify({
-      error: "Module initialization failed",
-      message: initError.message,
-      stack: initError.stack?.split("\\n").slice(0, 10)
+      error: "App initialization failed",
+      message: initError?.message || "Unknown error",
+      stack: initError?.stack?.split("\\n").slice(0, 10)
     }));
     return;
   }
-  app(req, res);
+  application(req, res);
 }
 `);
 
