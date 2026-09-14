@@ -1,6 +1,6 @@
 {
   "framework": null,
-  "buildCommand": "npx prisma generate && pnpm run build",
+  "buildCommand": "pnpm run build",
   "outputDirectory": "dist/public",
   "installCommand": "pnpm install",
   "routes": [
