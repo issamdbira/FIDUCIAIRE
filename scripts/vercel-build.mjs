@@ -53,9 +53,6 @@ try {
     `--format=esm ` +
     `--resolve-extensions=.ts,.tsx,.js,.jsx,.mjs,.json ` +
     `--outfile=${path.resolve(FUNC_DIR, "index.mjs")} ` +
-    `--external:@prisma/client ` +
-    `--external:@neondatabase/serverless ` +
-    `--external:@prisma/adapter-neon ` +
     `--allow-overwrite`,
     { cwd: ROOT, stdio: "inherit" }
   );
