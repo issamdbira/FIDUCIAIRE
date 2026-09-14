@@ -1,8 +1,9 @@
 // =============================================================================
 // Le Fiduciaire — Prisma Client singleton (Neon PostgreSQL)
 // =============================================================================
-// Sur Vercel (serverless) : utilise @prisma/adapter-neon + @neondatabase/serverless
-//   → Pas de binaire natif, pure JS/WASM, compatible AWS Lambda
+// Sur Vercel (serverless) : utilise @prisma/adapter-neon
+//   PrismaNeon est une factory qui prend un config object { connectionString }
+//   et crée le Pool Neon en interne. Pas de binaire natif requis.
 // En local (dev) : utilise le client Prisma classique avec moteur natif
 //   → Meilleures performances en développement
 // =============================================================================
@@ -15,11 +16,10 @@ function createPrismaClient(): PrismaClient {
   // Sur Vercel : utiliser le Neon serverless driver adapter
   if (process.env.VERCEL === "1") {
     try {
-      // Import dynamique — esbuild bundle ces modules
-      const { Pool } = require("@neondatabase/serverless");
+      // PrismaNeon v7+ est une factory : new PrismaNeon({ connectionString })
+      // Elle crée le Pool Neon en interne — ne PAS passer un Pool directement
       const { PrismaNeon } = require("@prisma/adapter-neon");
-      const neonPool = new Pool({ connectionString: process.env.DATABASE_URL });
-      const adapter = new PrismaNeon(neonPool);
+      const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL });
       return new PrismaClient({ adapter });
     } catch (err) {
       console.error("⚠️  Failed to initialize Neon adapter, falling back to default client:", err);
