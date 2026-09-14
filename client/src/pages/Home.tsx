@@ -22,6 +22,9 @@ import {
   Landmark,
   LayoutDashboard,
   FileSearch2,
+  LogIn,
+  Briefcase,
+  Users,
 } from "lucide-react";
 import { runPayrollEngine } from "@/lib/payroll/engine";
 import type { PayrollInput } from "@/lib/payroll/types";
@@ -251,16 +254,85 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══════════════ OUTILS — Groupes (MOD1 + MOD2) ═══════════════ */}
+      {/* ═══════════════ ESPACES CONNEXION ═══════════════ */}
+      <section className="max-w-5xl mx-auto px-4 pt-14 pb-10">
+        <h2
+          className="text-2xl font-bold text-foreground mb-2"
+          style={{ fontFamily: "Montserrat, sans-serif" }}
+        >
+          Vos espaces
+        </h2>
+        <p className="text-muted-foreground text-sm mb-8">
+          Connectez-vous selon votre profil pour accéder à vos outils de gestion.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* ─── Espace Entreprise ─── */}
+          <Link href="/login">
+            <Card className="h-full hover:shadow-lg transition-all cursor-pointer rounded-xl shadow-sm border border-primary/20 bg-card group">
+              <div className="p-7">
+                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                  <Briefcase className="h-7 w-7 text-primary" />
+                </div>
+                <h3
+                  className="text-lg font-bold text-foreground mb-2"
+                  style={{ fontFamily: "Montserrat, sans-serif" }}
+                >
+                  Espace Entreprise
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-5">
+                  Propriétaire d'une seule entreprise&nbsp;? Gérez directement vos salariés,
+                  votre paie mensuelle, vos déclarations CNSS et vos contrats de travail
+                  depuis un espace simplifié.
+                </p>
+                <div className="flex items-center gap-2 text-primary text-sm font-semibold group-hover:gap-3 transition-all">
+                  <LogIn className="h-4 w-4" />
+                  <span>Se connecter</span>
+                  <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </Card>
+          </Link>
+
+          {/* ─── Espace Cabinet ─── */}
+          <Link href="/login">
+            <Card className="h-full hover:shadow-lg transition-all cursor-pointer rounded-xl shadow-sm border border-amber-400/30 bg-card group">
+              <div className="p-7">
+                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30 group-hover:bg-amber-100/80 dark:group-hover:bg-amber-900/40 transition-colors">
+                  <Users className="h-7 w-7 text-amber-600 dark:text-amber-400" />
+                </div>
+                <h3
+                  className="text-lg font-bold text-foreground mb-2"
+                  style={{ fontFamily: "Montserrat, sans-serif" }}
+                >
+                  Espace Cabinet
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-5">
+                  Cabinet fiduciaire ou expert-comptable&nbsp;? Pilotez l'ensemble de vos
+                  clients depuis un tableau de bord multi-dossiers. Suivi de la masse
+                  salariale, déclarations groupées et audit centralisé.
+                </p>
+                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 text-sm font-semibold group-hover:gap-3 transition-all">
+                  <LogIn className="h-4 w-4" />
+                  <span>Se connecter</span>
+                  <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </Card>
+          </Link>
+        </div>
+      </section>
+
+      {/* ═══════════════ OUTILS & SERVICES GRATUITS ═══════════════ */}
       <section id="outils" className="max-w-5xl mx-auto px-4 pt-14 pb-10">
         <h2
           className="text-2xl font-bold text-foreground mb-2"
           style={{ fontFamily: "Montserrat, sans-serif" }}
         >
-          Outils
+          Outils &amp; services gratuits
         </h2>
         <p className="text-muted-foreground text-sm mb-8">
-          Sélectionnez un outil pour commencer.
+          Calculateurs, simulateurs et générateurs accessibles sans inscription.
         </p>
 
         {GROUPES_OUTILS.map((groupe) => {
