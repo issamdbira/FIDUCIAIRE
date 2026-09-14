@@ -81,7 +81,7 @@ fs.writeFileSync(
     runtime: "nodejs22.x",
     handler: "index.mjs",
     launcherType: "nodejs",
-    shouldAddHelpers: false,
+    shouldAddHelpers: true,
   }, null, 2) + "\n"
 );
 
