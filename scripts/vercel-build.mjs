@@ -87,13 +87,17 @@ fs.writeFileSync(
 
 // Step 5: Write the output config
 console.log("⚙️ Step 5: Writing config.json...");
+// CRITICAL: dest MUST match the function directory name (without .func suffix).
+// The function is at functions/api/[[...path]].func/
+// So dest must be "/api/[[...path]]" for Vercel to route to it.
+// The SPA fallback must EXCLUDE /api/* to avoid capturing API requests.
 fs.writeFileSync(
   path.resolve(OUTPUT, "config.json"),
   JSON.stringify({
     version: 3,
     routes: [
       { handle: "filesystem" },
-      { src: "/api/(.*)", dest: "/api/$1" },
+      { src: "/api/(.*)", dest: "/api/[[...path]]" },
       { handle: "filesystem" },
       { src: "/(.*)", dest: "/index.html" },
     ],
