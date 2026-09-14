@@ -100,11 +100,21 @@ try {
 
   // Inject CJS require polyfill at the top of the bundle.
   // Fixes: "Dynamic require of 'path' is not supported"
+  //   and "__dirname is not defined" (used by Prisma CJS runtime)
   // Express/depd/body-parser use dynamic require() for Node.js builtins.
   // createRequire makes require() available in ESM context.
+  // __dirname/__filename are needed by Prisma's CJS runtime.
   const outFile = path.resolve(FUNC_DIR, "index.mjs");
   const bundleCode = fs.readFileSync(outFile, "utf8");
-  const requirePolyfill = `import{createRequire as _cr}from"module";const require=_cr(import.meta.url);\n`;
+  const requirePolyfill = [
+    `import{createRequire as _cr}from"module";`,
+    `import{fileURLToPath as _fu}from"url";`,
+    `import _p from"path";`,
+    `const require=_cr(import.meta.url);`,
+    `const __filename=_fu(import.meta.url);`,
+    `const __dirname=_p.dirname(__filename);`,
+    `\n`,
+  ].join("");
   fs.writeFileSync(outFile, requirePolyfill + bundleCode);
 } catch (err) {
   // CRITICAL: Fail LOUDLY. A deployment that "succeeds" with an empty API
