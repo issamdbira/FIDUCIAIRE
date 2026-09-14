@@ -49,7 +49,7 @@ export default function handler(req, res) { app(req, res); }
 try {
   execSync(
     `npx esbuild ${tempEntry} ` +
-    `--bundle --platform=node --target=node24 ` +
+    `--bundle --platform=node --target=node22 ` +
     `--format=esm ` +
     `--resolve-extensions=.ts,.tsx,.js,.jsx,.mjs,.json ` +
     `--outfile=${path.resolve(FUNC_DIR, "index.mjs")} ` +
@@ -78,7 +78,7 @@ fs.unlinkSync(tempEntry);
 fs.writeFileSync(
   path.resolve(FUNC_DIR, ".vc-config.json"),
   JSON.stringify({
-    runtime: "nodejs24.x",
+    runtime: "nodejs22.x",
     handler: "index.mjs",
     launcherType: "nodejs",
     shouldAddHelpers: false,
