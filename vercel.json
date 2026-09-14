@@ -1,6 +1,5 @@
 {
   "framework": null,
   "buildCommand": "prisma generate && node scripts/vercel-build.mjs",
-  "installCommand": "npm install --legacy-peer-deps",
   "outputDirectory": ".vercel/output/static"
 }
