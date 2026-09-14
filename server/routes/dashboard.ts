@@ -343,6 +343,78 @@ router.get("/workspace/:ws", requireAuth, async (req: Request, res: Response) =>
 });
 
 // ---------------------------------------------------------------------------
+// POST /dashboard/maint/auto-close-contracts
+// Passe automatiquement à TERMINE les contrats ACTIF dont dateFin est dépassée.
+// Retourne le nombre de contrats clôturés.
+// Appelé par le frontend au chargement du dashboard — pas de cron nécessaire.
+// ---------------------------------------------------------------------------
+router.post("/maint/auto-close-contracts", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { workspaceId } = req.body;
+    if (!workspaceId) {
+      return res.status(400).json({ error: "workspaceId requis" });
+    }
+
+    const hasAccess = await checkWs(req.user!.userId, req.user!.role, workspaceId);
+    if (!hasAccess) {
+      return res.status(403).json({ error: "Accès refusé" });
+    }
+
+    const now = new Date();
+
+    // Trouver les contrats ACTIF dont dateFin est dans le passé
+    const expiredContracts = await prisma.contract.findMany({
+      where: {
+        workspaceId,
+        statut: "ACTIF",
+        dateFin: { lte: now },
+      },
+      include: {
+        employee: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+
+    if (expiredContracts.length === 0) {
+      return res.json({ closedCount: 0, contracts: [] });
+    }
+
+    // Passage à TERMINE en masse
+    const ids = expiredContracts.map((c) => c.id);
+    await prisma.contract.updateMany({
+      where: { id: { in: ids } },
+      data: { statut: "TERMINE" },
+    });
+
+    // Audit log pour chaque contrat clôturé
+    for (const c of expiredContracts) {
+      await prisma.auditLog.create({
+        data: {
+          workspaceId,
+          userId: req.user!.userId,
+          action: "AUTO_CLOSE_CONTRACT",
+          entity: "Contract",
+          entityId: c.id,
+          details: `Contrat ${c.type} de ${c.employee.firstName} ${c.employee.lastName} automatiquement clôturé à l'échéance (${new Date(c.dateFin!).toLocaleDateString("fr-TN")})`,
+        },
+      });
+    }
+
+    return res.json({
+      closedCount: expiredContracts.length,
+      contracts: expiredContracts.map((c) => ({
+        id: c.id,
+        type: c.type,
+        employeeName: `${c.employee.firstName} ${c.employee.lastName}`,
+        dateFin: c.dateFin,
+      })),
+    });
+  } catch (error) {
+    console.error("[dashboard] POST /maint/auto-close-contracts error:", error);
+    return res.status(500).json({ error: "Erreur interne" });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // GET /dashboard/workspace/:ws/alerts — Alertes workspace
 // ---------------------------------------------------------------------------
 router.get("/workspace/:ws/alerts", requireAuth, async (req: Request, res: Response) => {
@@ -355,6 +427,17 @@ router.get("/workspace/:ws/alerts", requireAuth, async (req: Request, res: Respo
     const now = new Date();
     const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     const fifteenDaysAgo = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
+
+    // --- Auto-close expired contracts (silently) ---
+    // Passe à TERMINE les contrats dont dateFin <= maintenant
+    const expiredCount = await prisma.contract.updateMany({
+      where: {
+        workspaceId: ws,
+        statut: "ACTIF",
+        dateFin: { lte: now },
+      },
+      data: { statut: "TERMINE" },
+    });
 
     // --- matriculesCnssManquants : employees with no or invalid matriculeCnss ---
     const matriculesCnssManquants = await prisma.employees.findMany({
@@ -427,6 +510,7 @@ router.get("/workspace/:ws/alerts", requireAuth, async (req: Request, res: Respo
       contratsExpirant,
       periodesNonCloturees,
       declarationsCnssEnRetard,
+      autoClosedContracts: expiredCount.count,
     });
   } catch (error) {
     console.error("[dashboard] GET /workspace/:ws/alerts error:", error);
