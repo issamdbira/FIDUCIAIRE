@@ -58,13 +58,41 @@ export function createApp() {
   app.use("/api/reports", reportRoutes);
   app.use("/api/dashboard", dashboardRoutes);
 
-  // Health check
+  // Health check with secure diagnostics
   app.get("/api/health", async (_req, res) => {
+    const diag: Record<string, unknown> = {
+      timestamp: new Date().toISOString(),
+      vercel: process.env.VERCEL === "1",
+      dbUrlSet: !!process.env.DATABASE_URL,
+    };
+
+    // Validate URL format without revealing value
+    if (process.env.DATABASE_URL) {
+      const url = process.env.DATABASE_URL;
+      diag.dbUrlPrefix = url.startsWith("postgresql://") ? "postgresql://" : url.startsWith("postgres://") ? "postgres://" : "INVALID";
+      diag.dbUrlLength = url.length;
+      diag.dbUrlSslmode = url.includes("sslmode=");
+    }
+
     try {
       await prisma.$queryRaw`SELECT 1`;
-      res.json({ status: "ok", database: "connected", timestamp: new Date().toISOString() });
-    } catch {
-      res.status(503).json({ status: "error", database: "disconnected" });
+      res.json({ status: "ok", database: "connected", ...diag });
+    } catch (err: any) {
+      // Anonymize error — never expose connection string, host, or credentials
+      const safeError = err?.code || err?.name || "Unknown";
+      const safeMsg = err?.message
+        ? err.message
+            .replace(/postgresql:\/\/[^\s]+/g, "[REDACTED]")
+            .replace(/postgres:\/\/[^\s]+/g, "[REDACTED]")
+            .replace(/@[^/]+\//g, "@[REDACTED]/")
+        : "No message";
+      res.status(503).json({
+        status: "error",
+        database: "disconnected",
+        error: safeError,
+        message: safeMsg,
+        ...diag,
+      });
     }
   });
 
