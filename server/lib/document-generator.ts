@@ -11,10 +11,19 @@ import prisma from "./prisma.js";
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
-const STORAGE_ROOT = process.env.DOCUMENT_STORAGE_PATH || path.resolve(process.cwd(), "storage");
+// Sur Vercel (Lambda), le filesystem est read-only sauf /tmp.
+// Utiliser /tmp/storage comme répertoire de stockage.
+const STORAGE_ROOT = process.env.DOCUMENT_STORAGE_PATH ||
+  (process.env.VERCEL === "1" ? "/tmp/storage" : path.resolve(process.cwd(), "storage"));
 
-// Ensure storage dir exists
-if (!fs.existsSync(STORAGE_ROOT)) fs.mkdirSync(STORAGE_ROOT, { recursive: true });
+// Ensure storage dir exists (lazy — only when needed, not at module load on Vercel)
+function ensureStorageDir() {
+  if (!fs.existsSync(STORAGE_ROOT)) fs.mkdirSync(STORAGE_ROOT, { recursive: true });
+}
+// Create immediately in local dev (filesystem writable)
+if (process.env.VERCEL !== "1") {
+  ensureStorageDir();
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -168,6 +177,7 @@ export function generateBulletinHtml(payslip: PayslipFull, clientInfo: { raisonS
 // ---------------------------------------------------------------------------
 
 export function storeFile(filename: string, content: Buffer | string): string {
+  ensureStorageDir();
   const filePath = path.join(STORAGE_ROOT, filename);
   const dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
