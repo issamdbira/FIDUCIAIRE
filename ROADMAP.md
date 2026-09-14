@@ -3,46 +3,58 @@
 ## Phase 1 : Neon, Prisma et authentification
 - **Statut** : ✅ Terminée
 - **Commit** : `0158d45`
-- **Tokens consommés** : ~14 000
 
 ## Phase 2 : Entreprises clientes et établissements
-- **Statut** : 🔴 À démarrer
-- **Estimation tokens** : ~12 000
-- **Fichiers concernés** :
-  - `prisma/schema.prisma` (enrichir Workspace + Etablissement)
-  - `server/routes/entreprises.ts`
-  - `client/src/pages/Entreprises.tsx`
-  - `client/src/pages/Etablissements.tsx`
-  - `client/src/App.tsx` (routes)
+- **Statut** : ✅ Terminée
+- **Fichiers** : `server/routes/clients.ts`, migration `phase2_clients_establishments`
 
-## Phase 3 : Salariés et contrats
-- **Statut** : ⚪ En attente Phase 2
-- **Estimation tokens** : ~15 000
+## Phase 3 : Salariés, contrats et conventions collectives
+- **Statut** : ✅ Terminée
+- **Fichiers** : `server/routes/contracts.ts`, `server/routes/conventions.ts`, migration `phase3_contracts_referentiels`
 
-## Phase 4 : Conventions et paramètres client
-- **Statut** : ⚪ En attente Phase 3
-- **Estimation tokens** : ~10 000
+## Phase 4 : Calendriers, règles et pointage mensuel
+- **Statut** : ✅ Terminée
+- **Fichiers** : `server/routes/calendars.ts`, `server/routes/regles.ts`, `server/routes/attendance.ts`, migration `phase4_pointage_mensuel`
 
-## Phase 5 : Import pointage mensuel Excel/CSV
-- **Statut** : ⚪ En attente Phase 4
-- **Estimation tokens** : ~12 000
+## Phase 5 : Période de paie et moteur central
+- **Statut** : ✅ Terminée
+- **Fichiers** : `server/routes/payroll.ts`, `server/lib/payroll-engine.ts`, migration `phase5_paie_mensuelle`
 
-## Phase 6 : Période de paie et moteur central
-- **Statut** : ⚪ En attente Phase 5
-- **Estimation tokens** : ~15 000
+## Phase 6 : Documents, PDF et stockage
+- **Statut** : ✅ Terminée
+- **Fichiers** : `server/routes/documents.ts`, `server/lib/document-generator.ts`, migration `phase6_documents`
 
-## Phase 7 : Bulletins PDF individuels
-- **Statut** : ⚪ En attente Phase 6
-- **Estimation tokens** : ~10 000
+## Phase 7 : Déclarations CNSS trimestrielles
+- **Statut** : ✅ Terminée
+- **Fichiers** : `server/routes/cnss.ts`, `server/lib/cnss-export.ts`
 
-## Phase 8 : Déclarations CNSS trimestrielles
-- **Statut** : ⚪ En attente Phase 7
-- **Estimation tokens** : ~12 000
+## Phase 8 : Audit, archivage et paie complémentaire
+- **Statut** : ✅ Terminée
+- **Fichiers** : `server/lib/audit-log.ts`, modèle `AuditLog`
 
-## Phase 9 : Audit, archivage et accès client limité
-- **Statut** : ⚪ En attente Phase 8
-- **Estimation tokens** : ~10 000
+## Phase 9 : Dashboard et alertes
+- **Statut** : ✅ Terminée
+- **Fichiers** : `server/routes/dashboard.ts`, `server/routes/reports.ts`
 
 ---
 
-## Total estimé : ~96 000 tokens restants (phases 2–9)
+## Phase 10 : Frontend ↔ Backend (EN COURS)
+- **Statut** : 🔄 En cours
+- **Objectif** : Connecter les pages frontend aux API backend (CRUD réel)
+- **Pages à connecter** :
+  - [x] Login → `/api/auth`
+  - [x] Dashboard Cabinet → `/api/dashboard/cabinet`
+  - [x] Dashboard Workspace → `/api/dashboard/workspace`
+  - [x] Audit Log → `/api/dashboard/audit`
+  - [ ] Gestion Clients → `/api/clients`
+  - [ ] Gestion Contrats → `/api/contracts`
+  - [ ] Gestion Conventions → `/api/conventions`
+  - [ ] Gestion Paie → `/api/payroll`
+  - [ ] Gestion Pointage → `/api/attendance`
+  - [ ] Gestion CNSS → `/api/cnss`
+  - [ ] Gestion Documents → `/api/documents`
+
+---
+
+## Phases backend (1–9) : ✅ Toutes terminées
+## Phase frontend-backend (10) : 🔄 En cours

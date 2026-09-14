@@ -35,6 +35,13 @@ import DashboardCabinet from "./pages/DashboardCabinet";
 import DashboardWorkspace from "./pages/DashboardWorkspace";
 import AuditLog from "./pages/AuditLog";
 import Login from "./pages/Login";
+import GestionClients from "./pages/gestion/GestionClients";
+import GestionContrats from "./pages/gestion/GestionContrats";
+import GestionConventions from "./pages/gestion/GestionConventions";
+import GestionPaie from "./pages/gestion/GestionPaie";
+import GestionPointage from "./pages/gestion/GestionPointage";
+import GestionCNSS from "./pages/gestion/GestionCNSS";
+import GestionDocuments from "./pages/gestion/GestionDocuments";
 
 function AppRoutes() {
   const routes = (
@@ -85,6 +92,41 @@ function AppRoutes() {
       <Route path="/dashboard/audit">
         <ProtectedRoute>
           <AuditLog />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/gestion/clients">
+        <ProtectedRoute>
+          <GestionClients />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/gestion/contrats">
+        <ProtectedRoute>
+          <GestionContrats />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/gestion/conventions">
+        <ProtectedRoute>
+          <GestionConventions />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/gestion/paie">
+        <ProtectedRoute>
+          <GestionPaie />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/gestion/pointage">
+        <ProtectedRoute>
+          <GestionPointage />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/gestion/cnss">
+        <ProtectedRoute>
+          <GestionCNSS />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/gestion/documents">
+        <ProtectedRoute>
+          <GestionDocuments />
         </ProtectedRoute>
       </Route>
       <Route path="/404" component={NotFound} />
