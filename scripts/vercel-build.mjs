@@ -89,6 +89,11 @@ try {
     `--format=esm ` +
     `--resolve-extensions=.ts,.tsx,.js,.jsx,.mjs,.json ` +
     `--outfile=${path.resolve(FUNC_DIR, "index.mjs")} ` +
+    `--external:path --external:fs --external:crypto --external:http --external:https ` +
+    `--external:stream --external:util --external:url --external:os --external:net ` +
+    `--external:dns --external:querystring --external:zlib --external:events ` +
+    `--external:buffer --external:child_process --external:tls --external:assert ` +
+    `--external:process --external:string_decoder --external:readline ` +
     `--allow-overwrite`,
     { cwd: ROOT, stdio: "inherit" }
   );
