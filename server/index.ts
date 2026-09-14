@@ -81,6 +81,8 @@ const app = createApp();
 // ---------------------------------------------------------------------------
 // Static files & SPA fallback (local only — Vercel sert le static lui-même)
 // ---------------------------------------------------------------------------
+let server: ReturnType<typeof createServer> | null = null;
+
 if (process.env.VERCEL !== "1") {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
@@ -101,7 +103,7 @@ if (process.env.VERCEL !== "1") {
   });
 
   const PORT = process.env.PORT || 3001;
-  const server = createServer(app);
+  server = createServer(app);
   server.listen(PORT, () => {
     console.log(`🚀 Le Fiduciaire API — http://localhost:${PORT}/`);
     console.log(`   Auth:        /api/auth/*`);
@@ -119,8 +121,6 @@ if (process.env.VERCEL !== "1") {
     console.log(`   Dashboard:   /api/dashboard/*`);
     console.log(`   Health:      /api/health`);
   });
-
-  export { server };
 }
 
-export { app };
+export { app, server };

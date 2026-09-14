@@ -36,11 +36,12 @@ copyDirRecursive(distPublic, path.resolve(OUTPUT, "static"));
 // Step 4: Bundle server with esbuild into the serverless function
 console.log("⚡ Step 4: Bundling API serverless function...");
 
-const entryFile = path.resolve(ROOT, "api", "[[...path]].ts");
 // Create a temporary entry file that imports createApp and exports the handler
+// IMPORTANT: import from .ts — esbuild bundles TypeScript natively.
+// The old import "../server/index.js" was WRONG (no .js file exists).
 const tempEntry = path.resolve(ROOT, ".vercel-temp-entry.mjs");
 fs.writeFileSync(tempEntry, `
-import { createApp } from "../server/index.js";
+import { createApp } from "./server/index.ts";
 const app = createApp();
 export default function handler(req, res) { app(req, res); }
 `);
@@ -50,6 +51,7 @@ try {
     `npx esbuild ${tempEntry} ` +
     `--bundle --platform=node --target=node24 ` +
     `--format=esm ` +
+    `--resolve-extensions=.ts,.tsx,.js,.jsx,.mjs,.json ` +
     `--outfile=${path.resolve(FUNC_DIR, "index.mjs")} ` +
     `--external:@prisma/client ` +
     `--external:@neondatabase/serverless ` +
@@ -57,15 +59,16 @@ try {
     `--allow-overwrite`,
     { cwd: ROOT, stdio: "inherit" }
   );
-} catch {
-  // Fallback: write a simple handler if bundling fails
-  console.log("⚠️  esbuild bundling failed, using fallback handler...");
-  fs.writeFileSync(
-    path.resolve(FUNC_DIR, "index.mjs"),
-    `import { createApp } from "../../server/index.js";\n` +
-    `const app = createApp();\n` +
-    `export default function handler(req, res) { app(req, res); }\n`
-  );
+} catch (err) {
+  // CRITICAL: Fail LOUDLY. A deployment that "succeeds" with an empty API
+  // is more dangerous than a visible failure.
+  console.error("❌ FATAL: esbuild bundling failed!");
+  console.error("   The API serverless function could NOT be built.");
+  console.error("   Aborting build — Vercel will NOT deploy a broken API.");
+  console.error("   Original error:", err?.message || err);
+  // Clean up temp file before exiting
+  try { fs.unlinkSync(tempEntry); } catch {}
+  process.exit(1);
 }
 
 // Clean up temp entry
