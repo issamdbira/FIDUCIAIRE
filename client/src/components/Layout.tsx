@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "./ThemeToggle";
+import WorkspaceSelector from "./WorkspaceSelector";
 import {
   Sheet,
   SheetContent,
@@ -55,6 +56,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <span className="text-muted-foreground">LE </span><span className="text-gold">FIDUCIAIRE</span>
             </span>
           </Link>
+
+          {/* Workspace selector — visible si l'utilisateur a des workspaces */}
+          <div className="hidden sm:flex items-center">
+            <WorkspaceSelector />
+          </div>
 
           {/* Right side : Theme toggle + Dashboard + Admin (desktop) */}
           <div className="flex items-center gap-2">
@@ -151,6 +157,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             >
               Accueil
             </Link>
+
+            {/* Workspace selector mobile */}
+            <div className="px-3 py-1">
+              <WorkspaceSelector />
+            </div>
+
             <div className="pt-2 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pilotage</div>
             <Link
               href="/dashboard/cabinet"
