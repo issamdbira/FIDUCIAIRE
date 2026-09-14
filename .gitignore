@@ -116,3 +116,4 @@ storage/
 
 # Vercel build output
 .vercel/
+.vercel
