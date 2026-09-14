@@ -14,6 +14,7 @@ import {
   FileDown,
   Shield,
   Clock,
+  UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "./ThemeToggle";
@@ -70,6 +71,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-primary">
                   <LayoutDashboard className="size-4" />
                   <span className="hidden md:inline">Dashboard</span>
+                </Button>
+              </Link>
+              <Link href="/gestion/employes">
+                <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-primary">
+                  <UserPlus className="size-4" />
+                  <span className="hidden md:inline">Employés</span>
                 </Button>
               </Link>
               <Link href="/gestion/clients">
@@ -192,6 +199,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors"
             >
               <Building2 className="size-4" /> Clients
+            </Link>
+            <Link
+              href="/gestion/employes"
+              onClick={() => setSheetOpen(false)}
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors"
+            >
+              <UserPlus className="size-4" /> Employés
             </Link>
             <Link
               href="/gestion/contrats"

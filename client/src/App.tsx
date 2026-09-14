@@ -42,6 +42,7 @@ import GestionPaie from "./pages/gestion/GestionPaie";
 import GestionPointage from "./pages/gestion/GestionPointage";
 import GestionCNSS from "./pages/gestion/GestionCNSS";
 import GestionDocuments from "./pages/gestion/GestionDocuments";
+import GestionEmployes from "./pages/gestion/GestionEmployes";
 
 function AppRoutes() {
   const routes = (
@@ -127,6 +128,11 @@ function AppRoutes() {
       <Route path="/gestion/documents">
         <ProtectedRoute>
           <GestionDocuments />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/gestion/employes">
+        <ProtectedRoute>
+          <GestionEmployes />
         </ProtectedRoute>
       </Route>
       <Route path="/404" component={NotFound} />
