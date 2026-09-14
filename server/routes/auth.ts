@@ -268,6 +268,36 @@ router.post("/setup", async (req: Request, res: Response) => {
     // Vérifier si un PROPRIETAIRE existe déjà
     const existingProp = await prisma.users.findFirst({ where: { role: "PROPRIETAIRE" } });
     if (existingProp) {
+      // Si l'email correspond → réinitialiser le mot de passe (récupération d'accès)
+      if (existingProp.email === email) {
+        const newHash = await bcrypt.hash(password, 12);
+        await prisma.users.update({
+          where: { id: existingProp.id },
+          data: { passwordHash: newHash, updatedAt: new Date() },
+        });
+        const token = signToken({
+          userId: existingProp.id,
+          email: existingProp.email,
+          role: existingProp.role,
+        });
+        // Retrouver les workspaces
+        const memberships = await prisma.workspace_members.findMany({
+          where: { userId: existingProp.id },
+          include: { workspace: { select: { id: true, name: true } } },
+        });
+        return res.json({
+          message: "Mot de passe réinitialisé avec succès",
+          user: {
+            id: existingProp.id,
+            email: existingProp.email,
+            fullName: existingProp.fullName,
+            role: existingProp.role,
+            statut: existingProp.statut,
+            workspaces: memberships.map((m) => ({ id: m.workspace.id, name: m.workspace.name, role: m.role })),
+          },
+          token,
+        });
+      }
       return res.status(409).json({
         error: "Le système est déjà initialisé — un propriétaire existe",
         email: existingProp.email,
