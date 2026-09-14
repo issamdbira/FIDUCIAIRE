@@ -3,7 +3,10 @@
 // Express + Prisma + JWT Auth + CORS + Clients + Contrats + Refs + Paie + Docs + CNSS + Reports + Dashboard
 // =============================================================================
 
-import "dotenv/config";
+// Charger .env uniquement en local (Vercel injecte les variables d'env directement)
+if (process.env.VERCEL !== "1") {
+  try { require("dotenv/config"); } catch { /* dotenv non disponible en serverless */ }
+}
 import express from "express";
 import cors from "cors";
 import { createServer } from "http";
@@ -37,7 +40,7 @@ export function createApp() {
 
   // Middleware
   app.use(cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    origin: process.env.CORS_ORIGIN || (process.env.VERCEL === "1" ? "https://fiduciaire.vercel.app" : "http://localhost:3000"),
     credentials: true,
   }));
   app.use(express.json());
