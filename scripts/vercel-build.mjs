@@ -36,44 +36,49 @@ copyDirRecursive(distPublic, path.resolve(OUTPUT, "static"));
 // Step 4: Bundle server with esbuild into the serverless function
 console.log("⚡ Step 4: Bundling API serverless function...");
 
-// Create a temporary entry file that imports createApp and exports the handler
-// IMPORTANT: import from .ts — esbuild bundles TypeScript natively.
-// Use LAZY initialization: createApp() is called on the first request,
-// not at module load time. This prevents module-load-time errors from
-// causing FUNCTION_INVOCATION_FAILED, and lets us return the actual error.
+// Create a temporary entry file with dynamic import for full error capture.
+// Dynamic import defers ALL module loading to the first request,
+// so any module-load-time error is caught and returned as JSON.
 const tempEntry = path.resolve(ROOT, ".vercel-temp-entry.mjs");
 fs.writeFileSync(tempEntry, `
-import { createApp } from "./server/index.ts";
-
 let app = null;
 let initError = null;
+let initPromise = null;
 
-function getApp() {
+async function ensureApp() {
   if (app) return app;
-  if (initError) return null;
-  try {
-    app = createApp();
-    return app;
-  } catch (err) {
-    initError = err;
-    console.error("❌ createApp() failed:", err?.message || err);
-    return null;
-  }
+  if (initError) throw initError;
+  if (initPromise) return initPromise;
+  initPromise = (async () => {
+    try {
+      const { createApp } = await import("./server/index.ts");
+      app = createApp();
+      return app;
+    } catch (err) {
+      initError = err;
+      console.error("❌ Module load or createApp() failed:", err?.message || err, err?.stack?.slice(0, 500));
+      throw err;
+    }
+  })();
+  return initPromise;
 }
 
-export default function handler(req, res) {
-  const application = getApp();
-  if (!application) {
-    res.statusCode = 500;
-    res.setHeader("content-type", "application/json");
+export default async function handler(req, res) {
+  try {
+    const application = await ensureApp();
+    application(req, res);
+  } catch (err) {
+    if (!res.headersSent) {
+      res.statusCode = 500;
+      res.setHeader("content-type", "application/json");
+    }
     res.end(JSON.stringify({
-      error: "App initialization failed",
-      message: initError?.message || "Unknown error",
-      stack: initError?.stack?.split("\\n").slice(0, 10)
+      error: "Initialization failed",
+      message: err?.message || String(err),
+      stack: err?.stack?.split("\\n").slice(0, 15),
+      code: err?.code
     }));
-    return;
   }
-  application(req, res);
 }
 `);
 
