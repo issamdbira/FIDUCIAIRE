@@ -97,6 +97,15 @@ try {
     `--allow-overwrite`,
     { cwd: ROOT, stdio: "inherit" }
   );
+
+  // Inject CJS require polyfill at the top of the bundle.
+  // Fixes: "Dynamic require of 'path' is not supported"
+  // Express/depd/body-parser use dynamic require() for Node.js builtins.
+  // createRequire makes require() available in ESM context.
+  const outFile = path.resolve(FUNC_DIR, "index.mjs");
+  const bundleCode = fs.readFileSync(outFile, "utf8");
+  const requirePolyfill = `import{createRequire as _cr}from"module";const require=_cr(import.meta.url);\n`;
+  fs.writeFileSync(outFile, requirePolyfill + bundleCode);
 } catch (err) {
   // CRITICAL: Fail LOUDLY. A deployment that "succeeds" with an empty API
   // is more dangerous than a visible failure.
