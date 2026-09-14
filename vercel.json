@@ -1,10 +1,16 @@
 {
-  "buildCommand": "pnpm run build",
+  "buildCommand": "npx prisma generate && pnpm run build",
   "outputDirectory": "dist/public",
   "installCommand": "pnpm install",
   "functions": {
     "api/[[...path]].ts": {
+      "runtime": "nodejs22.x",
       "maxDuration": 30
     }
-  }
+  },
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "^/(?!.*\\.).*$", "dest": "/index.html" }
+  ]
 }
