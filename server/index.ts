@@ -27,7 +27,7 @@ import documentRoutes from "./routes/documents.js";
 import cnssRoutes from "./routes/cnss.js";
 import reportRoutes from "./routes/reports.js";
 import dashboardRoutes from "./routes/dashboard.js";
-import prisma from "./lib/prisma.js";
+import prisma, { initLog, initMode, initError } from "./lib/prisma.js";
 
 // ---------------------------------------------------------------------------
 // Create Express app (réutilisable en local ET en serverless Vercel)
@@ -64,6 +64,8 @@ export function createApp() {
       timestamp: new Date().toISOString(),
       vercel: process.env.VERCEL === "1",
       dbUrlSet: !!process.env.DATABASE_URL,
+      initMode,
+      initError,
     };
 
     // Validate URL format without revealing value
@@ -90,8 +92,9 @@ export function createApp() {
         status: "error",
         database: "disconnected",
         error: safeError,
-        message: safeMsg,
+        message: safeMsg.slice(0, 500),
         ...diag,
+        initLog: initLog.slice(-10), // Last 10 init log entries
       });
     }
   });
