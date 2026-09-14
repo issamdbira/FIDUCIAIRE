@@ -1,11 +1,6 @@
 {
-  "buildCommand": "node scripts/vercel-build.mjs",
-  "outputDirectory": ".vercel/output/static",
-  "installCommand": "pnpm install",
   "framework": null,
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "^/(?!.*\\.).*$", "dest": "/index.html" }
-  ]
+  "buildCommand": "node scripts/vercel-build.mjs",
+  "installCommand": "pnpm install",
+  "outputDirectory": ".vercel/output/static"
 }
