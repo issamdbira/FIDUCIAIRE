@@ -142,8 +142,40 @@ fs.writeFileSync(
   }, null, 2) + "\n"
 );
 
-// Step 5: Write the output config
-console.log("⚙️ Step 5: Writing config.json...");
+// Step 5: Copy Prisma query engine for Vercel runtime (rhel-openssl-3.0.x)
+console.log("🔌 Step 5: Copying Prisma query engine for Vercel...");
+const prismaClientDir = findPrismaClientDir(ROOT);
+if (prismaClientDir) {
+  // Vercel Lambda runs on Amazon Linux 2023 → rhel-openssl-3.0.x
+  const rhelEngine = path.resolve(prismaClientDir, "libquery_engine-rhel-openssl-3.0.x.so.node");
+  if (fs.existsSync(rhelEngine)) {
+    // Copy to function root where Prisma looks for it
+    fs.copyFileSync(rhelEngine, path.resolve(FUNC_DIR, "libquery_engine-rhel-openssl-3.0.x.so.node"));
+    const sizeMB = (fs.statSync(rhelEngine).size / 1024 / 1024).toFixed(1);
+    console.log(`   ✅ Copied rhel engine binary (${sizeMB}MB) to function directory`);
+
+    // Also create the .prisma/client directory structure that Prisma expects
+    const prismaDir = path.resolve(FUNC_DIR, "node_modules", ".prisma", "client");
+    fs.mkdirSync(prismaDir, { recursive: true });
+    fs.copyFileSync(rhelEngine, path.resolve(prismaDir, "libquery_engine-rhel-openssl-3.0.x.so.node"));
+
+    // Copy schema.prisma too (needed by the engine)
+    const schemaFile = path.resolve(prismaClientDir, "schema.prisma");
+    if (fs.existsSync(schemaFile)) {
+      fs.copyFileSync(schemaFile, path.resolve(prismaDir, "schema.prisma"));
+    }
+  } else {
+    console.error("   ⚠️  rhel-openssl-3.0.x engine binary NOT found!");
+    console.error("   Make sure prisma/schema.prisma has binaryTargets = ['native', 'rhel-openssl-3.0.x']");
+    process.exit(1);
+  }
+} else {
+  console.error("   ⚠️  .prisma/client directory not found!");
+  process.exit(1);
+}
+
+// Step 6: Write the output config
+console.log("⚙️ Step 6: Writing config.json...");
 // CRITICAL: dest MUST match the function directory name (without .func suffix).
 // The function is at functions/api/[[...path]].func/
 // So dest must be "/api/[[...path]]" for Vercel to route to it.
@@ -164,6 +196,23 @@ fs.writeFileSync(
 console.log("✅ Build complete! .vercel/output/ is ready for deployment.");
 
 // --- Helper ---
+function findPrismaClientDir(root) {
+  // Look for .prisma/client in pnpm node_modules structure
+  const pnpmDir = path.resolve(root, "node_modules", ".pnpm");
+  if (fs.existsSync(pnpmDir)) {
+    for (const entry of fs.readdirSync(pnpmDir)) {
+      if (entry.startsWith("@prisma+client@")) {
+        const clientDir = path.resolve(pnpmDir, entry, "node_modules", ".prisma", "client");
+        if (fs.existsSync(clientDir)) return clientDir;
+      }
+    }
+  }
+  // Fallback: flat node_modules
+  const flatDir = path.resolve(root, "node_modules", ".prisma", "client");
+  if (fs.existsSync(flatDir)) return flatDir;
+  return null;
+}
+
 function copyDirRecursive(src, dest) {
   if (!fs.existsSync(src)) {
     console.error(`❌ Source directory not found: ${src}`);
