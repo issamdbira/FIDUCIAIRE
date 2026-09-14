@@ -27,6 +27,7 @@ import documentRoutes from "./routes/documents.js";
 import cnssRoutes from "./routes/cnss.js";
 import reportRoutes from "./routes/reports.js";
 import dashboardRoutes from "./routes/dashboard.js";
+import employeeRoutes from "./routes/employees.js";
 import prisma, { initLog, initMode, initError } from "./lib/prisma.js";
 
 // ---------------------------------------------------------------------------
@@ -57,6 +58,7 @@ export function createApp() {
   app.use("/api/cnss", cnssRoutes);
   app.use("/api/reports", reportRoutes);
   app.use("/api/dashboard", dashboardRoutes);
+  app.use("/api/employees", employeeRoutes);
 
   // Health check with secure diagnostics
   app.get("/api/health", async (_req, res) => {
@@ -150,6 +152,7 @@ if (process.env.VERCEL !== "1") {
     console.log(`   CNSS:        /api/cnss/*`);
     console.log(`   Rapports:    /api/reports/*`);
     console.log(`   Dashboard:   /api/dashboard/*`);
+    console.log(`   Employés:    /api/employees/*`);
     console.log(`   Health:      /api/health`);
   });
 }
