@@ -250,4 +250,132 @@ router.post("/validate", requireAuth, requireRole("PROPRIETAIRE"), async (req: R
   }
 });
 
+// ---------------------------------------------------------------------------
+// POST /api/auth/setup — Initialisation du système (crée le 1er PROPRIETAIRE)
+// Uniquement si AUCUN PROPRIETAIRE n'existe encore.
+// ---------------------------------------------------------------------------
+router.post("/setup", async (req: Request, res: Response) => {
+  try {
+    const { email, password, fullName, workspaceName } = req.body;
+
+    if (!email || !password || !fullName) {
+      return res.status(400).json({ error: "email, password et fullName requis" });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ error: "Le mot de passe doit contenir au moins 8 caractères" });
+    }
+
+    // Vérifier si un PROPRIETAIRE existe déjà
+    const existingProp = await prisma.users.findFirst({ where: { role: "PROPRIETAIRE" } });
+    if (existingProp) {
+      return res.status(409).json({
+        error: "Le système est déjà initialisé — un propriétaire existe",
+        email: existingProp.email,
+      });
+    }
+
+    // Vérifier si l'email est déjà pris
+    const existingUser = await prisma.users.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(409).json({ error: "Cet email est déjà inscrit" });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    // Créer le PROPRIETAIRE
+    const proprietaire = await prisma.users.create({
+      data: {
+        email,
+        passwordHash,
+        fullName,
+        role: "PROPRIETAIRE",
+        statut: "VALIDE",
+        updatedAt: new Date(),
+      },
+    });
+
+    // Créer le workspace par défaut
+    const workspace = await prisma.workspaces.create({
+      data: {
+        name: workspaceName || "Fiduciaire Principale",
+        secteur: "non_agricole",
+        tauxAtMp: 0.01,
+        updatedAt: new Date(),
+      },
+    });
+
+    // Assigner le propriétaire au workspace
+    await prisma.workspace_members.create({
+      data: {
+        userId: proprietaire.id,
+        workspaceId: workspace.id,
+        role: "PROPRIETAIRE",
+      },
+    });
+
+    // Créer la config paie par défaut pour ce workspace
+    await prisma.payrollConfig.create({
+      data: {
+        workspaceId: workspace.id,
+        smigHoraire48h: 2.667,
+        smigHoraire40h: 2.667 * 48 / 40,
+        smigMensuel48h: 554.736,
+        smigMensuel40h: 554.736 * 40 / 48,
+        cnssTauxSalarial: 0.0918,
+        cnssTauxPatronal: 0.1647,
+        cnssPlafond: 0,
+        cssActive: false,
+        cssTaux: 0,
+        irppDeductionFamiliale: 300,
+        irppDeductionFamilleNbPartsMax: 4,
+        updatedAt: new Date(),
+      },
+    });
+
+    // Créer les tranches IRPP par défaut (barème 2026)
+    const tranches = [
+      { min: 0, max: 5000, taux: 0 },
+      { min: 5000, max: 10000, taux: 0.26 },
+      { min: 10000, max: 20000, taux: 0.28 },
+      { min: 20000, max: 30000, taux: 0.32 },
+      { min: 30000, max: 50000, taux: 0.35 },
+      { min: 50000, max: null, taux: 0.38 },
+    ];
+    for (const t of tranches) {
+      await prisma.tranches_irpp.create({
+        data: {
+          workspaceId: workspace.id,
+          min: t.min,
+          max: t.max,
+          taux: t.taux,
+          updatedAt: new Date(),
+        },
+      });
+    }
+
+    // Générer un token JWT pour le propriétaire
+    const token = signToken({
+      userId: proprietaire.id,
+      email: proprietaire.email,
+      role: proprietaire.role,
+    });
+
+    return res.status(201).json({
+      message: "Système initialisé avec succès",
+      user: {
+        id: proprietaire.id,
+        email: proprietaire.email,
+        fullName: proprietaire.fullName,
+        role: proprietaire.role,
+        statut: proprietaire.statut,
+        workspaces: [{ id: workspace.id, name: workspace.name, role: "PROPRIETAIRE" }],
+      },
+      token,
+    });
+  } catch (error) {
+    console.error("[auth] setup error:", error);
+    return res.status(500).json({ error: "Erreur interne" });
+  }
+});
+
 export default router;
