@@ -108,10 +108,15 @@ interface Payslip {
   nomPrenom: string;
   matricule?: string;
   statut: string;
-  salaireBrut?: number;
+  salaireBrutContractuel?: number;
+  salaireBrutEffectif?: number;
   salaireNet?: number;
-  totalCotisations?: number;
-  irpp?: number;
+  totalRetenuesSalariales?: number;
+  retenueCnssSalarial?: number;
+  retenueIrpp?: number;
+  retenueCss?: number;
+  baseImposable?: number;
+  netAPayer?: number;
   mois: number;
   annee: number;
 }
@@ -509,10 +514,10 @@ export default function GestionPaie() {
                           <TableRow key={p.id}>
                             <TableCell className="font-medium">{p.nomPrenom}</TableCell>
                             <TableCell className="text-muted-foreground">{p.matricule || "—"}</TableCell>
-                            <TableCell className="text-right">{fmtMoney(p.salaireBrut)}</TableCell>
-                            <TableCell className="text-right">{fmtMoney(p.totalCotisations)}</TableCell>
-                            <TableCell className="text-right">{fmtMoney(p.irpp)}</TableCell>
-                            <TableCell className="text-right font-semibold">{fmtMoney(p.salaireNet)}</TableCell>
+                            <TableCell className="text-right">{fmtMoney(p.salaireBrutEffectif ?? p.salaireBrutContractuel)}</TableCell>
+                            <TableCell className="text-right">{fmtMoney(p.totalRetenuesSalariales)}</TableCell>
+                            <TableCell className="text-right">{fmtMoney(p.retenueIrpp)}</TableCell>
+                            <TableCell className="text-right font-semibold text-gold">{fmtMoney(p.salaireNet)}</TableCell>
                             <TableCell>
                               <Badge variant="secondary" className="text-xs">{p.statut}</Badge>
                             </TableCell>
