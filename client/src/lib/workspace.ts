@@ -31,6 +31,15 @@ export function setActiveWorkspaceId(workspaceId: string): void {
   }
 }
 
+/** Supprimer le workspace actif (déconnexion). */
+export function clearActiveWorkspaceId(): void {
+  try {
+    localStorage.removeItem(WS_KEY);
+  } catch {
+    // localStorage indisponible
+  }
+}
+
 /**
  * Résoudre le workspace actif pour l'utilisateur connecté.
  *

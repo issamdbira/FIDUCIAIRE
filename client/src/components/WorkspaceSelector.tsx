@@ -20,10 +20,6 @@ import { Building2, Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getActiveWorkspaceId, setActiveWorkspaceId } from "@/lib/workspace";
 
-// Ré-export temporaire : GestionEmployes importe getActiveWorkspaceId depuis
-// ce composant. Sera redirigé vers @/lib/workspace lors de l'unification des pages.
-export { getActiveWorkspaceId } from "@/lib/workspace";
-
 /** Changer le workspace actif et recharger la page pour rafraîchir toutes les données */
 function switchWorkspace(workspaceId: string) {
   setActiveWorkspaceId(workspaceId);

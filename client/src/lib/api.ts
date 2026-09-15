@@ -2,7 +2,7 @@
 // Le Fiduciaire — Client HTTP centralisé
 // =============================================================================
 
-import { syncActiveWorkspaceId } from "@/lib/workspace";
+import { syncActiveWorkspaceId, clearActiveWorkspaceId } from "@/lib/workspace";
 
 const TOKEN_KEY = "fiduciaire_token";
 const BASE_URL = "/api";
@@ -50,7 +50,7 @@ export function setToken(token: string): void {
 export function removeToken(): void {
   try {
     localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem("fiduciaire_workspace");
+    clearActiveWorkspaceId();
   } catch {
     // localStorage indisponible
   }

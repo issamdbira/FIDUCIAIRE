@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, type ApiError } from "@/lib/api";
-import { getActiveWorkspaceId } from "@/components/WorkspaceSelector";
+import { getWorkspaceId } from "@/lib/workspace";
 import BackToTools from "@/components/BackToTools";
 
 // shadcn/ui
@@ -142,7 +142,7 @@ const EMPTY_FORM: EmployeeFormData = {
 
 export default function GestionEmployes() {
   const { user } = useAuth();
-  const workspaceId = getActiveWorkspaceId();
+  const workspaceId = getWorkspaceId(user);
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [clients, setClients] = useState<ClientBrief[]>([]);
@@ -288,6 +288,20 @@ export default function GestionEmployes() {
       toast.error("Erreur lors du chargement du détail");
     }
   };
+
+  // ── No workspace guard ─────────────────────────────────────────────────
+  if (!workspaceId) {
+    return (
+      <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
+        <BackToTools />
+        <Card className="p-6 border border-destructive/30">
+          <p className="text-destructive">
+            Aucun workspace sélectionné. Veuillez vous reconnecter.
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   // ── Render ──
   return (

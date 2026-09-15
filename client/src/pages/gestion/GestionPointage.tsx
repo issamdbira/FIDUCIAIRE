@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { getWorkspaceId } from "@/lib/workspace";
 import { api, type ApiError } from "@/lib/api";
 import BackToTools from "@/components/BackToTools";
 
@@ -180,7 +181,7 @@ function getVariableStatutBadge(statut: string) {
 
 export default function GestionPointage() {
   const { user } = useAuth();
-  const workspaceId = user?.workspaces?.[0]?.id || "";
+  const workspaceId = getWorkspaceId(user) ?? "";
 
   // ── Imports state ──
   const [imports, setImports] = useState<AttendanceImport[]>([]);

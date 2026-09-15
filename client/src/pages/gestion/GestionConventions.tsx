@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { getWorkspaceId } from "@/lib/workspace";
 import { api, type ApiError } from "@/lib/api";
 import BackToTools from "@/components/BackToTools";
 
@@ -194,7 +195,7 @@ const EMPTY_GRILLE: GrilleFormData = {
 
 export default function GestionConventions() {
   const { user } = useAuth();
-  const workspaceId = user?.workspaces?.[0]?.id;
+  const workspaceId = getWorkspaceId(user);
 
   // ── State ──
   const [conventions, setConventions] = useState<Convention[]>([]);

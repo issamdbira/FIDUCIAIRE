@@ -21,6 +21,8 @@ import {
 import { Search, Filter, FileSearch, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import BackToTools from "@/components/BackToTools";
+import { useAuth } from "@/contexts/AuthContext";
+import { getWorkspaceId } from "@/lib/workspace";
 
 /* ── Types ─────────────────────────────────────────────────────────── */
 
@@ -107,6 +109,7 @@ const truncate = (s: string, n: number): string =>
 export default function AuditLog() {
   /* ── State ──────────────────────────────────────────────────────── */
 
+  const { user } = useAuth();
   const [actionFilter, setActionFilter] = useState<ActionType>("ALL");
   const [userIdFilter, setUserIdFilter] = useState("");
   const [fromDate, setFromDate] = useState("");
@@ -121,10 +124,7 @@ export default function AuditLog() {
 
   /* ── Workspace ID ───────────────────────────────────────────────── */
 
-  const workspaceId =
-    typeof window !== "undefined"
-      ? localStorage.getItem("fiduciaire_workspace") ?? ""
-      : "";
+  const workspaceId = getWorkspaceId(user) ?? "";
 
   /* ── Fetch ──────────────────────────────────────────────────────── */
 

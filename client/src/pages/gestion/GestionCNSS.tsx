@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { getWorkspaceId } from "@/lib/workspace";
 import { api, type ApiError } from "@/lib/api";
 import BackToTools from "@/components/BackToTools";
 
@@ -149,7 +150,7 @@ function formatDate(iso: string): string {
 
 export default function GestionCNSS() {
   const { user } = useAuth();
-  const workspaceId = user?.workspaces?.[0]?.id || localStorage.getItem("fiduciaire_workspace");
+  const workspaceId = getWorkspaceId(user);
 
   // ── State ──────────────────────────────────────────────────────────────
   const [declarations, setDeclarations] = useState<CnssDeclaration[]>([]);

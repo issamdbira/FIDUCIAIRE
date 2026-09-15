@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { getWorkspaceId } from "@/lib/workspace";
 import { api, type ApiError } from "@/lib/api";
 import BackToTools from "@/components/BackToTools";
 
@@ -256,7 +257,7 @@ const formatMoney = (val: number | null | undefined): string => {
 
 export default function GestionContrats() {
   const { user } = useAuth();
-  const workspaceId = user?.workspaces?.[0]?.id || localStorage.getItem("fiduciaire_workspace");
+  const workspaceId = getWorkspaceId(user);
 
   // ── State ────────────────────────────────────────────────────────────────
   const [contracts, setContracts] = useState<Contract[]>([]);

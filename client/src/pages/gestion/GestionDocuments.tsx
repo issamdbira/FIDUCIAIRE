@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { getWorkspaceId } from "@/lib/workspace";
 import { api, type ApiError } from "@/lib/api";
 import BackToTools from "@/components/BackToTools";
 
@@ -172,11 +173,7 @@ function getTypeInfo(type: TypeDocument) {
 
 export default function GestionDocuments() {
   const { user } = useAuth();
-  const workspaceId =
-    (typeof window !== "undefined" &&
-      localStorage.getItem("fiduciaire_workspace")) ||
-    user?.workspaces?.[0]?.id ||
-    "";
+  const workspaceId = getWorkspaceId(user) ?? "";
 
   // ── State ─────────────────────────────────────────────────────────────
   const [documents, setDocuments] = useState<DocumentStorage[]>([]);

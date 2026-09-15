@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import BackToTools from "@/components/BackToTools";
+import { useAuth } from "@/contexts/AuthContext";
+import { getWorkspaceId } from "@/lib/workspace";
 
 /* ── Types ─────────────────────────────────────────────────────────── */
 
@@ -105,14 +107,9 @@ function Unauthorized() {
 
 export default function DashboardWorkspace() {
   const [, navigate] = useLocation();
+  const { user } = useAuth();
 
-  const [workspaceId, setWorkspaceId] = useState<string>(() => {
-    try {
-      return localStorage.getItem("fiduciaire_workspace") ?? "";
-    } catch {
-      return "";
-    }
-  });
+  const [workspaceId, setWorkspaceId] = useState<string>(() => getWorkspaceId(user) ?? "");
 
   const [data, setData] = useState<WorkspaceData | null>(null);
   const [alerts, setAlerts] = useState<WorkspaceAlerts | null>(null);
