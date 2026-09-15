@@ -355,45 +355,39 @@ router.post("/setup", async (req: Request, res: Response) => {
       },
     });
 
-    // Créer la config paie par défaut pour ce workspace
-    await prisma.payrollConfig.create({
-      data: {
-        workspaceId: workspace.id,
-        smigHoraire48h: 2.667,
-        smigHoraire40h: 2.667 * 48 / 40,
-        smigMensuel48h: 554.736,
-        smigMensuel40h: 554.736 * 40 / 48,
-        cnssTauxSalarial: 0.0918,
-        cnssTauxPatronal: 0.1647,
-        cnssPlafond: 0,
-        cssActive: false,
-        cssTaux: 0,
-        irppDeductionFamiliale: 300,
-        irppDeductionFamilleNbPartsMax: 4,
-        updatedAt: new Date(),
-      },
+    // Créer la config paie par défaut pour ce workspace.
+    // Les valeurs par défaut du schéma Prisma sont identiques à la config de
+    // référence du moteur (client/src/lib/payroll/config.ts CONFIG_PAR_DEFAUT) :
+    // CNSS non agricole 9,68 % / 17,07 %, CSS inactive (LF 2026 art. 23),
+    // frais pro 10 % plafonné à 2000, déductions 300/100/1000, plafond 4…
+    const payrollConfig = await prisma.payrollConfig.create({
+      data: { workspaceId: workspace.id },
     });
 
-    // Créer les tranches IRPP par défaut (barème 2026)
-    const tranches = [
+    // Créer les tranches IRPP par défaut — barème 2026 en 8 tranches,
+    // aligné sur CONFIG_PAR_DEFAUT.baremeIRPP et les tests du moteur
+    // (client/src/lib/payroll/irpp.test.ts). `ordre` est requis et unique
+    // par config (@@unique([payrollConfigId, ordre])) ; la clé étrangère
+    // est payrollConfigId, plus workspaceId.
+    const tranchesIrpp = [
       { min: 0, max: 5000, taux: 0 },
-      { min: 5000, max: 10000, taux: 0.26 },
-      { min: 10000, max: 20000, taux: 0.28 },
-      { min: 20000, max: 30000, taux: 0.32 },
-      { min: 30000, max: 50000, taux: 0.35 },
-      { min: 50000, max: null, taux: 0.38 },
+      { min: 5000, max: 10000, taux: 0.15 },
+      { min: 10000, max: 20000, taux: 0.25 },
+      { min: 20000, max: 30000, taux: 0.3 },
+      { min: 30000, max: 40000, taux: 0.33 },
+      { min: 40000, max: 50000, taux: 0.36 },
+      { min: 50000, max: 70000, taux: 0.38 },
+      { min: 70000, max: null, taux: 0.4 },
     ];
-    for (const t of tranches) {
-      await prisma.tranches_irpp.create({
-        data: {
-          workspaceId: workspace.id,
-          min: t.min,
-          max: t.max,
-          taux: t.taux,
-          updatedAt: new Date(),
-        },
-      });
-    }
+    await prisma.tranches_irpp.createMany({
+      data: tranchesIrpp.map((t, i) => ({
+        payrollConfigId: payrollConfig.id,
+        min: t.min,
+        max: t.max,
+        taux: t.taux,
+        ordre: i + 1,
+      })),
+    });
 
     // Générer un token JWT pour le propriétaire
     const token = signToken({
