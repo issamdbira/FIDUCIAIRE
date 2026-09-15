@@ -18,25 +18,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Building2, Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getActiveWorkspaceId, setActiveWorkspaceId } from "@/lib/workspace";
 
-const WS_KEY = "fiduciaire_workspace";
-
-/** Lire l'ID du workspace actif dans localStorage */
-export function getActiveWorkspaceId(): string | null {
-  try {
-    return localStorage.getItem(WS_KEY);
-  } catch {
-    return null;
-  }
-}
+// Ré-export temporaire : GestionEmployes importe getActiveWorkspaceId depuis
+// ce composant. Sera redirigé vers @/lib/workspace lors de l'unification des pages.
+export { getActiveWorkspaceId } from "@/lib/workspace";
 
 /** Changer le workspace actif et recharger la page pour rafraîchir toutes les données */
 function switchWorkspace(workspaceId: string) {
-  try {
-    localStorage.setItem(WS_KEY, workspaceId);
-  } catch {
-    // localStorage indisponible
-  }
+  setActiveWorkspaceId(workspaceId);
   // Rechargement complet pour que toutes les pages relisent
   // le workspace actif depuis localStorage
   window.location.reload();
