@@ -2,6 +2,8 @@
 // Le Fiduciaire — Client HTTP centralisé
 // =============================================================================
 
+import { syncActiveWorkspaceId } from "@/lib/workspace";
+
 const TOKEN_KEY = "fiduciaire_token";
 const BASE_URL = "/api";
 
@@ -144,10 +146,10 @@ export async function login(email: string, password: string): Promise<LoginRespo
   setToken(result.token);
   localStorage.setItem("fiduciaire_user", JSON.stringify(result.user));
 
-  // Stocker le premier workspace si disponible
-  if (result.user.workspaces && result.user.workspaces.length > 0) {
-    localStorage.setItem("fiduciaire_workspace", result.user.workspaces[0].id);
-  }
+  // Synchroniser le workspace actif : conserve le choix précédent s'il est
+  // toujours valide, sinon pose le premier workspace (le login renvoie
+  // désormais workspaces[], même forme que /auth/me)
+  syncActiveWorkspaceId(result.user);
 
   return result;
 }
@@ -167,6 +169,9 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
   try {
     const user = await api.get<AuthUser>("/auth/me");
     localStorage.setItem("fiduciaire_user", JSON.stringify(user));
+    // Garantir un workspace actif valide en localStorage (sessions créées
+    // avant l'unification, ID périmé, etc.) — sans écraser un choix valide
+    syncActiveWorkspaceId(user);
     return user;
   } catch {
     return null;

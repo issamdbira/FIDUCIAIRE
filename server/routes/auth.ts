@@ -67,7 +67,14 @@ router.post("/login", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "email et password requis" });
     }
 
-    const user = await prisma.users.findUnique({ where: { email } });
+    const user = await prisma.users.findUnique({
+      where: { email },
+      include: {
+        workspace_members: {
+          include: { workspaces: true },
+        },
+      },
+    });
     if (!user) {
       return res.status(401).json({ error: "Identifiants invalides" });
     }
@@ -112,6 +119,11 @@ router.post("/login", async (req: Request, res: Response) => {
         fullName: user.fullName,
         role: user.role,
         statut: user.statut,
+        workspaces: user.workspace_members.map((wm) => ({
+          id: wm.workspaces.id,
+          name: wm.workspaces.name,
+          role: wm.role,
+        })),
       },
     });
   } catch (error) {
@@ -283,7 +295,7 @@ router.post("/setup", async (req: Request, res: Response) => {
         // Retrouver les workspaces
         const memberships = await prisma.workspace_members.findMany({
           where: { userId: existingProp.id },
-          include: { workspace: { select: { id: true, name: true } } },
+          include: { workspaces: { select: { id: true, name: true } } },
         });
         return res.json({
           message: "Mot de passe réinitialisé avec succès",
@@ -293,7 +305,7 @@ router.post("/setup", async (req: Request, res: Response) => {
             fullName: existingProp.fullName,
             role: existingProp.role,
             statut: existingProp.statut,
-            workspaces: memberships.map((m) => ({ id: m.workspace.id, name: m.workspace.name, role: m.role })),
+            workspaces: memberships.map((m) => ({ id: m.workspaces.id, name: m.workspaces.name, role: m.role })),
           },
           token,
         });
