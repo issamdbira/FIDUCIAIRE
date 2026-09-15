@@ -328,13 +328,13 @@ router.get("/workspace/:ws", requireAuth, async (req: Request, res: Response) =>
 
     return res.json({
       effectifActif,
-      entrees,
-      sorties,
+      entreesMois: entrees,
+      sortiesMois: sorties,
       masseSalarialeMois,
       masseSalarialePrecedent,
       variationMasseSalariale,
-      repartitionCNSS,
-      periodesOuvertes,
+      repartitionCnss: repartitionCNSS,
+      periodesOuvertes: periodesOuvertes.map((p) => ({ mois: p.mois, annee: p.annee })),
     });
   } catch (error) {
     console.error("[dashboard] GET /workspace/:ws error:", error);
@@ -506,10 +506,26 @@ router.get("/workspace/:ws/alerts", requireAuth, async (req: Request, res: Respo
     });
 
     return res.json({
-      matriculesCnssManquants,
-      contratsExpirant,
-      periodesNonCloturees,
-      declarationsCnssEnRetard,
+      // Formes alignées sur l'interface WorkspaceAlerts du client
+      // (DashboardWorkspace.tsx) — éviter tout crash de rendu.
+      matriculesCnssManquants: matriculesCnssManquants.map((e) =>
+        `${e.firstName} ${e.lastName}`.trim(),
+      ),
+      contratsExpirant: contratsExpirant.map((c) => ({
+        employeNom: `${c.employee.firstName} ${c.employee.lastName}`.trim(),
+        dateFin: c.dateFin ? c.dateFin.toISOString().slice(0, 10) : "",
+      })),
+      periodesNonCloturees: periodesNonCloturees.map((p) => ({
+        mois: p.mois,
+        annee: p.annee,
+        joursOuverts: Math.max(
+          1,
+          Math.floor((now.getTime() - p.createdAt.getTime()) / (24 * 60 * 60 * 1000)),
+        ),
+      })),
+      declarationsCnssEnRetard: declarationsCnssEnRetard.map((d) => ({
+        periode: `T${d.numeroTrimestre} ${d.annee}`,
+      })),
       autoClosedContracts: expiredCount.count,
     });
   } catch (error) {

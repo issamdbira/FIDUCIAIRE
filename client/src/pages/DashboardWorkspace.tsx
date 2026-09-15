@@ -216,12 +216,21 @@ export default function DashboardWorkspace() {
 
   /* ── Derived ───────────────────────────────────────────────────── */
 
-  const cnssTotal =
-    data.repartitionCnss.salarial + data.repartitionCnss.patronal || 1;
-  const salarialPct = (data.repartitionCnss.salarial / cnssTotal) * 100;
-  const patronalPct = (data.repartitionCnss.patronal / cnssTotal) * 100;
+  // Défensif : si l'API omet repartitionCnss (forme inattendue), on dégrade
+  // l'affichage plutôt que de crasher toute la page.
+  const repartition = data.repartitionCnss ?? { salarial: 0, patronal: 0 };
+  const cnssTotal = repartition.salarial + repartition.patronal || 1;
+  const salarialPct = (repartition.salarial / cnssTotal) * 100;
+  const patronalPct = (repartition.patronal / cnssTotal) * 100;
 
-  const variationPct = data.variationMasseSalariale;
+  const variationPct = data.variationMasseSalariale ?? 0;
+
+  // Listes d'alertes — toujours des tableaux, même si l'API renvoie une forme
+  // inattendue (évite .length / .map sur undefined).
+  const matriculesManquants = alerts?.matriculesCnssManquants ?? [];
+  const contratsExpirantListe = alerts?.contratsExpirant ?? [];
+  const periodesNonClotureesListe = alerts?.periodesNonCloturees ?? [];
+  const declarationsEnRetard = alerts?.declarationsCnssEnRetard ?? [];
 
   /* ── Render ────────────────────────────────────────────────────── */
 
@@ -308,10 +317,10 @@ export default function DashboardWorkspace() {
           <CardContent>
             <div className="space-y-1 mb-2">
               <p className="text-xs text-muted-foreground">
-                Salarial : {formatTND(data.repartitionCnss.salarial)}
+                Salarial : {formatTND(repartition.salarial)}
               </p>
               <p className="text-xs text-muted-foreground">
-                Patronal : {formatTND(data.repartitionCnss.patronal)}
+                Patronal : {formatTND(repartition.patronal)}
               </p>
             </div>
             {/* Stacked horizontal bar */}
@@ -381,13 +390,13 @@ export default function DashboardWorkspace() {
             <h3 className="text-sm font-semibold text-foreground mb-2">
               Matricules CNSS manquants
             </h3>
-            {alerts?.matriculesCnssManquants.length === 0 ? (
+            {matriculesManquants.length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 Aucun matricule manquant
               </p>
             ) : (
               <ul className="space-y-1">
-                {alerts?.matriculesCnssManquants.map((nom, i) => (
+                {matriculesManquants.map((nom, i) => (
                   <li
                     key={i}
                     className="flex items-center gap-2 text-sm text-foreground"
@@ -410,13 +419,13 @@ export default function DashboardWorkspace() {
             <h3 className="text-sm font-semibold text-foreground mb-2">
               Contrats expirant (&lt; 30 jours)
             </h3>
-            {alerts?.contratsExpirant.length === 0 ? (
+            {contratsExpirantListe.length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 Aucun contrat proche de l'expiration
               </p>
             ) : (
               <ul className="space-y-1">
-                {alerts?.contratsExpirant.map((c, i) => (
+                {contratsExpirantListe.map((c, i) => (
                   <li
                     key={i}
                     className="flex items-center gap-2 text-sm text-foreground"
@@ -439,13 +448,13 @@ export default function DashboardWorkspace() {
             <h3 className="text-sm font-semibold text-foreground mb-2">
               Périodes non clôturées (&gt; 15 jours)
             </h3>
-            {alerts?.periodesNonCloturees.length === 0 ? (
+            {periodesNonClotureesListe.length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 Toutes les périodes sont clôturées
               </p>
             ) : (
               <ul className="space-y-1">
-                {alerts?.periodesNonCloturees.map((p, i) => (
+                {periodesNonClotureesListe.map((p, i) => (
                   <li
                     key={i}
                     className="flex items-center gap-2 text-sm text-foreground"
@@ -468,13 +477,13 @@ export default function DashboardWorkspace() {
             <h3 className="text-sm font-semibold text-foreground mb-2">
               Déclarations CNSS en retard
             </h3>
-            {alerts?.declarationsCnssEnRetard.length === 0 ? (
+            {declarationsEnRetard.length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 Aucune déclaration en retard
               </p>
             ) : (
               <ul className="space-y-1">
-                {alerts?.declarationsCnssEnRetard.map((d, i) => (
+                {declarationsEnRetard.map((d, i) => (
                   <li
                     key={i}
                     className="flex items-center gap-2 text-sm text-foreground"
