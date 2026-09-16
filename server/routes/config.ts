@@ -6,6 +6,7 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth, requireWorkspaceAccess } from "../middleware/auth.js";
+import { requireWorkspaceMember, requireWorkspaceOwner } from "../middleware/rbac.js";
 
 const router = Router();
 
@@ -32,7 +33,7 @@ const IRPP_BAREME_2026 = [
 // ---------------------------------------------------------------------------
 // GET /api/config/:workspaceId — Lecture config (Neon d'abord, fallback client)
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId } = req.params;
 
@@ -92,7 +93,7 @@ router.get("/:workspaceId", requireAuth, async (req: Request, res: Response) => 
 // ---------------------------------------------------------------------------
 // PUT /api/config/:workspaceId — Mise à jour config
 // ---------------------------------------------------------------------------
-router.put("/:workspaceId", requireAuth, async (req: Request, res: Response) => {
+router.put("/:workspaceId", requireAuth, requireWorkspaceOwner(), async (req: Request, res: Response) => {
   try {
     const { workspaceId } = req.params;
 
@@ -184,7 +185,7 @@ router.put("/:workspaceId", requireAuth, async (req: Request, res: Response) => 
 // ---------------------------------------------------------------------------
 // POST /api/config/:workspaceId/reset — Réinitialiser aux valeurs par défaut
 // ---------------------------------------------------------------------------
-router.post("/:workspaceId/reset", requireAuth, async (req: Request, res: Response) => {
+router.post("/:workspaceId/reset", requireAuth, requireWorkspaceOwner(), async (req: Request, res: Response) => {
   try {
     const { workspaceId } = req.params;
 

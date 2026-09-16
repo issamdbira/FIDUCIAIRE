@@ -11,6 +11,7 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceMember, requireWorkspaceWriter, requireWorkspaceOwner } from "../middleware/rbac.js";
 
 const router = Router();
 
@@ -28,7 +29,7 @@ async function checkWorkspaceAccess(userId: string, role: string, workspaceId: s
 // ---------------------------------------------------------------------------
 // POST /api/employees — Créer un salarié
 // ---------------------------------------------------------------------------
-router.post("/", requireAuth, async (req: Request, res: Response) => {
+router.post("/", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const {
       workspaceId,
@@ -107,7 +108,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 // GET /api/employees/:workspaceId — Lister les salariés d'un workspace
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId } = req.params;
     const hasAccess = await checkWorkspaceAccess(req.user!.userId, req.user!.role, workspaceId);
@@ -152,7 +153,7 @@ router.get("/:workspaceId", requireAuth, async (req: Request, res: Response) => 
 // ---------------------------------------------------------------------------
 // GET /api/employees/:workspaceId/:id — Détail d'un salarié
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId/:id", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId/:id", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
     const hasAccess = await checkWorkspaceAccess(req.user!.userId, req.user!.role, workspaceId);
@@ -188,7 +189,7 @@ router.get("/:workspaceId/:id", requireAuth, async (req: Request, res: Response)
 // ---------------------------------------------------------------------------
 // PUT /api/employees/:workspaceId/:id — Mettre à jour un salarié
 // ---------------------------------------------------------------------------
-router.put("/:workspaceId/:id", requireAuth, async (req: Request, res: Response) => {
+router.put("/:workspaceId/:id", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
     const hasAccess = await checkWorkspaceAccess(req.user!.userId, req.user!.role, workspaceId);
@@ -259,7 +260,7 @@ router.put("/:workspaceId/:id", requireAuth, async (req: Request, res: Response)
 // déclarations CNSS. Supprimer l'enregistrement casserait l'intégrité
 // référentielle et l'historique fiscal/social.
 // ---------------------------------------------------------------------------
-router.patch("/:workspaceId/:id/archive", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:workspaceId/:id/archive", requireAuth, requireWorkspaceOwner(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
     const hasAccess = await checkWorkspaceAccess(req.user!.userId, req.user!.role, workspaceId);
@@ -290,7 +291,7 @@ router.patch("/:workspaceId/:id/archive", requireAuth, async (req: Request, res:
 // ---------------------------------------------------------------------------
 // PATCH /api/employees/:workspaceId/:id/activate — Réactiver un salarié archivé
 // ---------------------------------------------------------------------------
-router.patch("/:workspaceId/:id/activate", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:workspaceId/:id/activate", requireAuth, requireWorkspaceOwner(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
     const hasAccess = await checkWorkspaceAccess(req.user!.userId, req.user!.role, workspaceId);

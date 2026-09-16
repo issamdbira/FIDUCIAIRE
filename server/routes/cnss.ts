@@ -13,6 +13,7 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceMember, requireWorkspaceWriter, requireWorkspaceOwner } from "../middleware/rbac.js";
 import {
   generateCnssExportText,
   generateCnssExportCsv,
@@ -42,7 +43,7 @@ const CNSS_TRANSITIONS: Record<string, string[]> = {
 // POST /api/cnss/declarations — Créer déclaration CNSS
 // Regroupe les 3 périodes mensuelles validées d'un trimestre
 // ---------------------------------------------------------------------------
-router.post("/declarations", requireAuth, async (req: Request, res: Response) => {
+router.post("/declarations", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, clientCompanyId, annee, numeroTrimestre, note } = req.body;
     if (!workspaceId || !clientCompanyId || !annee || !numeroTrimestre) {
@@ -143,7 +144,7 @@ router.post("/declarations", requireAuth, async (req: Request, res: Response) =>
 // ---------------------------------------------------------------------------
 // GET /api/cnss/:ws/declarations — Lister déclarations
 // ---------------------------------------------------------------------------
-router.get("/:ws/declarations", requireAuth, async (req: Request, res: Response) => {
+router.get("/:ws/declarations", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { ws } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });
@@ -166,7 +167,7 @@ router.get("/:ws/declarations", requireAuth, async (req: Request, res: Response)
 // ---------------------------------------------------------------------------
 // GET /api/cnss/:ws/declarations/:id — Détail déclaration
 // ---------------------------------------------------------------------------
-router.get("/:ws/declarations/:id", requireAuth, async (req: Request, res: Response) => {
+router.get("/:ws/declarations/:id", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { ws, id } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });
@@ -183,7 +184,7 @@ router.get("/:ws/declarations/:id", requireAuth, async (req: Request, res: Respo
 // ---------------------------------------------------------------------------
 // PATCH /api/cnss/:ws/declarations/:id/controler — BROUILLON → CONTROLEE
 // ---------------------------------------------------------------------------
-router.patch("/:ws/declarations/:id/controler", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:ws/declarations/:id/controler", requireAuth, requireWorkspaceOwner(), async (req: Request, res: Response) => {
   try {
     const { ws, id } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });
@@ -207,7 +208,7 @@ router.patch("/:ws/declarations/:id/controler", requireAuth, async (req: Request
 // PATCH /api/cnss/:ws/declarations/:id/generer — CONTROLEE → GENEREE
 // Génère le fichier export CNSS et le stocke
 // ---------------------------------------------------------------------------
-router.patch("/:ws/declarations/:id/generer", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:ws/declarations/:id/generer", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { ws, id } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });
@@ -328,7 +329,7 @@ router.patch("/:ws/declarations/:id/generer", requireAuth, async (req: Request, 
 // ---------------------------------------------------------------------------
 // PATCH /api/cnss/:ws/declarations/:id/archiver — GENEREE → ARCHIVEE
 // ---------------------------------------------------------------------------
-router.patch("/:ws/declarations/:id/archiver", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:ws/declarations/:id/archiver", requireAuth, requireWorkspaceOwner(), async (req: Request, res: Response) => {
   try {
     const { ws, id } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });
@@ -352,7 +353,7 @@ router.patch("/:ws/declarations/:id/archiver", requireAuth, async (req: Request,
 // ---------------------------------------------------------------------------
 // POST /api/cnss/declarations/:id/export — Générer fichier export CNSS (sans transition)
 // ---------------------------------------------------------------------------
-router.post("/declarations/:id/export", requireAuth, async (req: Request, res: Response) => {
+router.post("/declarations/:id/export", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { workspaceId } = req.body;
@@ -451,7 +452,7 @@ router.post("/declarations/:id/export", requireAuth, async (req: Request, res: R
 // ---------------------------------------------------------------------------
 // GET /api/cnss/declarations/:id/download — Télécharger fichier export CNSS
 // ---------------------------------------------------------------------------
-router.get("/declarations/:id/download", requireAuth, async (req: Request, res: Response) => {
+router.get("/declarations/:id/download", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const workspaceId = req.query.workspaceId as string;

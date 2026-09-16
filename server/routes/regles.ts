@@ -10,7 +10,8 @@
 
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceMember, requireWorkspaceWriter, requireWorkspaceOwner } from "../middleware/rbac.js";
 
 const router = Router();
 
@@ -25,7 +26,7 @@ async function checkWorkspaceAccess(userId: string, role: string, workspaceId: s
 // ---------------------------------------------------------------------------
 // POST /api/regles — Créer une règle réglementaire
 // ---------------------------------------------------------------------------
-router.post("/", requireAuth, async (req: Request, res: Response) => {
+router.post("/", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const {
       workspaceId, code, categorie, description, valeur, unite,
@@ -85,7 +86,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 // GET /api/regles/:workspaceId — Lister règles
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId } = req.params;
     const { categorie, code, activeAt } = req.query;
@@ -124,7 +125,7 @@ router.get("/:workspaceId", requireAuth, async (req: Request, res: Response) => 
 // ---------------------------------------------------------------------------
 // GET /api/regles/:workspaceId/active/:code — Règle active à une date donnée
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId/active/:code", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId/active/:code", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, code } = req.params;
     const { date } = req.query;
@@ -163,7 +164,7 @@ router.get("/:workspaceId/active/:code", requireAuth, async (req: Request, res: 
 // ---------------------------------------------------------------------------
 // GET /api/regles/:workspaceId/:id — Détail règle
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId/:id", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId/:id", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
 
@@ -190,7 +191,7 @@ router.get("/:workspaceId/:id", requireAuth, async (req: Request, res: Response)
 // ---------------------------------------------------------------------------
 // PUT /api/regles/:workspaceId/:id — Mettre à jour règle
 // ---------------------------------------------------------------------------
-router.put("/:workspaceId/:id", requireAuth, async (req: Request, res: Response) => {
+router.put("/:workspaceId/:id", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
     const { description, valeur, unite, dateFin, source, reference } = req.body;
@@ -232,7 +233,7 @@ router.put("/:workspaceId/:id", requireAuth, async (req: Request, res: Response)
 // ---------------------------------------------------------------------------
 // DELETE /api/regles/:workspaceId/:id — Supprimer (si non système)
 // ---------------------------------------------------------------------------
-router.delete("/:workspaceId/:id", requireAuth, requireRole("PROPRIETAIRE"), async (req: Request, res: Response) => {
+router.delete("/:workspaceId/:id", requireAuth, requireWorkspaceOwner(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
 

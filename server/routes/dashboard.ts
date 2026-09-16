@@ -7,7 +7,8 @@
 
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
-import { requireAuth, requireRole, requireWorkspaceAccess } from "../middleware/auth.js";
+import { requireAuth, requireWorkspaceAccess } from "../middleware/auth.js";
+import { requireWorkspaceMember, requireWorkspaceWriter, requireAnyWorkspaceOwner } from "../middleware/rbac.js";
 
 const router = Router();
 
@@ -54,7 +55,7 @@ function getMoisTrimestre(numeroTrimestre: number): number[] {
 // ---------------------------------------------------------------------------
 // GET /dashboard/cabinet — Vue globale cabinet (PROPRIETAIRE only)
 // ---------------------------------------------------------------------------
-router.get("/cabinet", requireAuth, requireRole("PROPRIETAIRE"), async (req: Request, res: Response) => {
+router.get("/cabinet", requireAuth, requireAnyWorkspaceOwner, async (req: Request, res: Response) => {
   try {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -193,7 +194,7 @@ router.get("/cabinet", requireAuth, requireRole("PROPRIETAIRE"), async (req: Req
 // ---------------------------------------------------------------------------
 // GET /dashboard/workspace/:ws — Vue workspace
 // ---------------------------------------------------------------------------
-router.get("/workspace/:ws", requireAuth, async (req: Request, res: Response) => {
+router.get("/workspace/:ws", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { ws } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) {
@@ -348,7 +349,7 @@ router.get("/workspace/:ws", requireAuth, async (req: Request, res: Response) =>
 // Retourne le nombre de contrats clôturés.
 // Appelé par le frontend au chargement du dashboard — pas de cron nécessaire.
 // ---------------------------------------------------------------------------
-router.post("/maint/auto-close-contracts", requireAuth, async (req: Request, res: Response) => {
+router.post("/maint/auto-close-contracts", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId } = req.body;
     if (!workspaceId) {
@@ -417,7 +418,7 @@ router.post("/maint/auto-close-contracts", requireAuth, async (req: Request, res
 // ---------------------------------------------------------------------------
 // GET /dashboard/workspace/:ws/alerts — Alertes workspace
 // ---------------------------------------------------------------------------
-router.get("/workspace/:ws/alerts", requireAuth, async (req: Request, res: Response) => {
+router.get("/workspace/:ws/alerts", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { ws } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) {

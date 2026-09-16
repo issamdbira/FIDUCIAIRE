@@ -10,6 +10,7 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceMember, requireWorkspaceWriter } from "../middleware/rbac.js";
 
 const router = Router();
 
@@ -46,7 +47,7 @@ const DEFAULT_DAYS_40H = [
 // ---------------------------------------------------------------------------
 // POST /api/calendars — Créer calendrier de travail
 // ---------------------------------------------------------------------------
-router.post("/", requireAuth, async (req: Request, res: Response) => {
+router.post("/", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const {
       clientCompanyId, workspaceId, nom,
@@ -114,7 +115,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 // GET /api/calendars/:workspaceId — Lister calendriers
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId } = req.params;
     const { clientCompanyId } = req.query;
@@ -146,7 +147,7 @@ router.get("/:workspaceId", requireAuth, async (req: Request, res: Response) => 
 // ---------------------------------------------------------------------------
 // GET /api/calendars/:workspaceId/:id — Détail calendrier + jours
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId/:id", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId/:id", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
 
@@ -177,7 +178,7 @@ router.get("/:workspaceId/:id", requireAuth, async (req: Request, res: Response)
 // ---------------------------------------------------------------------------
 // PUT /api/calendars/:workspaceId/:id — Mettre à jour calendrier
 // ---------------------------------------------------------------------------
-router.put("/:workspaceId/:id", requireAuth, async (req: Request, res: Response) => {
+router.put("/:workspaceId/:id", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
     const { nom, heuresHebdomadaires, joursMoisStandard, heuresMoisStandard, isActive } = req.body;
@@ -213,7 +214,7 @@ router.put("/:workspaceId/:id", requireAuth, async (req: Request, res: Response)
 // ---------------------------------------------------------------------------
 // PUT /api/calendars/:workspaceId/:id/days — Mettre à jour les jours
 // ---------------------------------------------------------------------------
-router.put("/:workspaceId/:id/days", requireAuth, async (req: Request, res: Response) => {
+router.put("/:workspaceId/:id/days", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
     const { jours } = req.body;

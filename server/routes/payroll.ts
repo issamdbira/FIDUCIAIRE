@@ -5,6 +5,7 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceMember, requireWorkspaceWriter, requireWorkspaceOwner } from "../middleware/rbac.js";
 import { calculateMassPayroll } from "../lib/payroll-engine.js";
 import { auditLog, AUDIT_ACTIONS } from "../lib/audit-log.js";
 
@@ -27,7 +28,7 @@ const TRANSITIONS: Record<string, string[]> = {
 // ---------------------------------------------------------------------------
 // POST /api/payroll/periods — Ouvrir période
 // ---------------------------------------------------------------------------
-router.post("/periods", requireAuth, async (req: Request, res: Response) => {
+router.post("/periods", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, clientCompanyId, mois, annee, note } = req.body;
     if (!workspaceId || !clientCompanyId || !mois || !annee) {
@@ -56,7 +57,7 @@ router.post("/periods", requireAuth, async (req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 // GET /api/payroll/:ws/periods — Lister périodes
 // ---------------------------------------------------------------------------
-router.get("/:ws/periods", requireAuth, async (req: Request, res: Response) => {
+router.get("/:ws/periods", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { ws } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });
@@ -79,7 +80,7 @@ router.get("/:ws/periods", requireAuth, async (req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 // GET /api/payroll/:ws/periods/:id — Détail période
 // ---------------------------------------------------------------------------
-router.get("/:ws/periods/:id", requireAuth, async (req: Request, res: Response) => {
+router.get("/:ws/periods/:id", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { ws, id } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });
@@ -96,7 +97,7 @@ router.get("/:ws/periods/:id", requireAuth, async (req: Request, res: Response) 
 // ---------------------------------------------------------------------------
 // PATCH /api/payroll/:ws/periods/:id/calculate — Calcul en masse
 // ---------------------------------------------------------------------------
-router.patch("/:ws/periods/:id/calculate", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:ws/periods/:id/calculate", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { ws, id } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });
@@ -126,7 +127,7 @@ router.patch("/:ws/periods/:id/calculate", requireAuth, async (req: Request, res
 // ---------------------------------------------------------------------------
 // PATCH /api/payroll/:ws/periods/:id/review — Marquer TO_REVIEW
 // ---------------------------------------------------------------------------
-router.patch("/:ws/periods/:id/review", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:ws/periods/:id/review", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { ws, id } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });
@@ -145,7 +146,7 @@ router.patch("/:ws/periods/:id/review", requireAuth, async (req: Request, res: R
 // ---------------------------------------------------------------------------
 // PATCH /api/payroll/:ws/periods/:id/validate — Valider période
 // ---------------------------------------------------------------------------
-router.patch("/:ws/periods/:id/validate", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:ws/periods/:id/validate", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { ws, id } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });
@@ -175,7 +176,7 @@ router.patch("/:ws/periods/:id/validate", requireAuth, async (req: Request, res:
 // ---------------------------------------------------------------------------
 // PATCH /api/payroll/:ws/periods/:id/close — Clôturer période (PROPRIETAIRE)
 // ---------------------------------------------------------------------------
-router.patch("/:ws/periods/:id/close", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:ws/periods/:id/close", requireAuth, requireWorkspaceOwner(), async (req: Request, res: Response) => {
   try {
     const { ws, id } = req.params;
     if (req.user!.role !== "PROPRIETAIRE") return res.status(403).json({ error: "Rôle PROPRIETAIRE requis" });
@@ -198,7 +199,7 @@ router.patch("/:ws/periods/:id/close", requireAuth, async (req: Request, res: Re
 // ---------------------------------------------------------------------------
 // GET /api/payroll/:ws/payslips — Lister bulletins
 // ---------------------------------------------------------------------------
-router.get("/:ws/payslips", requireAuth, async (req: Request, res: Response) => {
+router.get("/:ws/payslips", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { ws } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });
@@ -218,7 +219,7 @@ router.get("/:ws/payslips", requireAuth, async (req: Request, res: Response) => 
 // ---------------------------------------------------------------------------
 // GET /api/payroll/:ws/payslips/:id — Détail bulletin
 // ---------------------------------------------------------------------------
-router.get("/:ws/payslips/:id", requireAuth, async (req: Request, res: Response) => {
+router.get("/:ws/payslips/:id", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { ws, id } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });
@@ -235,7 +236,7 @@ router.get("/:ws/payslips/:id", requireAuth, async (req: Request, res: Response)
 // ---------------------------------------------------------------------------
 // GET /api/payroll/:ws/anomalies — Lister anomalies
 // ---------------------------------------------------------------------------
-router.get("/:ws/anomalies", requireAuth, async (req: Request, res: Response) => {
+router.get("/:ws/anomalies", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { ws } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });
@@ -254,7 +255,7 @@ router.get("/:ws/anomalies", requireAuth, async (req: Request, res: Response) =>
 // ---------------------------------------------------------------------------
 // PATCH /api/payroll/:ws/anomalies/:id/resolve — Résoudre anomalie
 // ---------------------------------------------------------------------------
-router.patch("/:ws/anomalies/:id/resolve", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:ws/anomalies/:id/resolve", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { ws, id } = req.params;
     const { noteResolution } = req.body;
@@ -275,7 +276,7 @@ router.patch("/:ws/anomalies/:id/resolve", requireAuth, async (req: Request, res
 // ---------------------------------------------------------------------------
 // POST /api/payroll/periods/:id/complementary — Créer paie complémentaire
 // ---------------------------------------------------------------------------
-router.post("/periods/:id/complementary", requireAuth, async (req: Request, res: Response) => {
+router.post("/periods/:id/complementary", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { workspaceId, motifComplement, note } = req.body;
@@ -343,7 +344,7 @@ router.post("/periods/:id/complementary", requireAuth, async (req: Request, res:
 // ---------------------------------------------------------------------------
 // GET /api/payroll/:ws/audit — Lister audit logs (filtres combinés)
 // ---------------------------------------------------------------------------
-router.get("/:ws/audit", requireAuth, async (req: Request, res: Response) => {
+router.get("/:ws/audit", requireAuth, requireWorkspaceOwner(), async (req: Request, res: Response) => {
   try {
     const { ws } = req.params;
     if (req.user!.role !== "PROPRIETAIRE") return res.status(403).json({ error: "Rôle PROPRIETAIRE requis" });

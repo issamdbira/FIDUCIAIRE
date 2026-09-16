@@ -8,6 +8,7 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceMember, requireWorkspaceWriter } from "../middleware/rbac.js";
 import { generateBulletinHtml, storeFile, fileExists } from "../lib/document-generator.js";
 import { auditLog, AUDIT_ACTIONS } from "../lib/audit-log.js";
 
@@ -22,7 +23,7 @@ async function checkWs(userId: string, role: string, ws: string): Promise<boolea
 // ---------------------------------------------------------------------------
 // POST /api/reports/periods/:id/grouped-pdf — Générer rapport groupé
 // ---------------------------------------------------------------------------
-router.post("/periods/:id/grouped-pdf", requireAuth, async (req: Request, res: Response) => {
+router.post("/periods/:id/grouped-pdf", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { workspaceId } = req.body;
@@ -129,7 +130,7 @@ router.post("/periods/:id/grouped-pdf", requireAuth, async (req: Request, res: R
 // ---------------------------------------------------------------------------
 // GET /api/reports/:ws — Lister rapports générés
 // ---------------------------------------------------------------------------
-router.get("/:ws", requireAuth, async (req: Request, res: Response) => {
+router.get("/:ws", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { ws } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });
@@ -145,7 +146,7 @@ router.get("/:ws", requireAuth, async (req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 // GET /api/reports/:ws/:id — Détail rapport
 // ---------------------------------------------------------------------------
-router.get("/:ws/:id", requireAuth, async (req: Request, res: Response) => {
+router.get("/:ws/:id", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { ws, id } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });

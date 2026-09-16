@@ -15,6 +15,7 @@ import { Router, Request, Response } from "express";
 import multer from "multer";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceMember, requireWorkspaceWriter } from "../middleware/rbac.js";
 import {
   parseFile,
   validateRows,
@@ -54,7 +55,7 @@ async function checkWorkspaceAccess(userId: string, role: string, workspaceId: s
 // ---------------------------------------------------------------------------
 // POST /api/attendance/import — Importer fichier Excel/CSV
 // ---------------------------------------------------------------------------
-router.post("/import", requireAuth, upload.single("file"), async (req: Request, res: Response) => {
+router.post("/import", requireAuth, upload.single("file"), requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, clientCompanyId, mois, annee } = req.body;
 
@@ -159,7 +160,7 @@ router.post("/import", requireAuth, upload.single("file"), async (req: Request, 
 // ---------------------------------------------------------------------------
 // GET /api/attendance/:workspaceId/imports — Lister les imports
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId/imports", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId/imports", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId } = req.params;
     const { mois, annee, clientCompanyId } = req.query;
@@ -191,7 +192,7 @@ router.get("/:workspaceId/imports", requireAuth, async (req: Request, res: Respo
 // ---------------------------------------------------------------------------
 // GET /api/attendance/:workspaceId/imports/:id — Détail import + anomalies
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId/imports/:id", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId/imports/:id", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
 
@@ -217,7 +218,7 @@ router.get("/:workspaceId/imports/:id", requireAuth, async (req: Request, res: R
 // ---------------------------------------------------------------------------
 // GET /api/attendance/:workspaceId/summaries/:importId — Résumés par import
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId/summaries/:importId", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId/summaries/:importId", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, importId } = req.params;
 
@@ -243,7 +244,7 @@ router.get("/:workspaceId/summaries/:importId", requireAuth, async (req: Request
 // ---------------------------------------------------------------------------
 // GET /api/attendance/:workspaceId/variables — Variables de paie
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId/variables", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId/variables", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId } = req.params;
     const { mois, annee, statut, employeeId } = req.query;
@@ -277,7 +278,7 @@ router.get("/:workspaceId/variables", requireAuth, async (req: Request, res: Res
 // ---------------------------------------------------------------------------
 // GET /api/attendance/:workspaceId/variables/:id — Détail variable
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId/variables/:id", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId/variables/:id", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
 
@@ -303,7 +304,7 @@ router.get("/:workspaceId/variables/:id", requireAuth, async (req: Request, res:
 // ---------------------------------------------------------------------------
 // PATCH /api/attendance/:workspaceId/variables/:id/validate — Valider variable
 // ---------------------------------------------------------------------------
-router.patch("/:workspaceId/variables/:id/validate", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:workspaceId/variables/:id/validate", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
     const { noteValidation } = req.body;
@@ -337,7 +338,7 @@ router.patch("/:workspaceId/variables/:id/validate", requireAuth, async (req: Re
 // ---------------------------------------------------------------------------
 // PATCH /api/attendance/:workspaceId/variables/:id/refuse — Refuser variable
 // ---------------------------------------------------------------------------
-router.patch("/:workspaceId/variables/:id/refuse", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:workspaceId/variables/:id/refuse", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
     const { noteValidation } = req.body;
@@ -371,7 +372,7 @@ router.patch("/:workspaceId/variables/:id/refuse", requireAuth, async (req: Requ
 // ---------------------------------------------------------------------------
 // POST /api/attendance/template — Générer template Excel standardisé
 // ---------------------------------------------------------------------------
-router.post("/template", requireAuth, async (_req: Request, res: Response) => {
+router.post("/template", requireAuth, requireWorkspaceMember(), async (_req: Request, res: Response) => {
   try {
     const headers = [
       "Matricule",

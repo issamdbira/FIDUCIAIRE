@@ -12,6 +12,7 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceMember, requireWorkspaceWriter } from "../middleware/rbac.js";
 
 const router = Router();
 
@@ -27,7 +28,7 @@ async function checkWorkspaceAccess(userId: string, role: string, workspaceId: s
 // ---------------------------------------------------------------------------
 // POST /api/contracts — Créer un contrat + version initiale
 // ---------------------------------------------------------------------------
-router.post("/", requireAuth, async (req: Request, res: Response) => {
+router.post("/", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const {
       employeeId, workspaceId, type, poste, conventionCollectiveId,
@@ -122,7 +123,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 // GET /api/contracts/:workspaceId — Lister contrats du workspace
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId } = req.params;
     const { statut, type, employeeId } = req.query;
@@ -164,7 +165,7 @@ router.get("/:workspaceId", requireAuth, async (req: Request, res: Response) => 
 // ---------------------------------------------------------------------------
 // GET /api/contracts/:workspaceId/:id — Détail contrat + toutes versions
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId/:id", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId/:id", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
 
@@ -203,7 +204,7 @@ router.get("/:workspaceId/:id", requireAuth, async (req: Request, res: Response)
 // ---------------------------------------------------------------------------
 // PUT /api/contracts/:workspaceId/:id — Mettre à jour contrat
 // ---------------------------------------------------------------------------
-router.put("/:workspaceId/:id", requireAuth, async (req: Request, res: Response) => {
+router.put("/:workspaceId/:id", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
     const { poste, conventionCollectiveId, dateFin, periodeEssai } = req.body;
@@ -238,7 +239,7 @@ router.put("/:workspaceId/:id", requireAuth, async (req: Request, res: Response)
 // ---------------------------------------------------------------------------
 // POST /api/contracts/:workspaceId/:id/versions — Ajouter une version
 // ---------------------------------------------------------------------------
-router.post("/:workspaceId/:id/versions", requireAuth, async (req: Request, res: Response) => {
+router.post("/:workspaceId/:id/versions", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
     const {
@@ -289,7 +290,7 @@ router.post("/:workspaceId/:id/versions", requireAuth, async (req: Request, res:
 // ---------------------------------------------------------------------------
 // PATCH /api/contracts/:workspaceId/:id/resilier — Résilier
 // ---------------------------------------------------------------------------
-router.patch("/:workspaceId/:id/resilier", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:workspaceId/:id/resilier", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
     const { motifRupture, dateRupture } = req.body;
@@ -326,7 +327,7 @@ router.patch("/:workspaceId/:id/resilier", requireAuth, async (req: Request, res
 // ---------------------------------------------------------------------------
 // PATCH /api/contracts/:workspaceId/:id/suspendre — Suspendre
 // ---------------------------------------------------------------------------
-router.patch("/:workspaceId/:id/suspendre", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:workspaceId/:id/suspendre", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
 

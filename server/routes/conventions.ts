@@ -13,7 +13,8 @@
 
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceMember, requireWorkspaceWriter, requireWorkspaceOwner } from "../middleware/rbac.js";
 
 const router = Router();
 
@@ -28,7 +29,7 @@ async function checkWorkspaceAccess(userId: string, role: string, workspaceId: s
 // ---------------------------------------------------------------------------
 // POST /api/conventions — Créer convention collective
 // ---------------------------------------------------------------------------
-router.post("/", requireAuth, async (req: Request, res: Response) => {
+router.post("/", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, code, nom, secteur, organisme, datePublication, isSystem } = req.body;
 
@@ -74,7 +75,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 // GET /api/conventions/:workspaceId — Lister conventions
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId } = req.params;
     const { secteur } = req.query;
@@ -105,7 +106,7 @@ router.get("/:workspaceId", requireAuth, async (req: Request, res: Response) => 
 // ---------------------------------------------------------------------------
 // GET /api/conventions/:workspaceId/:id — Détail + articles + grille
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId/:id", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId/:id", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
 
@@ -140,7 +141,7 @@ router.get("/:workspaceId/:id", requireAuth, async (req: Request, res: Response)
 // ---------------------------------------------------------------------------
 // PUT /api/conventions/:workspaceId/:id — Mettre à jour convention
 // ---------------------------------------------------------------------------
-router.put("/:workspaceId/:id", requireAuth, async (req: Request, res: Response) => {
+router.put("/:workspaceId/:id", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
     const { nom, secteur, organisme, datePublication, isActive } = req.body;
@@ -181,7 +182,7 @@ router.put("/:workspaceId/:id", requireAuth, async (req: Request, res: Response)
 // ---------------------------------------------------------------------------
 // DELETE /api/conventions/:workspaceId/:id — Supprimer (si non système)
 // ---------------------------------------------------------------------------
-router.delete("/:workspaceId/:id", requireAuth, requireRole("PROPRIETAIRE"), async (req: Request, res: Response) => {
+router.delete("/:workspaceId/:id", requireAuth, requireWorkspaceOwner(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
 
@@ -204,7 +205,7 @@ router.delete("/:workspaceId/:id", requireAuth, requireRole("PROPRIETAIRE"), asy
 // ---------------------------------------------------------------------------
 // POST /api/conventions/:workspaceId/:id/articles — Ajouter article
 // ---------------------------------------------------------------------------
-router.post("/:workspaceId/:id/articles", requireAuth, async (req: Request, res: Response) => {
+router.post("/:workspaceId/:id/articles", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
     const { numero, titre, contenu, ordre } = req.body;
@@ -243,7 +244,7 @@ router.post("/:workspaceId/:id/articles", requireAuth, async (req: Request, res:
 // ---------------------------------------------------------------------------
 // POST /api/conventions/:workspaceId/:id/grille — Ajouter entrée grille salariale
 // ---------------------------------------------------------------------------
-router.post("/:workspaceId/:id/grille", requireAuth, async (req: Request, res: Response) => {
+router.post("/:workspaceId/:id/grille", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
     const { coefficient, echelon, salaireMinimum, dateEffet, dateFin } = req.body;
@@ -283,7 +284,7 @@ router.post("/:workspaceId/:id/grille", requireAuth, async (req: Request, res: R
 // ---------------------------------------------------------------------------
 // POST /api/conventions/:workspaceId/:id/adaptations — Créer adaptation client
 // ---------------------------------------------------------------------------
-router.post("/:workspaceId/:id/adaptations", requireAuth, async (req: Request, res: Response) => {
+router.post("/:workspaceId/:id/adaptations", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
     const {
@@ -335,7 +336,7 @@ router.post("/:workspaceId/:id/adaptations", requireAuth, async (req: Request, r
 // ---------------------------------------------------------------------------
 // GET /api/conventions/:workspaceId/:id/adaptations — Lister adaptations
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId/:id/adaptations", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId/:id/adaptations", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
 

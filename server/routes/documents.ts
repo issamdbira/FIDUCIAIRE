@@ -11,6 +11,7 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceMember, requireWorkspaceWriter } from "../middleware/rbac.js";
 import {
   generateBulletinHtml,
   generatePayrollExcel,
@@ -31,7 +32,7 @@ async function checkWs(userId: string, role: string, ws: string): Promise<boolea
 // ---------------------------------------------------------------------------
 // POST /api/documents/payslips/:id/pdf — Générer bulletin PDF (HTML stocké)
 // ---------------------------------------------------------------------------
-router.post("/payslips/:id/pdf", requireAuth, async (req: Request, res: Response) => {
+router.post("/payslips/:id/pdf", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { workspaceId } = req.body;
@@ -93,7 +94,7 @@ router.post("/payslips/:id/pdf", requireAuth, async (req: Request, res: Response
 // ---------------------------------------------------------------------------
 // GET /api/documents/payslips/:id/download — Télécharger bulletin
 // ---------------------------------------------------------------------------
-router.get("/payslips/:id/download", requireAuth, async (req: Request, res: Response) => {
+router.get("/payslips/:id/download", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const workspaceId = req.query.workspaceId as string;
@@ -118,7 +119,7 @@ router.get("/payslips/:id/download", requireAuth, async (req: Request, res: Resp
 // ---------------------------------------------------------------------------
 // POST /api/documents/periods/:id/excel — Export Excel d'une période
 // ---------------------------------------------------------------------------
-router.post("/periods/:id/excel", requireAuth, async (req: Request, res: Response) => {
+router.post("/periods/:id/excel", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { workspaceId } = req.body;
@@ -162,7 +163,7 @@ router.post("/periods/:id/excel", requireAuth, async (req: Request, res: Respons
 // ---------------------------------------------------------------------------
 // POST /api/documents/periods/:id/csv — Export CSV d'une période
 // ---------------------------------------------------------------------------
-router.post("/periods/:id/csv", requireAuth, async (req: Request, res: Response) => {
+router.post("/periods/:id/csv", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { workspaceId } = req.body;
@@ -205,7 +206,7 @@ router.post("/periods/:id/csv", requireAuth, async (req: Request, res: Response)
 // ---------------------------------------------------------------------------
 // GET /api/documents/:ws — Lister documents d'un workspace
 // ---------------------------------------------------------------------------
-router.get("/:ws", requireAuth, async (req: Request, res: Response) => {
+router.get("/:ws", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { ws } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });
@@ -228,7 +229,7 @@ router.get("/:ws", requireAuth, async (req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 // GET /api/documents/:ws/:id — Détail document
 // ---------------------------------------------------------------------------
-router.get("/:ws/:id", requireAuth, async (req: Request, res: Response) => {
+router.get("/:ws/:id", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { ws, id } = req.params;
     if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });

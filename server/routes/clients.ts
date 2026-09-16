@@ -13,6 +13,7 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { requireWorkspaceMember, requireWorkspaceWriter, requireWorkspaceOwner } from "../middleware/rbac.js";
 
 const router = Router();
 
@@ -30,7 +31,7 @@ async function checkWorkspaceAccess(userId: string, role: string, workspaceId: s
 // ---------------------------------------------------------------------------
 // POST /api/clients — Créer entreprise + établissement principal en une fois
 // ---------------------------------------------------------------------------
-router.post("/", requireAuth, async (req: Request, res: Response) => {
+router.post("/", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const {
       workspaceId,
@@ -111,7 +112,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 // GET /api/clients/:workspaceId — Lister les entreprises du workspace
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId } = req.params;
     const { statut, search } = req.query;
@@ -152,7 +153,7 @@ router.get("/:workspaceId", requireAuth, async (req: Request, res: Response) => 
 // ---------------------------------------------------------------------------
 // GET /api/clients/:workspaceId/:id — Détail entreprise
 // ---------------------------------------------------------------------------
-router.get("/:workspaceId/:id", requireAuth, async (req: Request, res: Response) => {
+router.get("/:workspaceId/:id", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
 
@@ -190,7 +191,7 @@ router.get("/:workspaceId/:id", requireAuth, async (req: Request, res: Response)
 // ---------------------------------------------------------------------------
 // PUT /api/clients/:workspaceId/:id — Mettre à jour entreprise
 // ---------------------------------------------------------------------------
-router.put("/:workspaceId/:id", requireAuth, async (req: Request, res: Response) => {
+router.put("/:workspaceId/:id", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
 
@@ -233,7 +234,7 @@ router.put("/:workspaceId/:id", requireAuth, async (req: Request, res: Response)
 // ---------------------------------------------------------------------------
 // PATCH /api/clients/:workspaceId/:id/archive — Archiver (jamais supprimer)
 // ---------------------------------------------------------------------------
-router.patch("/:workspaceId/:id/archive", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:workspaceId/:id/archive", requireAuth, requireWorkspaceOwner(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
 
@@ -265,7 +266,7 @@ router.patch("/:workspaceId/:id/archive", requireAuth, async (req: Request, res:
 // ---------------------------------------------------------------------------
 // PATCH /api/clients/:workspaceId/:id/activate — Réactiver
 // ---------------------------------------------------------------------------
-router.patch("/:workspaceId/:id/activate", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:workspaceId/:id/activate", requireAuth, requireWorkspaceOwner(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
 
@@ -294,7 +295,7 @@ router.patch("/:workspaceId/:id/activate", requireAuth, async (req: Request, res
 // ---------------------------------------------------------------------------
 // POST /api/clients/:workspaceId/:id/establishments — Ajouter établissement
 // ---------------------------------------------------------------------------
-router.post("/:workspaceId/:id/establishments", requireAuth, async (req: Request, res: Response) => {
+router.post("/:workspaceId/:id/establishments", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id } = req.params;
     const { designation, isPrincipal, adresse, ville, gouvernorat, codePostal, matriculeCnss, codeExploitation } = req.body;
@@ -345,7 +346,7 @@ router.post("/:workspaceId/:id/establishments", requireAuth, async (req: Request
 // ---------------------------------------------------------------------------
 // PUT /api/clients/:workspaceId/:id/establishments/:estId — Modifier établissement
 // ---------------------------------------------------------------------------
-router.put("/:workspaceId/:id/establishments/:estId", requireAuth, async (req: Request, res: Response) => {
+router.put("/:workspaceId/:id/establishments/:estId", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
     const { workspaceId, id, estId } = req.params;
     const data = req.body;
