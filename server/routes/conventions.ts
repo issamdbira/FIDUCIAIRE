@@ -15,6 +15,7 @@ import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireWorkspaceMember, requireWorkspaceWriter, requireWorkspaceOwner } from "../middleware/rbac.js";
+import { auditLog } from "../lib/audit-log.js";
 
 const router = Router();
 
@@ -63,6 +64,16 @@ router.post("/", requireAuth, requireWorkspaceWriter(), async (req: Request, res
         datePublication: datePublication ? new Date(datePublication) : null,
         isSystem: isSystemFlag || false,
       },
+    });
+
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "CONVENTION_CREATE",
+      entity: "ConventionCollective",
+      entityId: convention.id,
+      details: JSON.stringify({ nom: convention.nom, code: convention.code }),
+      ipAddress: req.ip,
     });
 
     return res.status(201).json(convention);

@@ -42,6 +42,12 @@ router.post("/periods", requireAuth, requireWorkspaceWriter(), async (req: Reque
     const client = await prisma.clientCompany.findFirst({ where: { id: clientCompanyId, workspaceId } });
     if (!client) return res.status(404).json({ error: "Client introuvable" });
 
+    // Archivage bloquant : un client ARCHIVED ne peut plus ouvrir de période
+    // de paie (l'historique reste consultable en lecture)
+    if (client.statut === "ARCHIVED") {
+      return res.status(409).json({ error: `Client archivé — réactivez-le avant d'ouvrir une période de paie` });
+    }
+
     const existing = await prisma.payrollPeriod.findUnique({
       where: { workspaceId_clientCompanyId_annee_mois: { workspaceId, clientCompanyId, annee: a, mois: m } },
     });

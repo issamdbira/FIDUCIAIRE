@@ -7,6 +7,7 @@ import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth, requireWorkspaceAccess } from "../middleware/auth.js";
 import { requireWorkspaceMember, requireWorkspaceOwner } from "../middleware/rbac.js";
+import { auditLog } from "../lib/audit-log.js";
 
 const router = Router();
 
@@ -109,6 +110,12 @@ router.put("/:workspaceId", requireAuth, requireWorkspaceOwner(), async (req: Re
 
     const data = req.body;
 
+    // Sauvegarde de l'état avant modification (pour l'audit avant/après)
+    const configAvant = await prisma.payrollConfig.findUnique({
+      where: { workspaceId },
+      include: { tranches_irpp: { orderBy: { ordre: "asc" } } },
+    });
+
     // Upsert config
     const config = await prisma.payrollConfig.upsert({
       where: { workspaceId },
@@ -175,6 +182,29 @@ router.put("/:workspaceId", requireAuth, requireWorkspaceOwner(), async (req: Re
       include: { tranches_irpp: { orderBy: { ordre: "asc" } } },
     });
 
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "CONFIG_UPDATE",
+      entity: "PayrollConfig",
+      entityId: result?.id ?? undefined,
+      details: JSON.stringify({
+        avant: configAvant ? {
+          cnssSalarialNonAgricole: configAvant.cnssSalarialNonAgricole,
+          cnssPatronalNonAgricole: configAvant.cnssPatronalNonAgricole,
+          deductionChefFamille: configAvant.deductionChefFamille,
+          nbTranchesIrpp: configAvant.tranches_irpp.length,
+        } : null,
+        apres: {
+          cnssSalarialNonAgricole: result?.cnssSalarialNonAgricole,
+          cnssPatronalNonAgricole: result?.cnssPatronalNonAgricole,
+          deductionChefFamille: result?.deductionChefFamille,
+          nbTranchesIrpp: result?.tranches_irpp.length ?? 0,
+        },
+      }),
+      ipAddress: req.ip,
+    });
+
     return res.json({ source: "neon", ...result, tranchesIrpp: result!.tranches_irpp });
   } catch (error) {
     console.error("[config] PUT error:", error);
@@ -225,6 +255,16 @@ router.post("/:workspaceId/reset", requireAuth, requireWorkspaceOwner(), async (
     const result = await prisma.payrollConfig.findUnique({
       where: { workspaceId },
       include: { tranches_irpp: { orderBy: { ordre: "asc" } } },
+    });
+
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "CONFIG_RESET",
+      entity: "PayrollConfig",
+      entityId: result?.id ?? undefined,
+      details: JSON.stringify({ message: "Réinitialisation aux valeurs par défaut (barème IRPP 2026 en 8 tranches)" }),
+      ipAddress: req.ip,
     });
 
     return res.json({ source: "neon", ...result, tranchesIrpp: result!.tranches_irpp });

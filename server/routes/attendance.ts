@@ -16,6 +16,7 @@ import multer from "multer";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireWorkspaceMember, requireWorkspaceWriter } from "../middleware/rbac.js";
+import { auditLog } from "../lib/audit-log.js";
 import {
   parseFile,
   validateRows,
@@ -85,6 +86,11 @@ router.post("/import", requireAuth, upload.single("file"), requireWorkspaceWrite
       return res.status(404).json({ error: "Entreprise cliente introuvable dans ce workspace" });
     }
 
+    // Archivage bloquant : pas d'import de pointage pour un client ARCHIVED
+    if (client.statut === "ARCHIVED") {
+      return res.status(409).json({ error: "Client archivé — réactivez-le avant d'importer du pointage" });
+    }
+
     // Parser le fichier
     let rows;
     try {
@@ -137,6 +143,16 @@ router.post("/import", requireAuth, upload.single("file"), requireWorkspaceWrite
       summariesCreated = result.summariesCreated;
       variablesCreated = result.variablesCreated;
     }
+
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "ATTENDANCE_IMPORT",
+      entity: "AttendanceImport",
+      entityId: undefined,
+      details: JSON.stringify({ clientCompanyId, mois: moisNum, annee: anneeNum, fichier: req.file?.originalname }),
+      ipAddress: req.ip,
+    });
 
     return res.status(201).json({
       import: attendanceImport,
@@ -328,6 +344,16 @@ router.patch("/:workspaceId/variables/:id/validate", requireAuth, requireWorkspa
       },
     });
 
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "ATTENDANCE_VARIABLE_VALIDATE",
+      entity: "PayrollVariable",
+      entityId: id,
+      details: JSON.stringify({ avant: existing.statut, apres: "VALIDEe", note: noteValidation || null }),
+      ipAddress: req.ip,
+    });
+
     return res.json(updated);
   } catch (error) {
     console.error("[attendance] validate error:", error);
@@ -360,6 +386,16 @@ router.patch("/:workspaceId/variables/:id/refuse", requireAuth, requireWorkspace
         validatedAt: new Date(),
         noteValidation: noteValidation || null,
       },
+    });
+
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "ATTENDANCE_VARIABLE_REFUSE",
+      entity: "PayrollVariable",
+      entityId: id,
+      details: JSON.stringify({ avant: existing.statut, apres: "REFUSEe", note: noteValidation || null }),
+      ipAddress: req.ip,
     });
 
     return res.json(updated);

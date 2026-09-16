@@ -13,6 +13,7 @@ import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireWorkspaceMember, requireWorkspaceWriter } from "../middleware/rbac.js";
+import { auditLog } from "../lib/audit-log.js";
 
 const router = Router();
 
@@ -56,6 +57,17 @@ router.post("/", requireAuth, requireWorkspaceWriter(), async (req: Request, res
     });
     if (!employee) {
       return res.status(404).json({ error: "Employé introuvable dans ce workspace" });
+    }
+
+    // Archivage bloquant : pas de nouveau contrat pour un salarié dont le
+    // client est ARCHIVED (l'historique reste consultable)
+    if (employee.clientCompanyId) {
+      const clientDuSalarié = await prisma.clientCompany.findFirst({
+        where: { id: employee.clientCompanyId, workspaceId },
+      });
+      if (clientDuSalarié?.statut === "ARCHIVED") {
+        return res.status(409).json({ error: "Client archivé — réactivez-le avant de créer un nouveau contrat" });
+      }
     }
 
     // Vérifier le type de contrat
@@ -107,6 +119,16 @@ router.post("/", requireAuth, requireWorkspaceWriter(), async (req: Request, res
       });
 
       return { contract, version };
+    });
+
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "CONTRACT_CREATE",
+      entity: "Contract",
+      entityId: result.contract.id,
+      details: JSON.stringify({ employé: employeeId, type, poste, salaireBrut }),
+      ipAddress: req.ip,
     });
 
     return res.status(201).json({

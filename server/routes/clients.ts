@@ -14,6 +14,7 @@ import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireWorkspaceMember, requireWorkspaceWriter, requireWorkspaceOwner } from "../middleware/rbac.js";
+import { auditLog } from "../lib/audit-log.js";
 
 const router = Router();
 
@@ -96,6 +97,16 @@ router.post("/", requireAuth, requireWorkspaceWriter(), async (req: Request, res
       });
 
       return { company, establishment };
+    });
+
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "CLIENT_CREATE",
+      entity: "ClientCompany",
+      entityId: result.company.id,
+      details: JSON.stringify({ raisonSociale, matriculeFiscal: matriculeFiscal || null }),
+      ipAddress: req.ip,
     });
 
     return res.status(201).json({
@@ -224,6 +235,19 @@ router.put("/:workspaceId/:id", requireAuth, requireWorkspaceWriter(), async (re
       },
     });
 
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "CLIENT_UPDATE",
+      entity: "ClientCompany",
+      entityId: id,
+      details: JSON.stringify({
+        avant: { raisonSociale: existing.raisonSociale, matriculeFiscal: existing.matriculeFiscal, contactEmail: existing.contactEmail },
+        apres: { raisonSociale: updated.raisonSociale, matriculeFiscal: updated.matriculeFiscal, contactEmail: updated.contactEmail },
+      }),
+      ipAddress: req.ip,
+    });
+
     return res.json(updated);
   } catch (error) {
     console.error("[clients] PUT error:", error);
@@ -256,6 +280,16 @@ router.patch("/:workspaceId/:id/archive", requireAuth, requireWorkspaceOwner(), 
       data: { statut: "ARCHIVED", archivedAt: new Date() },
     });
 
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "CLIENT_ARCHIVE",
+      entity: "ClientCompany",
+      entityId: id,
+      details: JSON.stringify({ raisonSociale: existing.raisonSociale, avant: "ACTIVE", apres: "ARCHIVED" }),
+      ipAddress: req.ip,
+    });
+
     return res.json(updated);
   } catch (error) {
     console.error("[clients] archive error:", error);
@@ -283,6 +317,16 @@ router.patch("/:workspaceId/:id/activate", requireAuth, requireWorkspaceOwner(),
     const updated = await prisma.clientCompany.update({
       where: { id },
       data: { statut: "ACTIVE", archivedAt: null },
+    });
+
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "CLIENT_ACTIVATE",
+      entity: "ClientCompany",
+      entityId: id,
+      details: JSON.stringify({ raisonSociale: existing.raisonSociale, avant: "ARCHIVED", apres: "ACTIVE" }),
+      ipAddress: req.ip,
     });
 
     return res.json(updated);

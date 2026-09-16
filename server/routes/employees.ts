@@ -12,6 +12,7 @@ import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireWorkspaceMember, requireWorkspaceWriter, requireWorkspaceOwner } from "../middleware/rbac.js";
+import { auditLog } from "../lib/audit-log.js";
 
 const router = Router();
 
@@ -96,6 +97,16 @@ router.post("/", requireAuth, requireWorkspaceWriter(), async (req: Request, res
         isActive: true,
         hiredAt: hiredAt ? new Date(hiredAt) : new Date(),
       },
+    });
+
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "EMPLOYEE_CREATE",
+      entity: "employees",
+      entityId: employee.id,
+      details: JSON.stringify({ salarié: `${employee.firstName} ${employee.lastName}`, matriculeCnss: employee.matriculeCnss, baseSalary: employee.baseSalary }),
+      ipAddress: req.ip,
     });
 
     res.status(201).json(employee);
@@ -246,6 +257,19 @@ router.put("/:workspaceId/:id", requireAuth, requireWorkspaceWriter(), async (re
       },
     });
 
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "EMPLOYEE_UPDATE",
+      entity: "employees",
+      entityId: id,
+      details: JSON.stringify({
+        avant: { firstName: existing.firstName, lastName: existing.lastName, baseSalary: existing.baseSalary, clientCompanyId: existing.clientCompanyId },
+        apres: { firstName: updated.firstName, lastName: updated.lastName, baseSalary: updated.baseSalary, clientCompanyId: updated.clientCompanyId },
+      }),
+      ipAddress: req.ip,
+    });
+
     res.json(updated);
   } catch (err: any) {
     console.error("[employees] PUT error:", err.message);
@@ -279,6 +303,16 @@ router.patch("/:workspaceId/:id/archive", requireAuth, requireWorkspaceOwner(), 
         isActive: false,
         departedAt: new Date(),
       },
+    });
+
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "EMPLOYEE_ARCHIVE",
+      entity: "employees",
+      entityId: id,
+      details: JSON.stringify({ salarié: `${existing.firstName} ${existing.lastName}`, avant: "actif", apres: "archivé" }),
+      ipAddress: req.ip,
     });
 
     res.json(updated);
