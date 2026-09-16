@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { getWorkspaceId } from "@/lib/workspace";
+import { can, roleInWorkspace } from "@/lib/permissions";
 import { api, type ApiError } from "@/lib/api";
 import BackToTools from "@/components/BackToTools";
 
@@ -182,6 +183,9 @@ function getVariableStatutBadge(statut: string) {
 export default function GestionPointage() {
   const { user } = useAuth();
   const workspaceId = getWorkspaceId(user) ?? "";
+  // Permissions du workspace actif (miroir backend) — LECTEUR : lecture seule
+  const roleWs = roleInWorkspace(user, workspaceId || null);
+  const peutEcrire = can(roleWs, "write"); // importer, valider/refuser les variables
 
   // ── Imports state ──
   const [imports, setImports] = useState<AttendanceImport[]>([]);
@@ -590,14 +594,16 @@ export default function GestionPointage() {
                   >
                     <RefreshCw className={`size-4 ${importsLoading ? "animate-spin" : ""}`} />
                   </Button>
-                  <Button
-                    size="sm"
-                    className="gap-1.5 bg-primary hover:bg-primary/90"
-                    onClick={() => setImportDialogOpen(true)}
-                  >
-                    <Upload className="size-4" />
-                    Importer un fichier
-                  </Button>
+                  {peutEcrire && (
+                    <Button
+                      size="sm"
+                      className="gap-1.5 bg-primary hover:bg-primary/90"
+                      onClick={() => setImportDialogOpen(true)}
+                    >
+                      <Upload className="size-4" />
+                      Importer un fichier
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -747,31 +753,35 @@ export default function GestionPointage() {
                           <TableCell className="text-right">
                             {v.statut === "PROPOSEE" && (
                               <div className="flex gap-1 justify-end">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="size-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                                  onClick={() => {
-                                    setActingVariable(v);
-                                    setValidateDialogOpen(true);
-                                  }}
-                                  title="Valider"
-                                >
-                                  <CheckCircle2 className="size-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="size-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  onClick={() => {
-                                    setActingVariable(v);
-                                    setMotifRefus("");
-                                    setRefuseDialogOpen(true);
-                                  }}
-                                  title="Refuser"
-                                >
-                                  <XCircle className="size-4" />
-                                </Button>
+                                {peutEcrire && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                    onClick={() => {
+                                      setActingVariable(v);
+                                      setValidateDialogOpen(true);
+                                    }}
+                                    title="Valider"
+                                  >
+                                    <CheckCircle2 className="size-4" />
+                                  </Button>
+                                )}
+                                {peutEcrire && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    onClick={() => {
+                                      setActingVariable(v);
+                                      setMotifRefus("");
+                                      setRefuseDialogOpen(true);
+                                    }}
+                                    title="Refuser"
+                                  >
+                                    <XCircle className="size-4" />
+                                  </Button>
+                                )}
                               </div>
                             )}
                           </TableCell>

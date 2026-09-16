@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, type ApiError } from "@/lib/api";
 import { getWorkspaceId } from "@/lib/workspace";
+import { can, roleInWorkspace } from "@/lib/permissions";
 import BackToTools from "@/components/BackToTools";
 
 // shadcn/ui
@@ -143,6 +144,10 @@ const EMPTY_FORM: EmployeeFormData = {
 export default function GestionEmployes() {
   const { user } = useAuth();
   const workspaceId = getWorkspaceId(user);
+  // Permissions du workspace actif (miroir backend) — LECTEUR : lecture seule
+  const roleWs = roleInWorkspace(user, workspaceId);
+  const peutEcrire = can(roleWs, "write");
+  const peutArchiver = can(roleWs, "archive");
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [clients, setClients] = useState<ClientBrief[]>([]);
@@ -318,10 +323,12 @@ export default function GestionEmployes() {
             Créer, modifier et archiver les salariés de votre workspace.
           </p>
         </div>
-        <Button onClick={openCreate} className="gap-2">
-          <UserPlus className="size-4" />
-          Ajouter un salarié
-        </Button>
+        {peutEcrire && (
+          <Button onClick={openCreate} className="gap-2">
+            <UserPlus className="size-4" />
+            Ajouter un salarié
+          </Button>
+        )}
       </div>
 
       {/* Filters */}
@@ -412,18 +419,22 @@ export default function GestionEmployes() {
                           <DropdownMenuItem onClick={() => openDetail(emp)} className="gap-2">
                             <Eye className="size-3.5" /> Voir détail
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openEdit(emp)} className="gap-2">
-                            <Pencil className="size-3.5" /> Modifier
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {emp.isActive ? (
-                            <DropdownMenuItem onClick={() => handleArchive(emp)} className="gap-2 text-destructive">
-                              <Archive className="size-3.5" /> Archiver
+                          {peutEcrire && (
+                            <DropdownMenuItem onClick={() => openEdit(emp)} className="gap-2">
+                              <Pencil className="size-3.5" /> Modifier
                             </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem onClick={() => handleActivate(emp)} className="gap-2">
-                              <RotateCcw className="size-3.5" /> Réactiver
-                            </DropdownMenuItem>
+                          )}
+                          {(peutEcrire || peutArchiver) && <DropdownMenuSeparator />}
+                          {peutArchiver && (
+                            emp.isActive ? (
+                              <DropdownMenuItem onClick={() => handleArchive(emp)} className="gap-2 text-destructive">
+                                <Archive className="size-3.5" /> Archiver
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem onClick={() => handleActivate(emp)} className="gap-2">
+                                <RotateCcw className="size-3.5" /> Réactiver
+                              </DropdownMenuItem>
+                            )
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>

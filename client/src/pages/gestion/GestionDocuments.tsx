@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { getWorkspaceId } from "@/lib/workspace";
+import { can, roleInWorkspace } from "@/lib/permissions";
 import { api, type ApiError } from "@/lib/api";
 import BackToTools from "@/components/BackToTools";
 
@@ -174,6 +175,9 @@ function getTypeInfo(type: TypeDocument) {
 export default function GestionDocuments() {
   const { user } = useAuth();
   const workspaceId = getWorkspaceId(user) ?? "";
+  // Permissions du workspace actif (miroir backend) — LECTEUR : lecture seule
+  const roleWs = roleInWorkspace(user, workspaceId || null);
+  const peutEcrire = can(roleWs, "write"); // générer PDF / Excel / CSV
 
   // ── State ─────────────────────────────────────────────────────────────
   const [documents, setDocuments] = useState<DocumentStorage[]>([]);
@@ -420,14 +424,16 @@ export default function GestionDocuments() {
               Générer le bulletin de paie au format PDF pour un bulletin
               spécifique.
             </p>
-            <Button
-              size="sm"
-              className="w-full bg-navy hover:bg-navy/90 text-white gap-1.5"
-              onClick={() => setShowPdfDialog(true)}
-            >
+            {peutEcrire && (
+              <Button
+                size="sm"
+                className="w-full bg-navy hover:bg-navy/90 text-white gap-1.5"
+                onClick={() => setShowPdfDialog(true)}
+              >
               <FileText className="size-3.5" />
               Générer PDF
             </Button>
+            )}
           </CardContent>
         </Card>
 
@@ -443,14 +449,16 @@ export default function GestionDocuments() {
               Exporter tous les bulletins d&apos;une période de paie au format
               Excel.
             </p>
-            <Button
-              size="sm"
-              className="w-full bg-navy hover:bg-navy/90 text-white gap-1.5"
-              onClick={() => setShowExcelDialog(true)}
-            >
+            {peutEcrire && (
+              <Button
+                size="sm"
+                className="w-full bg-navy hover:bg-navy/90 text-white gap-1.5"
+                onClick={() => setShowExcelDialog(true)}
+              >
               <FileSpreadsheet className="size-3.5" />
               Exporter Excel
             </Button>
+            )}
           </CardContent>
         </Card>
 
@@ -466,14 +474,16 @@ export default function GestionDocuments() {
               Exporter tous les bulletins d&apos;une période de paie au format
               CSV.
             </p>
-            <Button
-              size="sm"
-              className="w-full bg-navy hover:bg-navy/90 text-white gap-1.5"
-              onClick={() => setShowCsvDialog(true)}
-            >
+            {peutEcrire && (
+              <Button
+                size="sm"
+                className="w-full bg-navy hover:bg-navy/90 text-white gap-1.5"
+                onClick={() => setShowCsvDialog(true)}
+              >
               <FileDown className="size-3.5" />
               Exporter CSV
             </Button>
+            )}
           </CardContent>
         </Card>
       </div>

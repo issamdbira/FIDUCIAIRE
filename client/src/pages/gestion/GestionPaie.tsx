@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { getWorkspaceId } from "@/lib/workspace";
+import { can, roleInWorkspace } from "@/lib/permissions";
 import { api, type ApiError } from "@/lib/api";
 import BackToTools from "@/components/BackToTools";
 
@@ -165,6 +166,11 @@ const ANOMALY_NIVEAU_CLASSES: Record<string, string> = {
 export default function GestionPaie() {
   const { user } = useAuth();
   const workspaceId = getWorkspaceId(user);
+  // Permissions du workspace actif (miroir backend)
+  const roleWs = roleInWorkspace(user, workspaceId);
+  const peutEcrire = can(roleWs, "write");       // ouvrir période, calculer, revoir
+  const peutValider = can(roleWs, "writePayroll"); // valider (P+G)
+  const peutCloturer = can(roleWs, "closePeriod"); // clôturer (P seul)
 
   // ── State ──────────────────────────────────────────────────────────────
   const [periods, setPeriods] = useState<PayrollPeriod[]>([]);
@@ -451,7 +457,7 @@ export default function GestionPaie() {
                 {/* Action buttons for detail */}
                 <Separator />
                 <div className="flex flex-wrap gap-2">
-                  {(detailPeriod.statut === "OPEN" || detailPeriod.statut === "TO_REVIEW") && (
+                  {(detailPeriod.statut === "OPEN" || detailPeriod.statut === "TO_REVIEW") && peutEcrire && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -463,19 +469,19 @@ export default function GestionPaie() {
                       {calculatingId === detailPeriod.id ? "Calcul en cours…" : "Calculer"}
                     </Button>
                   )}
-                  {detailPeriod.statut === "CALCULATED" && (
+                  {detailPeriod.statut === "CALCULATED" && peutEcrire && (
                     <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handleReview(detailPeriod)}>
                       <AlertTriangle className="size-4" />
                       Marquer à revoir
                     </Button>
                   )}
-                  {(detailPeriod.statut === "CALCULATED" || detailPeriod.statut === "TO_REVIEW") && (
+                  {(detailPeriod.statut === "CALCULATED" || detailPeriod.statut === "TO_REVIEW") && peutValider && (
                     <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handleValidate(detailPeriod)}>
                       <CheckCircle2 className="size-4" />
                       Valider
                     </Button>
                   )}
-                  {detailPeriod.statut === "VALIDATED" && (
+                  {detailPeriod.statut === "VALIDATED" && peutCloturer && (
                     <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handleClose(detailPeriod)}>
                       <Lock className="size-4" />
                       Clôturer
@@ -657,10 +663,12 @@ export default function GestionPaie() {
             Gestion des périodes de paie et des bulletins de salaire
           </p>
         </div>
-        <Button onClick={() => setOpenDialog(true)} className="gap-1.5 bg-navy-800 hover:bg-navy-900 text-white">
-          <Plus className="size-4" />
-          Ouvrir période
-        </Button>
+        {peutEcrire && (
+          <Button onClick={() => setOpenDialog(true)} className="gap-1.5 bg-navy-800 hover:bg-navy-900 text-white">
+            <Plus className="size-4" />
+            Ouvrir période
+          </Button>
+        )}
       </div>
 
       {/* Filters */}
@@ -808,25 +816,25 @@ export default function GestionPaie() {
                               <Eye className="size-4" /> Voir détail
                             </DropdownMenuItem>
 
-                            {(p.statut === "OPEN" || p.statut === "TO_REVIEW") && (
+                            {(p.statut === "OPEN" || p.statut === "TO_REVIEW") && peutEcrire && (
                               <DropdownMenuItem onClick={() => handleCalculate(p)} className="gap-2">
                                 <Calculator className="size-4" /> Calculer
                               </DropdownMenuItem>
                             )}
 
-                            {p.statut === "CALCULATED" && (
+                            {p.statut === "CALCULATED" && peutEcrire && (
                               <DropdownMenuItem onClick={() => handleReview(p)} className="gap-2">
                                 <AlertTriangle className="size-4" /> Marquer à revoir
                               </DropdownMenuItem>
                             )}
 
-                            {(p.statut === "CALCULATED" || p.statut === "TO_REVIEW") && (
+                            {(p.statut === "CALCULATED" || p.statut === "TO_REVIEW") && peutValider && (
                               <DropdownMenuItem onClick={() => handleValidate(p)} className="gap-2">
                                 <CheckCircle2 className="size-4" /> Valider
                               </DropdownMenuItem>
                             )}
 
-                            {p.statut === "VALIDATED" && (
+                            {p.statut === "VALIDATED" && peutCloturer && (
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => handleClose(p)} className="gap-2">

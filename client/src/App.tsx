@@ -44,6 +44,7 @@ import GestionPointage from "./pages/gestion/GestionPointage";
 import GestionCNSS from "./pages/gestion/GestionCNSS";
 import GestionDocuments from "./pages/gestion/GestionDocuments";
 import GestionEmployes from "./pages/gestion/GestionEmployes";
+import GestionMembres from "./pages/gestion/GestionMembres";
 
 function AppRoutes() {
   const routes = (
@@ -83,7 +84,7 @@ function AppRoutes() {
       <Route path="/conventions/:slug" component={ConventionDetail} />
       <Route path="/conventions" component={ConventionsList} />
       <Route path="/dashboard/cabinet">
-        <ProtectedRoute roles={["PROPRIETAIRE", "GESTIONNAIRE"]}>
+        <ProtectedRoute roles={["PROPRIETAIRE"]}>
           <DashboardCabinet />
         </ProtectedRoute>
       </Route>
@@ -135,6 +136,11 @@ function AppRoutes() {
       <Route path="/gestion/employes">
         <ProtectedRoute>
           <GestionEmployes />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/gestion/membres">
+        <ProtectedRoute roles={["PROPRIETAIRE"]}>
+          <GestionMembres />
         </ProtectedRoute>
       </Route>
       <Route path="/404" component={NotFound} />

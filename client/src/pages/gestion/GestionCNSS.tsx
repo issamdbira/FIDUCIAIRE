@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { getWorkspaceId } from "@/lib/workspace";
+import { can, roleInWorkspace } from "@/lib/permissions";
 import { api, type ApiError } from "@/lib/api";
 import BackToTools from "@/components/BackToTools";
 
@@ -151,6 +152,11 @@ function formatDate(iso: string): string {
 export default function GestionCNSS() {
   const { user } = useAuth();
   const workspaceId = getWorkspaceId(user);
+  // Permissions du workspace actif (miroir backend)
+  const roleWs = roleInWorkspace(user, workspaceId);
+  const peutEcrire = can(roleWs, "write");         // créer déclaration
+  const peutGenerer = can(roleWs, "generateCnss"); // générer / régénérer export (P+G)
+  const peutSoumettre = can(roleWs, "submitCnss"); // contrôler / archiver (P seul)
 
   // ── State ──────────────────────────────────────────────────────────────
   const [declarations, setDeclarations] = useState<CnssDeclaration[]>([]);
@@ -389,13 +395,15 @@ export default function GestionCNSS() {
             Gestion des déclarations trimestrielles CNSS
           </p>
         </div>
-        <Button
-          onClick={() => setOpenNewDialog(true)}
-          className="bg-navy-800 hover:bg-navy-900 text-white gap-1.5"
-        >
-          <Plus className="size-4" />
-          Nouvelle déclaration
-        </Button>
+        {peutEcrire && (
+          <Button
+            onClick={() => setOpenNewDialog(true)}
+            className="bg-navy-800 hover:bg-navy-900 text-white gap-1.5"
+          >
+            <Plus className="size-4" />
+            Nouvelle déclaration
+          </Button>
+        )}
       </div>
 
       {/* ── Filters ── */}
@@ -546,13 +554,13 @@ export default function GestionCNSS() {
                                 <Eye className="size-4" /> Voir détail
                               </DropdownMenuItem>
 
-                              {decl.statut === "BROUILLON" && (
+                              {decl.statut === "BROUILLON" && peutSoumettre && (
                                 <DropdownMenuItem onClick={() => handleControler(decl)} className="gap-2">
                                   <CheckCircle2 className="size-4" /> Contrôler
                                 </DropdownMenuItem>
                               )}
 
-                              {decl.statut === "CONTROLEE" && (
+                              {decl.statut === "CONTROLEE" && peutGenerer && (
                                 <DropdownMenuItem onClick={() => handleGenerer(decl)} className="gap-2">
                                   <FileDown className="size-4" /> Générer
                                 </DropdownMenuItem>
@@ -560,9 +568,11 @@ export default function GestionCNSS() {
 
                               {decl.statut === "GENEREE" && (
                                 <>
-                                  <DropdownMenuItem onClick={() => handleArchiver(decl)} className="gap-2">
-                                    <Archive className="size-4" /> Archiver
-                                  </DropdownMenuItem>
+                                  {peutSoumettre && (
+                                    <DropdownMenuItem onClick={() => handleArchiver(decl)} className="gap-2">
+                                      <Archive className="size-4" /> Archiver
+                                    </DropdownMenuItem>
+                                  )}
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onClick={() => handleDownload(decl)} className="gap-2">
                                     <Download className="size-4" /> Télécharger
@@ -580,7 +590,7 @@ export default function GestionCNSS() {
                                 <DropdownMenuSeparator />
                               )}
 
-                              {(decl.statut === "GENEREE" || decl.statut === "ARCHIVEE") && (
+                              {(decl.statut === "GENEREE" || decl.statut === "ARCHIVEE") && peutGenerer && (
                                 <DropdownMenuItem onClick={() => handleExport(decl)} className="gap-2">
                                   <FileDown className="size-4" /> Régénérer export
                                 </DropdownMenuItem>

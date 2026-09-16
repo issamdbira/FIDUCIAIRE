@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { getWorkspaceId } from "@/lib/workspace";
+import { can, roleInWorkspace } from "@/lib/permissions";
 import { api, type ApiError } from "@/lib/api";
 import BackToTools from "@/components/BackToTools";
 
@@ -196,6 +197,12 @@ const EMPTY_GRILLE: GrilleFormData = {
 export default function GestionConventions() {
   const { user } = useAuth();
   const workspaceId = getWorkspaceId(user);
+
+  // Permissions du workspace actif (miroir backend) — remplace l'ancien
+  // isProprietaire basé sur le rôle GLOBAL du compte
+  const roleWs = roleInWorkspace(user, workspaceId);
+  const peutEcrire = can(roleWs, "write");
+  const isProprietaire = can(roleWs, "archive"); // suppression réservée P (même garde que DELETE backend)
 
   // ── State ──
   const [conventions, setConventions] = useState<Convention[]>([]);
@@ -451,7 +458,8 @@ export default function GestionConventions() {
     setDeleteOpen(true);
   };
 
-  const isProprietaire = user?.role === "PROPRIETAIRE";
+  // (isProprietaire est désormais calculé depuis le rôle du workspace actif,
+  //  voir déclaration en tête de composant — ancien rôle global supprimé)
 
   // =============================================================================
   // Render
@@ -476,16 +484,18 @@ export default function GestionConventions() {
             </p>
           </div>
         </div>
-        <Button
-          onClick={() => {
-            setForm(EMPTY_FORM);
-            setCreateOpen(true);
-          }}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
-        >
-          <Plus className="size-4" />
-          Nouvelle convention
-        </Button>
+        {peutEcrire && (
+          <Button
+            onClick={() => {
+              setForm(EMPTY_FORM);
+              setCreateOpen(true);
+            }}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+          >
+            <Plus className="size-4" />
+            Nouvelle convention
+          </Button>
+        )}
       </div>
 
       {/* ── Filtres ── */}
@@ -642,10 +652,12 @@ export default function GestionConventions() {
                               <Eye className="size-4" />
                               Voir détail
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openEdit(c)} className="gap-2">
-                              <Pencil className="size-4" />
-                              Modifier
-                            </DropdownMenuItem>
+                            {peutEcrire && (
+                              <DropdownMenuItem onClick={() => openEdit(c)} className="gap-2">
+                                <Pencil className="size-4" />
+                                Modifier
+                              </DropdownMenuItem>
+                            )}
                             {!c.isSystem && isProprietaire && (
                               <>
                                 <DropdownMenuSeparator />

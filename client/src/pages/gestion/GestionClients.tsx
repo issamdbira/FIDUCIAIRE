@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { getWorkspaceId } from "@/lib/workspace";
+import { can, roleInWorkspace } from "@/lib/permissions";
 import { api, type ApiError } from "@/lib/api";
 import BackToTools from "@/components/BackToTools";
 
@@ -191,6 +192,10 @@ const formatDate = (iso: string): string => {
 export default function GestionClients() {
   const { user } = useAuth();
   const workspaceId = getWorkspaceId(user);
+  // Permissions du workspace actif (miroir backend) — LECTEUR : lecture seule
+  const roleWs = roleInWorkspace(user, workspaceId);
+  const peutEcrire = can(roleWs, "write");
+  const peutArchiver = can(roleWs, "archive");
 
   // ── State ────────────────────────────────────────────────────────────────
   const [clients, setClients] = useState<ClientCompany[]>([]);
@@ -373,13 +378,15 @@ export default function GestionClients() {
         >
           Gestion des Clients
         </h1>
-        <Button
-          onClick={openCreateForm}
-          className="gap-2 bg-[#1e3a5f] hover:bg-[#1e3a5f]/90 text-white"
-        >
-          <Plus className="size-4" />
-          Nouveau client
-        </Button>
+        {peutEcrire && (
+          <Button
+            onClick={openCreateForm}
+            className="gap-2 bg-[#1e3a5f] hover:bg-[#1e3a5f]/90 text-white"
+          >
+            <Plus className="size-4" />
+            Nouveau client
+          </Button>
+        )}
       </div>
 
       {/* ── Search + Filters ── */}
@@ -503,27 +510,31 @@ export default function GestionClients() {
                             <Eye className="size-4 mr-2" />
                             Voir détail
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openEditForm(client)}>
-                            <Pencil className="size-4 mr-2" />
-                            Modifier
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {client.statut === "ACTIVE" ? (
-                            <DropdownMenuItem
-                              onClick={() => handleArchive(client)}
-                              className="text-amber-600 focus:text-amber-700"
-                            >
-                              <Archive className="size-4 mr-2" />
-                              Archiver
+                          {peutEcrire && (
+                            <DropdownMenuItem onClick={() => openEditForm(client)}>
+                              <Pencil className="size-4 mr-2" />
+                              Modifier
                             </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem
-                              onClick={() => handleActivate(client)}
-                              className="text-emerald-600 focus:text-emerald-700"
-                            >
-                              <RotateCcw className="size-4 mr-2" />
-                              Réactiver
-                            </DropdownMenuItem>
+                          )}
+                          {(peutEcrire || peutArchiver) && <DropdownMenuSeparator />}
+                          {peutArchiver && (
+                            client.statut === "ACTIVE" ? (
+                              <DropdownMenuItem
+                                onClick={() => handleArchive(client)}
+                                className="text-amber-600 focus:text-amber-700"
+                              >
+                                <Archive className="size-4 mr-2" />
+                                Archiver
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={() => handleActivate(client)}
+                                className="text-emerald-600 focus:text-emerald-700"
+                              >
+                                <RotateCcw className="size-4 mr-2" />
+                                Réactiver
+                              </DropdownMenuItem>
+                            )
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>

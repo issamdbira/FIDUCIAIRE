@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { LogIn, AlertCircle, Clock, ShieldOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import type { ApiError } from "@/lib/api";
+import { getWorkspaceId } from "@/lib/workspace";
+import { roleInWorkspace } from "@/lib/permissions";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -33,8 +35,12 @@ export default function LoginPage() {
     try {
       const result = await login(email, password);
 
-      // Rediriger selon le rôle
-      if (result.user.role === "PROPRIETAIRE") {
+      // Rediriger selon le rôle DANS LE WORKSPACE ACTIF (et non le rôle
+      // global du compte) — cohérent avec le backend qui vérifie
+      // workspace_members.role à chaque requête
+      const wsId = getWorkspaceId(result.user);
+      const role = roleInWorkspace(result.user, wsId);
+      if (role === "PROPRIETAIRE") {
         navigate("/dashboard/cabinet");
       } else {
         navigate("/dashboard/workspace");

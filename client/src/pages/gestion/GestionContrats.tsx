@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { getWorkspaceId } from "@/lib/workspace";
+import { can, roleInWorkspace } from "@/lib/permissions";
 import { api, type ApiError } from "@/lib/api";
 import BackToTools from "@/components/BackToTools";
 
@@ -258,6 +259,9 @@ const formatMoney = (val: number | null | undefined): string => {
 export default function GestionContrats() {
   const { user } = useAuth();
   const workspaceId = getWorkspaceId(user);
+  // Permissions du workspace actif (miroir backend) — LECTEUR : lecture seule
+  const roleWs = roleInWorkspace(user, workspaceId);
+  const peutEcrire = can(roleWs, "write");
 
   // ── State ────────────────────────────────────────────────────────────────
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -616,13 +620,15 @@ export default function GestionContrats() {
         >
           Gestion des Contrats
         </h1>
-        <Button
-          onClick={openCreateForm}
-          className="gap-2 bg-[#1e3a5f] hover:bg-[#1e3a5f]/90 text-white"
-        >
-          <Plus className="size-4" />
-          Nouveau contrat
-        </Button>
+        {peutEcrire && (
+          <Button
+            onClick={openCreateForm}
+            className="gap-2 bg-[#1e3a5f] hover:bg-[#1e3a5f]/90 text-white"
+          >
+            <Plus className="size-4" />
+            Nouveau contrat
+          </Button>
+        )}
       </div>
 
       {/* ── Filters ── */}
@@ -751,14 +757,18 @@ export default function GestionContrats() {
                               <Eye className="size-4 mr-2" />
                               Voir détail
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openEditForm(contract)}>
-                              <Pencil className="size-4 mr-2" />
-                              Modifier
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openVersionForm(contract)}>
-                              <History className="size-4 mr-2" />
-                              Ajouter version
-                            </DropdownMenuItem>
+                            {peutEcrire && (
+                              <DropdownMenuItem onClick={() => openEditForm(contract)}>
+                                <Pencil className="size-4 mr-2" />
+                                Modifier
+                              </DropdownMenuItem>
+                            )}
+                            {peutEcrire && (
+                              <DropdownMenuItem onClick={() => openVersionForm(contract)}>
+                                <History className="size-4 mr-2" />
+                                Ajouter version
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             {contract.statut === "ACTIF" && (
                               <>
