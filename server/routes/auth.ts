@@ -278,41 +278,16 @@ router.post("/setup", async (req: Request, res: Response) => {
     }
 
     // Vérifier si un PROPRIETAIRE existe déjà
+    // Sécurité (P0) : cette route est STRICTEMENT réservée à l'initialisation
+    // du système (bootstrap). Aucune réinitialisation de mot de passe n'est
+    // possible ici — l'ancienne branche « reset par email » permettait à
+    // quiconque connaissant l'email du propriétaire de prendre le contrôle
+    // du compte. La récupération d'accès passera par un flux dédié avec
+    // token expiré (chantier futur, nécessite un service email).
     const existingProp = await prisma.users.findFirst({ where: { role: "PROPRIETAIRE" } });
     if (existingProp) {
-      // Si l'email correspond → réinitialiser le mot de passe (récupération d'accès)
-      if (existingProp.email === email) {
-        const newHash = await bcrypt.hash(password, 12);
-        await prisma.users.update({
-          where: { id: existingProp.id },
-          data: { passwordHash: newHash, updatedAt: new Date() },
-        });
-        const token = signToken({
-          userId: existingProp.id,
-          email: existingProp.email,
-          role: existingProp.role,
-        });
-        // Retrouver les workspaces
-        const memberships = await prisma.workspace_members.findMany({
-          where: { userId: existingProp.id },
-          include: { workspaces: { select: { id: true, name: true } } },
-        });
-        return res.json({
-          message: "Mot de passe réinitialisé avec succès",
-          user: {
-            id: existingProp.id,
-            email: existingProp.email,
-            fullName: existingProp.fullName,
-            role: existingProp.role,
-            statut: existingProp.statut,
-            workspaces: memberships.map((m) => ({ id: m.workspaces.id, name: m.workspaces.name, role: m.role })),
-          },
-          token,
-        });
-      }
-      return res.status(409).json({
-        error: "Le système est déjà initialisé — un propriétaire existe",
-        email: existingProp.email,
+      return res.status(403).json({
+        error: "Le système est déjà initialisé — cette route est réservée à la première installation",
       });
     }
 

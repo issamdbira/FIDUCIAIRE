@@ -11,16 +11,22 @@ const router = Router();
 
 // ---------------------------------------------------------------------------
 // IRPP barème 2026 — 8 tranches (fallback)
+// Source unique : aligné sur CONFIG_PAR_DEFAUT.baremeIRPP
+// (client/src/lib/payroll/config.ts) et les tests du moteur
+// (client/src/lib/payroll/irpp.test.ts). Doit rester identique aux tranches
+// créées par /auth/setup — c'était une divergence : l'ancien barème
+// (26/28/32/36/39/40) contredisait le moteur et aurait écrasé les tranches
+// correctes en base lors d'un POST /reset.
 // ---------------------------------------------------------------------------
 const IRPP_BAREME_2026 = [
-  { min: 0, max: 5000, taux: 0, deduction: 0, ordre: 1 },
-  { min: 5000, max: 10000, taux: 0.26, deduction: 1300, ordre: 2 },
-  { min: 10000, max: 20000, taux: 0.28, deduction: 1500, ordre: 3 },
-  { min: 20000, max: 30000, taux: 0.32, deduction: 2300, ordre: 4 },
-  { min: 30000, max: 50000, taux: 0.36, deduction: 3500, ordre: 5 },
-  { min: 50000, max: 75000, taux: 0.39, deduction: 5000, ordre: 6 },
-  { min: 75000, max: 100000, taux: 0.40, deduction: 5750, ordre: 7 },
-  { min: 100000, max: null, taux: 0.40, deduction: 5750, ordre: 8 },
+  { min: 0, max: 5000, taux: 0, ordre: 1 },
+  { min: 5000, max: 10000, taux: 0.15, ordre: 2 },
+  { min: 10000, max: 20000, taux: 0.25, ordre: 3 },
+  { min: 20000, max: 30000, taux: 0.3, ordre: 4 },
+  { min: 30000, max: 40000, taux: 0.33, ordre: 5 },
+  { min: 40000, max: 50000, taux: 0.36, ordre: 6 },
+  { min: 50000, max: 70000, taux: 0.38, ordre: 7 },
+  { min: 70000, max: null, taux: 0.4, ordre: 8 },
 ];
 
 // ---------------------------------------------------------------------------

@@ -4,125 +4,226 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Lock, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, RotateCcw, Save, ShieldAlert, Trash2 } from "lucide-react";
 import { Link } from "wouter";
-import { CONFIG_PAR_DEFAUT, getPayrollConfig, reinitialiserPayrollConfig, setPayrollConfig, type PayrollConfig } from "@/lib/payroll/config";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
+import { getWorkspaceId } from "@/lib/workspace";
+import { CONFIG_PAR_DEFAUT, getPayrollConfig, setPayrollConfig, type PayrollConfig } from "@/lib/payroll/config";
 
 /**
  * Panneau d'administration — paramétrage centralisé du moteur de paie.
- * Tous les simulateurs du site (Calculer un salaire, Générer une fiche de
- * paie, PaieCNSS, IRPP) lisent leurs taux/barèmes/déductions depuis cette
- * configuration unique (lib/payroll/config.ts), stockée localement.
  *
- * Sécurité client-side : l'accès est protégé par un mot de passe configurable
- * via VITE_ADMIN_PASSWORD (variable d'environnement). La session est conservée
- * dans sessionStorage pour éviter de re-saisir le mot de passe à chaque
- * navigation. ATTENTION : cette protection est côté client uniquement —
- * le code source et le mot de passe sont accessibles dans le navigateur.
- * Ce mécanisme empêche l'accès accidentel, pas un attaquant déterminé.
+ * Sécurité (P0, correction) : l'ancienne porte mot de passe côté client
+ * (VITE_ADMIN_PASSWORD avec fallback en dur) a été supprimée — elle était
+ * lisible dans le bundle de production. L'accès est désormais réservé au
+ * PROPRIETAIRE du workspace actif, et le paramétrage est lu/écrit dans la
+ * base via GET/PUT /api/config/:ws.
+ *
+ * Les calculateurs publics du navigateur continuent de lire la config locale
+ * (localStorage) : à chaque sauvegarde serveur, la copie locale est
+ * synchronisée pour rester cohérente.
  */
 
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "fiduciaire2026";
-const SESSION_KEY = "fiduciaire_admin_auth";
-
-function isAdminAuthenticated(): boolean {
-  try {
-    return sessionStorage.getItem(SESSION_KEY) === "true";
-  } catch {
-    return false;
-  }
+/** Réponse GET /api/config/:ws (champs DB + tranchesIrpp) */
+interface RemoteConfig {
+  source?: string;
+  cnssSalarialNonAgricole?: number;
+  cnssPatronalNonAgricole?: number;
+  cnssSalarialAgricole?: number;
+  cnssPatronalAgricole?: number;
+  cssActive?: boolean;
+  cssTaux?: number;
+  cssSeuilExonerationAnnuel?: number;
+  fraisProTauxActifs?: number;
+  fraisProPlafondActifsAnnuel?: number;
+  fraisProTauxRetraites?: number;
+  deductionChefFamille?: number;
+  deductionEnfant?: number;
+  deductionEtudiant?: number;
+  plafondNombreEnfantsEtudiants?: number;
+  deductionInfirme?: number;
+  parentsEnChargeActif?: boolean;
+  parentsEnChargeTaux?: number;
+  parentsEnChargePlafondParAnnuel?: number;
+  tranchesIrpp?: { min: number; max: number | null; taux: number }[];
 }
 
-function authenticateAdmin(): void {
-  try {
-    sessionStorage.setItem(SESSION_KEY, "true");
-  } catch {
-    // sessionStorage indisponible
-  }
-}
-
-function AdminLogin({ onAuth }: { onAuth: () => void }) {
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      authenticateAdmin();
-      onAuth();
-    } else {
-      setError(true);
-    }
+/** Convertit la réponse API vers la forme utilisée par le moteur client */
+function remoteVersLocale(r: RemoteConfig): PayrollConfig {
+  return {
+    cnssSalarialNonAgricole: r.cnssSalarialNonAgricole ?? CONFIG_PAR_DEFAUT.cnssSalarialNonAgricole,
+    cnssPatronalNonAgricole: r.cnssPatronalNonAgricole ?? CONFIG_PAR_DEFAUT.cnssPatronalNonAgricole,
+    cnssSalarialAgricole: r.cnssSalarialAgricole ?? CONFIG_PAR_DEFAUT.cnssSalarialAgricole,
+    cnssPatronalAgricole: r.cnssPatronalAgricole ?? CONFIG_PAR_DEFAUT.cnssPatronalAgricole,
+    cssActive: r.cssActive ?? CONFIG_PAR_DEFAUT.cssActive,
+    cssTaux: r.cssTaux ?? CONFIG_PAR_DEFAUT.cssTaux,
+    cssSeuilExonerationAnnuel: r.cssSeuilExonerationAnnuel ?? CONFIG_PAR_DEFAUT.cssSeuilExonerationAnnuel,
+    fraisProTauxActifs: r.fraisProTauxActifs ?? CONFIG_PAR_DEFAUT.fraisProTauxActifs,
+    fraisProPlafondActifsAnnuel: r.fraisProPlafondActifsAnnuel ?? CONFIG_PAR_DEFAUT.fraisProPlafondActifsAnnuel,
+    fraisProTauxRetraites: r.fraisProTauxRetraites ?? CONFIG_PAR_DEFAUT.fraisProTauxRetraites,
+    deductionChefFamille: r.deductionChefFamille ?? CONFIG_PAR_DEFAUT.deductionChefFamille,
+    deductionEnfant: r.deductionEnfant ?? CONFIG_PAR_DEFAUT.deductionEnfant,
+    deductionEtudiant: r.deductionEtudiant ?? CONFIG_PAR_DEFAUT.deductionEtudiant,
+    plafondNombreEnfantsEtudiants: r.plafondNombreEnfantsEtudiants ?? CONFIG_PAR_DEFAUT.plafondNombreEnfantsEtudiants,
+    deductionInfirme: r.deductionInfirme ?? CONFIG_PAR_DEFAUT.deductionInfirme,
+    parentsEnChargeActif: r.parentsEnChargeActif ?? CONFIG_PAR_DEFAUT.parentsEnChargeActif,
+    parentsEnChargeTaux: r.parentsEnChargeTaux ?? CONFIG_PAR_DEFAUT.parentsEnChargeTaux,
+    parentsEnChargePlafondParAnnuel: r.parentsEnChargePlafondParAnnuel ?? CONFIG_PAR_DEFAUT.parentsEnChargePlafondParAnnuel,
+    baremeIRPP: (r.tranchesIrpp && r.tranchesIrpp.length > 0)
+      ? r.tranchesIrpp.map((t) => ({ min: t.min, max: t.max, taux: t.taux }))
+      : CONFIG_PAR_DEFAUT.baremeIRPP,
   };
-
-  return (
-    <div className="max-w-sm mx-auto py-20 px-4">
-      <Card className="p-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-card">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-            <Lock className="h-5 w-5 text-primary" />
-          </div>
-          <h1 className="text-xl font-bold text-primary" style={{ fontFamily: "Montserrat, sans-serif" }}>
-            Accès administrateur
-          </h1>
-        </div>
-        <p className="text-sm text-muted-foreground mb-6">
-          Ce panneau permet de modifier les paramètres du moteur de paie.
-          L'accès est restreint pour éviter les modifications accidentelles.
-        </p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="admin-pwd">Mot de passe</Label>
-            <Input
-              id="admin-pwd"
-              type="password"
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(false); }}
-              placeholder="Entrez le mot de passe"
-              className="mt-1"
-            />
-            {error && <p className="text-xs text-destructive mt-1">Mot de passe incorrect</p>}
-          </div>
-          <Button type="submit" className="w-full gap-2">
-            <Lock className="w-4 h-4" /> Connexion
-          </Button>
-        </form>
-      </Card>
-    </div>
-  );
 }
-export default function Admin() {
-  const [authed, setAuthed] = useState(isAdminAuthenticated);
 
-  if (!authed) {
-    return <AdminLogin onAuth={() => setAuthed(true)} />;
+/** Charge la config du workspace actif (base de données), avec repli local */
+async function chargerConfigServeur(workspaceId: string): Promise<PayrollConfig> {
+  const remote = await api.get<RemoteConfig>(`/config/${workspaceId}`);
+  return remoteVersLocale(remote);
+}
+
+export default function Admin() {
+  const { user, isLoading } = useAuth();
+  const workspaceId = user ? getWorkspaceId(user) : null;
+  const roleWs = workspaceId
+    ? user?.workspaces?.find((ws) => ws.id === workspaceId)?.role ?? null
+    : null;
+
+  // Vérification initiale en cours
+  if (isLoading) {
+    return (
+      <div className="min-h-[calc(100vh-48px)] flex items-center justify-center">
+        <div className="h-8 w-8 border-4 border-primary border-r-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
-  return <AdminPanel />;
+  // Accès réservé au propriétaire du workspace actif (contrôle réel, côté serveur aussi)
+  if (!user || roleWs !== "PROPRIETAIRE" || !workspaceId) {
+    return (
+      <div className="min-h-[calc(100vh-48px)] flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-destructive/10 mx-auto mb-4">
+            <ShieldAlert className="h-6 w-6 text-destructive" />
+          </div>
+          <h2 className="text-lg font-semibold mb-2">Accès réservé au propriétaire</h2>
+          <p className="text-sm text-muted-foreground">
+            Le paramétrage du moteur de paie ne peut être modifié que par le
+            propriétaire de ce cabinet. Contactez-le si vous pensez qu'il s'agit
+            d'une erreur.
+          </p>
+          <Link href="/dashboard/workspace" className="inline-block mt-6">
+            <Button variant="outline" className="gap-2">
+              <ArrowLeft className="w-4 h-4" /> Retour au tableau de bord
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return <AdminPanel workspaceId={workspaceId} />;
 }
 
-function AdminPanel() {
+function AdminPanel({ workspaceId }: { workspaceId: string }) {
   const [config, setConfig] = useState<PayrollConfig>(CONFIG_PAR_DEFAUT);
   const [sauvegarde, setSauvegarde] = useState(false);
+  const [enregistrement, setEnregistrement] = useState(false);
+  const [source, setSource] = useState<"chargement" | "serveur" | "locale">("chargement");
 
   useEffect(() => {
-    setConfig(getPayrollConfig());
-  }, []);
+    let annule = false;
+    chargerConfigServeur(workspaceId)
+      .then((c) => {
+        if (!annule) {
+          setConfig(c);
+          setSource("serveur");
+        }
+      })
+      .catch(() => {
+        // Repli : config locale du navigateur (calculateurs publics)
+        if (!annule) {
+          setConfig(getPayrollConfig());
+          setSource("locale");
+          toast.info("Config locale affichée — serveur injoignable");
+        }
+      });
+    return () => {
+      annule = true;
+    };
+  }, [workspaceId]);
 
   const champ = <K extends keyof PayrollConfig>(cle: K, valeur: PayrollConfig[K]) => {
     setConfig((prev) => ({ ...prev, [cle]: valeur }));
     setSauvegarde(false);
   };
 
-  const sauvegarder = () => {
-    setPayrollConfig(config);
-    setSauvegarde(true);
-    setTimeout(() => setSauvegarde(false), 2500);
+  const sauvegarder = async () => {
+    setEnregistrement(true);
+    try {
+      // 1. Écrire dans la base (source de vérité, utilisée par le moteur serveur)
+      await api.put(`/config/${workspaceId}`, {
+        cnssSalarialNonAgricole: config.cnssSalarialNonAgricole,
+        cnssPatronalNonAgricole: config.cnssPatronalNonAgricole,
+        cnssSalarialAgricole: config.cnssSalarialAgricole,
+        cnssPatronalAgricole: config.cnssPatronalAgricole,
+        cssActive: config.cssActive,
+        cssTaux: config.cssTaux,
+        cssSeuilExonerationAnnuel: config.cssSeuilExonerationAnnuel,
+        fraisProTauxActifs: config.fraisProTauxActifs,
+        fraisProPlafondActifsAnnuel: config.fraisProPlafondActifsAnnuel,
+        fraisProTauxRetraites: config.fraisProTauxRetraites,
+        deductionChefFamille: config.deductionChefFamille,
+        deductionEnfant: config.deductionEnfant,
+        deductionEtudiant: config.deductionEtudiant,
+        plafondNombreEnfantsEtudiants: config.plafondNombreEnfantsEtudiants,
+        deductionInfirme: config.deductionInfirme,
+        parentsEnChargeActif: config.parentsEnChargeActif,
+        parentsEnChargeTaux: config.parentsEnChargeTaux,
+        parentsEnChargePlafondParAnnuel: config.parentsEnChargePlafondParAnnuel,
+        tranchesIrpp: config.baremeIRPP.map((t, i) => ({
+          min: t.min,
+          max: t.max,
+          taux: t.taux,
+          ordre: i + 1,
+        })),
+      });
+      // 2. Synchroniser la copie locale (calculateurs publics du navigateur)
+      setPayrollConfig(config);
+      setSource("serveur");
+      setSauvegarde(true);
+      toast.success("Paramètres enregistrés dans la base de données");
+      setTimeout(() => setSauvegarde(false), 2500);
+    } catch (err) {
+      // Repli : préserver l'ancien comportement (sauvegarde locale seule)
+      setPayrollConfig(config);
+      setSource("locale");
+      toast.error("Serveur injoignable — sauvegardé localement uniquement");
+    } finally {
+      setEnregistrement(false);
+    }
   };
 
-  const reinitialiser = () => {
+  const reinitialiser = async () => {
     if (!confirm("Réinitialiser tous les paramètres aux valeurs par défaut ?")) return;
-    setConfig(reinitialiserPayrollConfig());
+    setEnregistrement(true);
+    try {
+      const remote = await api.post<RemoteConfig>(`/config/${workspaceId}/reset`);
+      const c = remoteVersLocale(remote);
+      setConfig(c);
+      setPayrollConfig(c); // garder les calculateurs locaux cohérents
+      setSource("serveur");
+      toast.success("Paramètres réinitialisés aux valeurs par défaut");
+    } catch {
+      // Repli local si le serveur est injoignable
+      setConfig({ ...CONFIG_PAR_DEFAUT });
+      setPayrollConfig({ ...CONFIG_PAR_DEFAUT });
+      setSource("locale");
+      toast.error("Serveur injoignable — réinitialisation locale uniquement");
+    } finally {
+      setEnregistrement(false);
+    }
   };
 
   const modifierTranche = (index: number, patch: Partial<PayrollConfig["baremeIRPP"][number]>) => {
@@ -150,10 +251,10 @@ function AdminPanel() {
             </Button>
           </Link>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={reinitialiser} className="gap-2 text-destructive border-destructive/30">
+            <Button variant="outline" onClick={reinitialiser} disabled={enregistrement} className="gap-2 text-destructive border-destructive/30">
               <RotateCcw className="w-4 h-4" /> Réinitialiser
             </Button>
-            <Button onClick={sauvegarder} className="gap-2 ">
+            <Button onClick={sauvegarder} disabled={enregistrement} className="gap-2 ">
               <Save className="w-4 h-4" /> {sauvegarde ? "Enregistré ✓" : "Enregistrer"}
             </Button>
           </div>
@@ -170,6 +271,18 @@ function AdminPanel() {
               Tous les simulateurs du site utilisent ces valeurs. Une modification ici s'applique
               immédiatement à tous les calculateurs (moteur unifié).
             </p>
+            {source === "chargement" && (
+              <p className="text-xs text-muted-foreground mt-2">Chargement de la configuration…</p>
+            )}
+            {source === "serveur" && (
+              <p className="text-xs text-muted-foreground mt-2">Configuration chargée depuis la base de données du cabinet.</p>
+            )}
+            {source === "locale" && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                Serveur injoignable — configuration locale du navigateur affichée. Les modifications ne seront
+                appliquées qu'à ce navigateur.
+              </p>
+            )}
           </div>
 
           {/* CNSS */}
@@ -315,10 +428,10 @@ function AdminPanel() {
           </Card>
 
           <div className="flex justify-end gap-3 pb-8">
-            <Button variant="outline" onClick={reinitialiser} className="gap-2 text-destructive border-destructive/30">
+            <Button variant="outline" onClick={reinitialiser} disabled={enregistrement} className="gap-2 text-destructive border-destructive/30">
               <RotateCcw className="w-4 h-4" /> Réinitialiser tout
             </Button>
-            <Button onClick={sauvegarder} className="gap-2 ">
+            <Button onClick={sauvegarder} disabled={enregistrement} className="gap-2 ">
               <Save className="w-4 h-4" /> {sauvegarde ? "Enregistré ✓" : "Enregistrer"}
             </Button>
           </div>
