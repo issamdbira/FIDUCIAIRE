@@ -11,6 +11,7 @@ import prisma from "../lib/prisma.js";
 import { signToken, verifyToken } from "../lib/jwt.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { auditLog } from "../lib/audit-log.js";
+import { provisionWorkspace } from "../lib/provision-workspace.js";
 
 const router = Router();
 
@@ -496,6 +497,105 @@ router.post("/invitation/:token/accept", async (req: Request, res: Response) => 
     });
   } catch (error) {
     console.error("[auth] invitation accept error:", error);
+    return res.status(500).json({ error: "Erreur interne" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/auth/create-space — Flux B : auto-inscription publique d'une
+// entreprise (Phase 10 — modèle espaces)
+// ---------------------------------------------------------------------------
+// Une société qui gère sa propre paie crée SON espace ENTREPRISE autonome :
+// compte VALIDE + espace + fiche société + config paie (barème 2026) +
+// membership PROPRIETAIRE, puis session immédiate. Pour donner accès à son
+// cabinet, elle génère ensuite un code de liaison (Membres & accès → Ma
+// société) que le cabinet saisit dans sa liste de dossiers.
+// Distinct de /auth/setup (bootstrap réservé à la toute première installation)
+// et de /auth/register (désactivé — les comptes sans espace sont interdits).
+// ---------------------------------------------------------------------------
+router.post("/create-space", async (req: Request, res: Response) => {
+  try {
+    const { email, password, fullName, companyName, matriculeFiscal, matriculeCnss, secteur, adresse, ville } = req.body;
+
+    if (!email || !password || !fullName || !companyName) {
+      return res.status(400).json({ error: "email, password, fullName et companyName requis" });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ error: "Le mot de passe doit contenir au moins 8 caractères" });
+    }
+
+    const existingUser = await prisma.users.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(409).json({ error: "Cet email est déjà inscrit — connectez-vous ou utilisez un autre email" });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const user = await prisma.users.create({
+      data: {
+        email,
+        passwordHash,
+        fullName,
+        role: "PROPRIETAIRE",
+        statut: "VALIDE",
+        updatedAt: new Date(),
+      },
+    });
+
+    const { workspace } = await provisionWorkspace({
+      name: companyName,
+      type: "ENTREPRISE",
+      societe: {
+        raisonSociale: companyName,
+        matriculeFiscal: matriculeFiscal ?? null,
+        matriculeCnss: matriculeCnss ?? null,
+        secteur,
+        adresse: adresse ?? null,
+        ville: ville ?? null,
+      },
+    });
+
+    await prisma.workspace_members.create({
+      data: {
+        userId: user.id,
+        workspaceId: workspace.id,
+        role: "PROPRIETAIRE",
+      },
+    });
+
+    await auditLog({
+      workspaceId: workspace.id,
+      userId: user.id,
+      action: "SPACE_SELF_CREATE",
+      entity: "workspaces",
+      entityId: workspace.id,
+      details: JSON.stringify({ companyName, type: "ENTREPRISE" }),
+      ipAddress: req.ip,
+    });
+
+    const { token, jti, expiresAt } = signToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+    await prisma.session.create({
+      data: { userId: user.id, token: jti, expiresAt },
+    });
+
+    return res.status(201).json({
+      message: "Votre espace entreprise est créé — bienvenue",
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        statut: user.statut,
+        workspaces: await buildAccessibleWorkspaces(user.id),
+      },
+    });
+  } catch (error) {
+    console.error("[auth] create-space error:", error);
     return res.status(500).json({ error: "Erreur interne" });
   }
 });

@@ -3,7 +3,7 @@
 // =============================================================================
 
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -174,7 +174,13 @@ export default function LoginPage() {
 
         {/* Lien d'inscription futur */}
         <p className="text-xs text-muted-foreground mt-6 text-center">
-          Pas encore de compte ? Contactez le propriétaire du cabinet.
+          Votre société gère sa propre paie, sans cabinet ?{" "}
+          <Link href="/creer-espace" className="text-primary hover:underline font-medium">
+            Créez votre espace entreprise
+          </Link>
+        </p>
+        <p className="text-[11px] text-muted-foreground mt-2 text-center">
+          Invité par un cabinet ou un collègue ? Utilisez simplement le lien d'invitation reçu.
         </p>
       </Card>
     </div>

@@ -35,6 +35,7 @@ import DashboardCabinet from "./pages/DashboardCabinet";
 import DashboardWorkspace from "./pages/DashboardWorkspace";
 import AuditLog from "./pages/AuditLog";
 import Login from "./pages/Login";
+import CreerEspace from "./pages/CreerEspace";
 import Invitation from "./pages/Invitation";
 import GestionClients from "./pages/gestion/GestionClients";
 import GestionContrats from "./pages/gestion/GestionContrats";
@@ -58,6 +59,7 @@ function AppRoutes() {
       <Route path="/guides/controle-fichier-declaration-cnss-txt" component={GuideFichierTXT} />
       <Route path="/guides/cotisations-cnss-taux-salariaux-patronaux" component={GuideCotisationsCNSS} />
       <Route path="/login" component={Login} />
+      <Route path="/creer-espace" component={CreerEspace} />
       <Route path="/invitation" component={Invitation} />
       <Route path="/calculateurs/calculer-salaire" component={CalculerSalaire} />
       <Route path="/referentiel-avantages-exclus" component={ReferentielAvantages} />

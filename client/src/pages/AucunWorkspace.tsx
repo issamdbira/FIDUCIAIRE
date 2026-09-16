@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { LogOut, MailQuestion } from "lucide-react";
+import { LogOut, MailQuestion, Building2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "wouter";
 
 /**
  * Écran « Aucun workspace » — affiché quand un utilisateur authentifié n'est
@@ -30,9 +31,14 @@ export default function AucunWorkspace() {
           (il la génère depuis <span className="font-medium">Gestion des membres</span>),
           puis reconnectez-vous une fois le lien accepté.
         </p>
-        <Button variant="outline" className="gap-2 w-full" onClick={() => logout()}>
+        <Button variant="outline" className="gap-2 w-full mb-3" onClick={() => logout()}>
           <LogOut className="w-4 h-4" /> Se déconnecter
         </Button>
+        <Link href="/creer-espace" className="block">
+          <Button className="gap-2 w-full bg-[#1e3a5f] hover:bg-[#1e3a5f]/90 text-white">
+            <Building2 className="w-4 h-4" /> Créer mon espace entreprise
+          </Button>
+        </Link>
       </Card>
     </div>
   );

@@ -223,6 +223,10 @@ export default function GestionEmployes() {
   // ── Save (create or update) ──
   const handleSave = async () => {
     if (!workspaceId) return;
+    if (!form.clientCompanyId) {
+      toast.error("L'entreprise est obligatoire — un salarié vit dans l'espace de sa société");
+      return;
+    }
     if (!form.matriculeCnss || !form.firstName || !form.lastName || !form.baseSalary) {
       toast.error("Matricule CNSS, nom, prénom et salaire de base sont requis");
       return;
@@ -460,7 +464,7 @@ export default function GestionEmployes() {
           <div className="grid gap-4 py-2">
             {/* Entreprise cliente */}
             <div className="space-y-1.5">
-              <Label>Entreprise cliente</Label>
+              <Label>Entreprise <span className="text-destructive">*</span></Label>
               <Select value={form.clientCompanyId} onValueChange={(v) => setForm({ ...form, clientCompanyId: v, establishmentId: "" })}>
                 <SelectTrigger><SelectValue placeholder="Sélectionner une entreprise" /></SelectTrigger>
                 <SelectContent>

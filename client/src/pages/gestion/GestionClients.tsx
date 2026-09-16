@@ -9,6 +9,7 @@ import { getWorkspaceId } from "@/lib/workspace";
 import { can, roleInWorkspace } from "@/lib/permissions";
 import { api, type ApiError } from "@/lib/api";
 import BackToTools from "@/components/BackToTools";
+import DossiersClients from "./DossiersClients";
 
 // shadcn/ui
 import { Button } from "@/components/ui/button";
@@ -197,6 +198,11 @@ export default function GestionClients() {
   const peutEcrire = can(roleWs, "write");
   const peutArchiver = can(roleWs, "archive");
 
+  // Phase 10 — modèle espaces : type de l'espace actif (défaut CABINET)
+  const espaceActif = user?.workspaces?.find((ws) => ws.id === workspaceId);
+  const espaceType = espaceActif?.type ?? "CABINET";
+  const estEntreprise = espaceType === "ENTREPRISE";
+
   // ── State ────────────────────────────────────────────────────────────────
   const [clients, setClients] = useState<ClientCompany[]>([]);
   const [loading, setLoading] = useState(true);
@@ -376,18 +382,26 @@ export default function GestionClients() {
           className="text-2xl sm:text-3xl font-bold text-primary"
           style={{ fontFamily: "Montserrat, sans-serif" }}
         >
-          Gestion des Clients
+          {estEntreprise ? "Ma société" : "Gestion des Clients"}
         </h1>
-        {peutEcrire && (
+        {peutEcrire && !estEntreprise && (
           <Button
             onClick={openCreateForm}
             className="gap-2 bg-[#1e3a5f] hover:bg-[#1e3a5f]/90 text-white"
           >
             <Plus className="size-4" />
-            Nouveau client
+            Ajouter (dans cet espace)
           </Button>
         )}
       </div>
+
+      {/* ── Phase 10 : dossiers clients (cabinet) / accès cabinet (entreprise) ── */}
+      <DossiersClients
+        workspaceId={workspaceId}
+        espaceType={espaceType}
+        peutEcrire={peutEcrire}
+        isProprietaire={roleWs === "PROPRIETAIRE"}
+      />
 
       {/* ── Search + Filters ── */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">

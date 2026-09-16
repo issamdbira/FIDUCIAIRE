@@ -46,6 +46,13 @@ router.post("/", requireAuth, requireWorkspaceWriter(), async (req: Request, res
       return res.status(400).json({ error: "workspaceId, matriculeCnss, firstName, lastName et baseSalary sont requis" });
     }
 
+    // Phase 10 (décision produit) : un salarié est TOUJOURS rattaché à une
+    // société (l'espace cabinet ne porte plus de salariés orphelins — dans le
+    // modèle espaces, les salariés vivent dans l'espace de leur entreprise).
+    if (!clientCompanyId) {
+      return res.status(400).json({ error: "clientCompanyId requis — un salarié doit être rattaché à une entreprise" });
+    }
+
     // Vérifier l'accès au workspace
     const hasAccess = await checkWorkspaceAccess(req.user!.userId, req.user!.role, workspaceId);
     if (!hasAccess) {
@@ -60,14 +67,12 @@ router.post("/", requireAuth, requireWorkspaceWriter(), async (req: Request, res
       return res.status(409).json({ error: `Un salarié avec le matricule CNSS "${matriculeCnss}" existe déjà dans ce workspace` });
     }
 
-    // Vérifier que le client existe si fourni
-    if (clientCompanyId) {
-      const client = await prisma.clientCompany.findFirst({
-        where: { id: clientCompanyId, workspaceId },
-      });
-      if (!client) {
-        return res.status(400).json({ error: "Entreprise cliente non trouvée dans ce workspace" });
-      }
+    // Vérifier que le client existe (désormais obligatoire)
+    const client = await prisma.clientCompany.findFirst({
+      where: { id: clientCompanyId, workspaceId },
+    });
+    if (!client) {
+      return res.status(400).json({ error: "Entreprise cliente non trouvée dans ce workspace" });
     }
 
     // Vérifier que l'établissement existe si fourni
