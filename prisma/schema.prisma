@@ -94,6 +94,19 @@ enum CategorieRegle {
   GENERAL         // Règle générale
 }
 
+// Phase 10 — Type d'espace métier (immuable après création)
+enum TypeEspace {
+  CABINET       // Cabinet professionnel : accès délégué vers des espaces Entreprise
+  ENTREPRISE    // Société autonome gérant sa propre paie
+}
+
+// Phase 10 — Cycle de vie d'une liaison d'accès délégué
+enum StatutDelegation {
+  PENDING       // Code de liaison généré par l'entreprise, pas encore accepté
+  ACTIVE        // Liaison active — le cabinet accède à l'espace cible
+  REVOKED       // Liaison révoquée (par l'entreprise ou le cabinet)
+}
+
 // ---------------------------------------------------------------------------
 // Utilisateur
 // ---------------------------------------------------------------------------
@@ -138,12 +151,14 @@ model Session {
 model workspaces {
   id                String              @id @default(cuid())
   name              String
+  type              TypeEspace          @default(CABINET) // CABINET | ENTREPRISE — immuable après création
   matriculeCnss     String?
   codeExploitation  String?
   matriculeFiscal   String?
   address           String?
   tauxAtMp          Float               @default(0.01)
   secteur           String              @default("non_agricole")
+  archivedAt        DateTime?           // null = actif ; utilisé p.ex. après fusion de cabinets (données préservées, espace masqué)
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 
@@ -156,7 +171,10 @@ model workspaces {
   regles_reglementaires   RegleReglementaire[]
   attendance_imports      AttendanceImport[]
   invitations             invitations[]
+  delegations_as_cabinet  delegated_access[] @relation("DelegationCabinet")
+  delegations_as_target   delegated_access[] @relation("DelegationTarget")
 
+  @@index([type])
   @@map("workspaces")
 }
 
@@ -197,6 +215,68 @@ model invitations {
 
   @@index([workspaceId])
   @@map("invitations")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 10 — Espaces CABINET / ENTREPRISE + accès délégué
+// ---------------------------------------------------------------------------
+// Modèle métier (document d'orientation, fait autorité) :
+//   - ESPACE ENTREPRISE : une société unique gère sa propre paie (autonome)
+//   - ESPACE CABINET : un cabinet a un ACCÈS DÉLÉGUÉ vers plusieurs espaces
+//     Entreprise distincts (ses clients). Le cabinet ne « contient » pas ses
+//     clients — il bascule dans leur espace via cette table.
+//
+// Cycle de vie d'une liaison :
+//   1. L'espace Entreprise génère un code de liaison (statut PENDING,
+//      cabinetWorkspaceId null, code rempli, expiresAt J+7)
+//   2. Le cabinet saisit le code → statut ACTIVE, code effacé
+//   3. La révocation (soit par l'entreprise, soit par le cabinet) → REVOKED
+//   4. Une nouvelle liaison pour le même couple revive la ligne REVOKED
+//      (contrainte unique (cabinetWorkspaceId, targetWorkspaceId) ; les NULL
+//      de Postgres étant distincts, plusieurs PENDING coexistent)
+// ---------------------------------------------------------------------------
+
+model delegated_access {
+  id                 String           @id @default(cuid())
+  cabinetWorkspaceId String?          // null tant que le code n'a pas été accepté par un cabinet
+  targetWorkspaceId  String           // L'espace Entreprise ciblé (jamais null)
+  statut             StatutDelegation @default(PENDING)
+  code               String?          @unique // Code de liaison (uniquement en PENDING)
+  expiresAt          DateTime?        // Expiration du code (PENDING uniquement, J+7)
+  createdByUserId    String           // Générateur du code (propriétaire de l'espace cible)
+  createdAt          DateTime         @default(now())
+  revokedAt          DateTime?
+
+  cabinet_workspace  workspaces?      @relation("DelegationCabinet", fields: [cabinetWorkspaceId], references: [id], onDelete: SetNull)
+  target_workspace   workspaces       @relation("DelegationTarget", fields: [targetWorkspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([cabinetWorkspaceId, targetWorkspaceId])
+  @@index([cabinetWorkspaceId])
+  @@index([targetWorkspaceId])
+  @@index([statut])
+  @@map("delegated_access")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 10 — Traçabilité de la migration des données (Clients → Espaces)
+// ---------------------------------------------------------------------------
+// Une ligne par ClientCompany migrée de son workspace cabinet d'origine vers
+// son nouvel espace ENTREPRISE autonome. Rend le script idempotent
+// (re-exécution = skip) et réversible (--reverse). Jamais supprimée.
+// ---------------------------------------------------------------------------
+
+model migration_map {
+  id              String    @id @default(cuid())
+  oldWorkspaceId  String    // Workspace cabinet d'origine
+  clientCompanyId String    @unique // Le ClientCompany migré
+  newWorkspaceId  String    // L'espace ENTREPRISE créé
+  status          String    @default("EXECUTED") // EXECUTED | REVERSED
+  executedAt      DateTime  @default(now())
+  reversedAt      DateTime?
+
+  @@index([oldWorkspaceId])
+  @@index([newWorkspaceId])
+  @@map("migration_map")
 }
 
 // ---------------------------------------------------------------------------
