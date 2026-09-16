@@ -40,6 +40,17 @@ vi.mock("../lib/prisma.js", () => {
       delete: vi.fn(),
       update: vi.fn(),
     },
+    delegated_access: {
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
+    workspaces: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+    },
     auditLog: {
       create: vi.fn(),
     },
@@ -82,6 +93,7 @@ const db = prisma as unknown as {
   users: { findUnique: ReturnType<typeof vi.fn>; findFirst: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn> };
   workspace_members: { findUnique: ReturnType<typeof vi.fn>; findMany: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn> };
   invitations: { findUnique: ReturnType<typeof vi.fn> };
+  delegated_access: { findMany: ReturnType<typeof vi.fn> };
   auditLog: { create: ReturnType<typeof vi.fn> };
   clientCompany: { findFirst: ReturnType<typeof vi.fn> };
   employees: { findFirst: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn> };
@@ -112,6 +124,8 @@ const WS_B = "ws-beta";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Phase 10 : par défaut, aucune délégation d'accès (tests directs inchangés)
+  db.delegated_access.findMany.mockResolvedValue([]);
 });
 
 describe("P0 — /auth/setup verrouillé après installation", () => {

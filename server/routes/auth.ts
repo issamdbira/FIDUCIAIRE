@@ -15,6 +15,78 @@ import { auditLog } from "../lib/audit-log.js";
 const router = Router();
 
 // ---------------------------------------------------------------------------
+// Phase 10 — Liste des espaces accessibles à un utilisateur
+// ---------------------------------------------------------------------------
+// Shape (additive — les champs historiques id/name/role sont inchangés) :
+//   - type : CABINET | ENTREPRISE (badge du sélecteur, parcours différencié)
+//   - viaCabinetId / viaCabinetName : renseignés uniquement pour un accès
+//     DÉLÉGUÉ (l'espace Entreprise d'un client du cabinet)
+// Précédence : membership direct > délégation. Espaces archivés masqués
+// (p.ex. cabinets fusionnés — les données sont conservées en base).
+// ---------------------------------------------------------------------------
+interface AccessibleWorkspace {
+  id: string;
+  name: string;
+  role: string;
+  type: string;
+  viaCabinetId: string | null;
+  viaCabinetName: string | null;
+}
+
+async function buildAccessibleWorkspaces(userId: string): Promise<AccessibleWorkspace[]> {
+  const memberships = await prisma.workspace_members.findMany({
+    where: { userId },
+    include: { workspaces: true },
+  });
+
+  const list: AccessibleWorkspace[] = [];
+  const directIds = new Set<string>();
+
+  for (const wm of memberships) {
+    if (wm.workspaces.archivedAt) continue; // espace fusionné/archivé : masqué
+    directIds.add(wm.workspaces.id);
+    list.push({
+      id: wm.workspaces.id,
+      name: wm.workspaces.name,
+      role: wm.role,
+      type: wm.workspaces.type,
+      viaCabinetId: null,
+      viaCabinetName: null,
+    });
+  }
+
+  // Accès délégués : espaces Entreprise des clients des cabinets de l'utilisateur
+  const activeCabinetIds = memberships
+    .filter((m) => !m.workspaces.archivedAt)
+    .map((m) => m.workspaces.id);
+  if (activeCabinetIds.length > 0) {
+    const delegations = await prisma.delegated_access.findMany({
+      where: { statut: "ACTIVE", cabinetWorkspaceId: { in: activeCabinetIds } },
+      include: { target_workspace: true, cabinet_workspace: true },
+    });
+    for (const d of delegations) {
+      if (!d.cabinet_workspace || !d.cabinetWorkspaceId) continue;
+      if (d.target_workspace.archivedAt) continue;
+      if (directIds.has(d.targetWorkspaceId)) continue; // précédence accès direct
+      const roleInCabinet = memberships.find(
+        (m) => m.workspaces.id === d.cabinetWorkspaceId,
+      )?.role;
+      if (!roleInCabinet) continue;
+      list.push({
+        id: d.target_workspace.id,
+        name: d.target_workspace.name,
+        role: roleInCabinet,
+        type: d.target_workspace.type,
+        viaCabinetId: d.cabinetWorkspaceId,
+        viaCabinetName: d.cabinet_workspace.name,
+      });
+    }
+  }
+
+  return list;
+}
+
+// ---------------------------------------------------------------------------
 // POST /api/auth/register — Inscription ouverte
 // DÉSACTIVÉE (décision produit) : les nouveaux comptes passent par invitation.
 // Le code est conservé pour mémoire ; toute inscription publique reçoit 403.
@@ -132,11 +204,7 @@ router.post("/login", async (req: Request, res: Response) => {
         fullName: user.fullName,
         role: user.role,
         statut: user.statut,
-        workspaces: user.workspace_members.map((wm) => ({
-          id: wm.workspaces.id,
-          name: wm.workspaces.name,
-          role: wm.role,
-        })),
+        workspaces: await buildAccessibleWorkspaces(user.id),
       },
     });
   } catch (error) {
@@ -169,11 +237,7 @@ router.get("/me", requireAuth, async (req: Request, res: Response) => {
       fullName: user.fullName,
       role: user.role,
       statut: user.statut,
-      workspaces: user.workspace_members.map((wm) => ({
-        id: wm.workspaces.id,
-        name: wm.workspaces.name,
-        role: wm.role,
-      })),
+      workspaces: await buildAccessibleWorkspaces(user.id),
     });
   } catch (error) {
     console.error("[auth] me error:", error);
@@ -418,11 +482,6 @@ router.post("/invitation/:token/accept", async (req: Request, res: Response) => 
       data: { userId: user!.id, token: jti, expiresAt },
     });
 
-    const memberships = await prisma.workspace_members.findMany({
-      where: { userId: user!.id },
-      include: { workspaces: { select: { id: true, name: true } } },
-    });
-
     return res.json({
       message: "Invitation acceptée — bienvenue",
       token: jwt,
@@ -432,11 +491,7 @@ router.post("/invitation/:token/accept", async (req: Request, res: Response) => 
         fullName: user!.fullName,
         role: user!.role,
         statut: user!.statut,
-        workspaces: memberships.map((m) => ({
-          id: m.workspaces.id,
-          name: m.workspaces.name,
-          role: m.role,
-        })),
+        workspaces: await buildAccessibleWorkspaces(user!.id),
       },
     });
   } catch (error) {
@@ -562,7 +617,14 @@ router.post("/setup", async (req: Request, res: Response) => {
         fullName: proprietaire.fullName,
         role: proprietaire.role,
         statut: proprietaire.statut,
-        workspaces: [{ id: workspace.id, name: workspace.name, role: "PROPRIETAIRE" }],
+        workspaces: [{
+          id: workspace.id,
+          name: workspace.name,
+          role: "PROPRIETAIRE",
+          type: workspace.type,
+          viaCabinetId: null,
+          viaCabinetName: null,
+        }],
       },
       token,
     });

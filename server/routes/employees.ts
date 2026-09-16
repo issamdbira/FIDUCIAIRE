@@ -11,7 +11,7 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
-import { requireWorkspaceMember, requireWorkspaceWriter, requireWorkspaceOwner } from "../middleware/rbac.js";
+import { requireWorkspaceMember, requireWorkspaceWriter, requireWorkspaceOwner, hasWorkspaceAccess } from "../middleware/rbac.js";
 import { auditLog } from "../lib/audit-log.js";
 
 const router = Router();
@@ -20,12 +20,8 @@ const router = Router();
 // Helper : vérifier l'accès au workspace
 // ---------------------------------------------------------------------------
 async function checkWorkspaceAccess(userId: string, _role: string, workspaceId: string): Promise<boolean> {
-  // Sécurité (Phase 10) : plus de bypass « rôle global PROPRIETAIRE » — le rôle
-  // s entend PAR WORKSPACE, comme dans le middleware central rbac.ts.
-  const membership = await prisma.workspace_members.findUnique({
-    where: { userId_workspaceId: { userId, workspaceId } },
-  });
-  return !!membership;
+  // Phase 10 : accès direct OU délégué (cabinet) — résolution centralisée rbac.ts
+  return hasWorkspaceAccess(userId, workspaceId);
 }
 
 // ---------------------------------------------------------------------------

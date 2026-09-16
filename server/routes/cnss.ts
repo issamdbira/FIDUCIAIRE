@@ -13,7 +13,7 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
-import { requireWorkspaceMember, requireWorkspaceWriter, requireWorkspaceOwner } from "../middleware/rbac.js";
+import { requireWorkspaceMember, requireWorkspaceWriter, requireWorkspaceOwner, hasWorkspaceAccess } from "../middleware/rbac.js";
 import {
   generateCnssExportText,
   generateCnssExportCsv,
@@ -27,9 +27,8 @@ import { auditLog, AUDIT_ACTIONS } from "../lib/audit-log.js";
 const router = Router();
 
 async function checkWs(userId: string, _role: string, ws: string): Promise<boolean> {
-  // Sécurité (Phase 10) : plus de bypass « rôle global PROPRIETAIRE »
-  const m = await prisma.workspace_members.findUnique({ where: { userId_workspaceId: { userId, workspaceId: ws } } });
-  return !!m;
+  // Phase 10 : accès direct OU délégué (cabinet) — résolution centralisée rbac.ts
+  return hasWorkspaceAccess(userId, ws);
 }
 
 const CNSS_TRANSITIONS: Record<string, string[]> = {

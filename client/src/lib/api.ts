@@ -15,13 +15,29 @@ export interface ApiError {
   code?: string;
 }
 
+/**
+ * Espace accessible (Phase 10 — modèle espaces) :
+ * - type : "CABINET" | "ENTREPRISE"
+ * - viaCabinetId / viaCabinetName : renseignés uniquement pour un accès
+ *   DÉLÉGUÉ (l'espace Entreprise d'un client du cabinet)
+ * Les champs historiques id/name/role sont inchangés (additif).
+ */
+export interface AccessibleWorkspace {
+  id: string;
+  name: string;
+  role: string;
+  type?: string;
+  viaCabinetId?: string | null;
+  viaCabinetName?: string | null;
+}
+
 export interface AuthUser {
   id: string;
   email: string;
   fullName: string;
   role: string;
   statut: string;
-  workspaces?: { id: string; name: string; role: string }[];
+  workspaces?: AccessibleWorkspace[];
 }
 
 export interface LoginResponse {

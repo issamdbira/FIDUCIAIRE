@@ -4,11 +4,16 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock du client Prisma : le middleware ne touche QUE workspace_members
+// Mock du client Prisma : workspace_members (accès direct) + delegated_access (Phase 10)
 vi.mock("../lib/prisma.js", () => ({
   default: {
     workspace_members: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+    },
+    delegated_access: {
+      findMany: vi.fn().mockResolvedValue([]),
       findFirst: vi.fn(),
     },
   },
@@ -25,6 +30,8 @@ import {
 
 const mockedFindUnique = prisma.workspace_members.findUnique as ReturnType<typeof vi.fn>;
 const mockedFindFirst = prisma.workspace_members.findFirst as ReturnType<typeof vi.fn>;
+const mockedMembersFindMany = prisma.workspace_members.findMany as ReturnType<typeof vi.fn>;
+const mockedDelegationsFindMany = prisma.delegated_access.findMany as ReturnType<typeof vi.fn>;
 
 type FakeReq = {
   params: Record<string, string>;
@@ -57,6 +64,9 @@ async function run(mw: ReturnType<typeof requireWorkspaceRole>, req: FakeReq) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Par défaut : aucune délégation (les tests « accès direct » sont inchangés)
+  mockedDelegationsFindMany.mockResolvedValue([]);
+  mockedMembersFindMany.mockResolvedValue([]);
 });
 
 describe("requireWorkspaceMember — lecture (P+G+L)", () => {
@@ -205,6 +215,39 @@ describe("req.membership injecté pour les handlers", () => {
       userId: "user-1",
       workspaceId: "ws-1",
       role: "GESTIONNAIRE",
+      via: "DIRECT",
+      cabinetWorkspaceId: undefined,
     });
+  });
+});
+
+// ── Phase 10 : accès délégué (cabinet → espace Entreprise) ─────────────────
+
+describe("resolveWorkspaceAccess — accès délégué (Phase 10)", () => {
+  it("via DELEGATED : membre du cabinet → rôle du cabinet dans l'espace cible", async () => {
+    mockedFindUnique
+      .mockResolvedValueOnce(null) // pas de membership direct dans l'espace cible
+      .mockResolvedValueOnce({ role: "GESTIONNAIRE" }); // membership dans le cabinet
+    mockedDelegationsFindMany.mockResolvedValue([{ cabinetWorkspaceId: "ws-cabinet" }]);
+    const r = await run(requireWorkspaceMember(), makeReq());
+    expect(r.passed).toBe(true);
+    expect(r.statusCode).toBeUndefined();
+  });
+
+  it("liaison REVOKED/PENDING → aucun accès (403)", async () => {
+    mockedFindUnique.mockResolvedValue(null); // pas de membership direct
+    mockedDelegationsFindMany.mockResolvedValue([]); // aucune délégation ACTIVE
+    const r = await run(requireWorkspaceMember(), makeReq());
+    expect(r.passed).toBe(false);
+    expect(r.statusCode).toBe(403);
+  });
+
+  it("précédence : le membership direct gagne sur la délégation", async () => {
+    mockedFindUnique.mockResolvedValue({ role: "LECTEUR" }); // direct LECTEUR
+    mockedDelegationsFindMany.mockResolvedValue([{ cabinetWorkspaceId: "ws-cabinet" }]);
+    // LECTEUR direct + délégation GESTIONNAIRE → écriture refusée (rôle direct)
+    const r = await run(requireWorkspaceWriter(), makeReq());
+    expect(r.passed).toBe(false);
+    expect(r.statusCode).toBe(403);
   });
 });

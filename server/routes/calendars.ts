@@ -10,17 +10,13 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
-import { requireWorkspaceMember, requireWorkspaceWriter } from "../middleware/rbac.js";
+import { requireWorkspaceMember, requireWorkspaceWriter, hasWorkspaceAccess } from "../middleware/rbac.js";
 
 const router = Router();
 
 async function checkWorkspaceAccess(userId: string, _role: string, workspaceId: string): Promise<boolean> {
-  // Sécurité (Phase 10) : plus de bypass « rôle global PROPRIETAIRE » — le rôle
-  // s entend PAR WORKSPACE, comme dans le middleware central rbac.ts.
-  const membership = await prisma.workspace_members.findUnique({
-    where: { userId_workspaceId: { userId, workspaceId } },
-  });
-  return !!membership;
+  // Phase 10 : accès direct OU délégué (cabinet) — résolution centralisée rbac.ts
+  return hasWorkspaceAccess(userId, workspaceId);
 }
 
 // Jours standard Tunisie (48h/semaine)
