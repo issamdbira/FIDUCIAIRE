@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import BackToTools from "@/components/BackToTools";
+import { useAuth } from "@/contexts/AuthContext";
+import { getWorkspaceId } from "@/lib/workspace";
 
 /* ── Types ─────────────────────────────────────────────────────────── */
 
@@ -101,19 +103,22 @@ function Unauthorized() {
 /* ── Main Component ────────────────────────────────────────────────── */
 
 export default function DashboardCabinet() {
+  const { user } = useAuth();
   const [data, setData] = useState<CabinetData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("fiduciaire_token");
-    if (!token) {
+    // Phase 10 : dashboard scopé au CABINET ACTIF (anti-fuite inter-espaces)
+    const wsId = getWorkspaceId(user);
+    if (!token || !wsId) {
       setError("unauthorized");
       setLoading(false);
       return;
     }
 
-    fetch("/api/dashboard/cabinet", {
+    fetch(`/api/dashboard/cabinet/${wsId}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
@@ -132,7 +137,7 @@ export default function DashboardCabinet() {
         setError(err.message);
         setLoading(false);
       });
-  }, []);
+  }, [user]);
 
   /* ── Guards ────────────────────────────────────────────────────── */
 
@@ -198,7 +203,7 @@ export default function DashboardCabinet() {
               <Building2 className="h-5 w-5 text-primary" />
             </div>
             <CardTitle className="text-sm font-semibold text-primary">
-              Workspaces actifs
+              Dossiers suivis
             </CardTitle>
           </CardHeader>
           <CardContent>

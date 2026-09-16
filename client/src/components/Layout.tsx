@@ -22,8 +22,9 @@ import { Button } from "@/components/ui/button";
 import ThemeToggle from "./ThemeToggle";
 import WorkspaceSelector from "./WorkspaceSelector";
 import { useAuth } from "@/contexts/AuthContext";
-import { getWorkspaceId } from "@/lib/workspace";
+import { getWorkspaceId, setActiveWorkspaceId } from "@/lib/workspace";
 import { can, roleInWorkspace } from "@/lib/permissions";
+import { ArrowLeftRight, CornerUpLeft } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -51,6 +52,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // Rôle dans le workspace ACTIF — pilote l'affichage du menu (miroir du backend)
   const wsId = getWorkspaceId(user);
   const role = useMemo(() => roleInWorkspace(user, wsId), [user, wsId]);
+
+  // Phase 10 : contexte délégué — l'espace actif est un dossier client accédé
+  // via un cabinet → bannière de contexte + retour au cabinet d'un clic
+  const activeWs = user?.workspaces?.find((ws) => ws.id === wsId);
+  const contexteDelegue = activeWs?.viaCabinetId ? activeWs : null;
+  const retourCabinet = () => {
+    if (contexteDelegue?.viaCabinetId) {
+      setActiveWorkspaceId(contexteDelegue.viaCabinetId);
+      window.location.reload();
+    }
+  };
 
   // Liens de navigation desktop, filtrés par rôle
   const liensDesktop = useMemo(() => {
@@ -118,6 +130,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </nav>
+
+      {/* ─── Bannière de contexte délégué (Phase 10) ─── */}
+      {contexteDelegue && (
+        <div className="bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-900">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 px-4 py-1.5 text-xs">
+            <span className="flex items-center gap-2 text-amber-800 dark:text-amber-300 min-w-0">
+              <ArrowLeftRight className="size-3.5 shrink-0" />
+              <span className="truncate">
+                Espace <strong>{contexteDelegue.name}</strong> — accédé via{" "}
+                <strong>{contexteDelegue.viaCabinetName}</strong>
+              </span>
+            </span>
+            <button
+              onClick={retourCabinet}
+              className="flex items-center gap-1.5 shrink-0 rounded-md px-2 py-1 font-medium text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
+            >
+              <CornerUpLeft className="size-3.5" />
+              Retour au cabinet
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ─── Mobile Sheet (conserve accès outils sur mobile) ─── */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>

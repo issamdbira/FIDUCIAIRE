@@ -8,7 +8,7 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth, requireWorkspaceAccess } from "../middleware/auth.js";
-import { requireWorkspaceMember, requireWorkspaceWriter, requireAnyWorkspaceOwner, hasWorkspaceAccess } from "../middleware/rbac.js";
+import { requireWorkspaceMember, requireWorkspaceWriter, requireWorkspaceOwner, requireAnyWorkspaceOwner, hasWorkspaceAccess } from "../middleware/rbac.js";
 
 const router = Router();
 
@@ -50,140 +50,168 @@ function getMoisTrimestre(numeroTrimestre: number): number[] {
 }
 
 // ---------------------------------------------------------------------------
+// Phase 10 — Statistiques cabinet SCOPEES (anti-fuite inter-espaces)
+// ---------------------------------------------------------------------------
+// Périmètre : les cabinets donnés + leurs dossiers délégués ACTIFS
+// (espaces Entreprise des clients). Les clients encore « embarqués » dans le
+// cabinet (pré-migration) restent comptés via les cabinets eux-mêmes —
+// coexistence des deux modèles pendant la transition.
+// ---------------------------------------------------------------------------
+async function computeCabinetStats(cabinetIds: string[]) {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  // Dossiers : espaces Entreprise accessibles par délégation ACTIVE
+  const delegations = await prisma.delegated_access.findMany({
+    where: { statut: "ACTIVE", cabinetWorkspaceId: { in: cabinetIds } },
+    select: { targetWorkspaceId: true },
+  });
+  const dossierIds = [...new Set(delegations.map((d) => d.targetWorkspaceId))];
+  const scopeWsIds = [...new Set([...cabinetIds, ...dossierIds])];
+
+  // --- Clients (embarqués dans les cabinets + sociétés des dossiers) ---
+  const activeClients = await prisma.clientCompany.count({
+    where: { workspaceId: { in: scopeWsIds }, statut: "ACTIVE" },
+  });
+  const newClientsThisMonth = await prisma.clientCompany.count({
+    where: { workspaceId: { in: scopeWsIds }, createdAt: { gte: startOfMonth } },
+  });
+  const inactiveClients = await prisma.clientCompany.count({
+    where: { workspaceId: { in: scopeWsIds }, statut: "ARCHIVED" },
+  });
+
+  // --- Périodes du périmètre ---
+  const scopedPeriods = await prisma.payrollPeriod.findMany({
+    where: { workspaceId: { in: scopeWsIds } },
+    select: { id: true, statut: true },
+  });
+  const scopedPeriodIds = scopedPeriods.map((p) => p.id);
+  const closedPeriodIds = scopedPeriods.filter((p) => p.statut === "CLOSED").map((p) => p.id);
+
+  let totalMasseSalariale = 0;
+  if (closedPeriodIds.length > 0) {
+    const agg = await prisma.payslip.aggregate({
+      where: { periodId: { in: closedPeriodIds } },
+      _sum: { salaireBrutEffectif: true },
+    });
+    totalMasseSalariale = agg._sum.salaireBrutEffectif || 0;
+  }
+
+  const totalBulletins = await prisma.payslip.count({
+    where: { periodId: { in: scopedPeriodIds } },
+  });
+
+  const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+  const payslipsByMonth = await prisma.payslip.groupBy({
+    by: ["mois", "annee"],
+    where: {
+      createdAt: { gte: twelveMonthsAgo },
+      periodId: { in: scopedPeriodIds },
+    },
+    _count: { id: true },
+    orderBy: [{ annee: "asc" }, { mois: "asc" }],
+  });
+  const bulletinsLast12Months = payslipsByMonth.map((r) => ({
+    mois: r.mois,
+    annee: r.annee,
+    count: r._count.id,
+  }));
+
+  // --- CNSS (périmètre scopé) ---
+  const currentQ = getCurrentQuarter();
+  const previousQ = getPreviousQuarter();
+
+  const aJour = await prisma.cNSSDeclaration.count({
+    where: { workspaceId: { in: scopeWsIds }, statut: "ARCHIVEE" },
+  });
+  const enRetard = await prisma.cNSSDeclaration.count({
+    where: {
+      workspaceId: { in: scopeWsIds },
+      statut: { in: ["BROUILLON", "CONTROLEE"] },
+      OR: [
+        { annee: { lt: currentQ.annee } },
+        { annee: currentQ.annee, numeroTrimestre: { lt: currentQ.numeroTrimestre } },
+      ],
+    },
+  });
+
+  const activeClientsList = await prisma.clientCompany.findMany({
+    where: { workspaceId: { in: scopeWsIds }, statut: "ACTIVE" },
+    select: { id: true, workspaceId: true },
+  });
+  const relevantDeclarations = await prisma.cNSSDeclaration.findMany({
+    where: {
+      workspaceId: { in: scopeWsIds },
+      OR: [
+        { annee: previousQ.annee, numeroTrimestre: previousQ.numeroTrimestre },
+        { annee: currentQ.annee, numeroTrimestre: currentQ.numeroTrimestre },
+      ],
+    },
+    select: { clientCompanyId: true, annee: true, numeroTrimestre: true },
+  });
+  const declarationSet = new Set(
+    relevantDeclarations.map((d) => `${d.clientCompanyId}:${d.annee}:${d.numeroTrimestre}`)
+  );
+  let manquantes = 0;
+  for (const client of activeClientsList) {
+    for (const q of [previousQ, currentQ]) {
+      const key = `${client.id}:${q.annee}:${q.numeroTrimestre}`;
+      if (!declarationSet.has(key)) manquantes++;
+    }
+  }
+  const cnssDeclarations = { aJour, enRetard, manquantes };
+
+  // --- Audit (périmètre scopé) ---
+  const recentAuditLogs = await prisma.auditLog.findMany({
+    where: { workspaceId: { in: scopeWsIds } },
+    take: 10,
+    orderBy: { createdAt: "desc" },
+  });
+
+  return {
+    totalWorkspaces: dossierIds.length, // dossiers délégués suivis par le(s) cabinet(s)
+    activeClients,
+    newClientsThisMonth,
+    inactiveClients,
+    totalMasseSalariale,
+    totalBulletins,
+    bulletinsLast12Months,
+    cnssDeclarations,
+    recentAuditLogs,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // GET /dashboard/cabinet — Vue globale cabinet (PROPRIETAIRE only)
+// Phase 10 : SCOPE aux cabinets de l'utilisateur + leurs dossiers délégués
+// (l'ancienne version agrégeait TOUS les espaces de la plateforme — fuite)
 // ---------------------------------------------------------------------------
 router.get("/cabinet", requireAuth, requireAnyWorkspaceOwner, async (req: Request, res: Response) => {
   try {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    // --- totalWorkspaces ---
-    const totalWorkspaces = await prisma.workspaces.count();
-
-    // --- activeClients ---
-    const activeClients = await prisma.clientCompany.count({
-      where: { statut: "ACTIVE" },
+    const owned = await prisma.workspace_members.findMany({
+      where: { userId: req.user!.userId, role: "PROPRIETAIRE" },
+      select: { workspaceId: true },
     });
-
-    // --- newClientsThisMonth ---
-    const newClientsThisMonth = await prisma.clientCompany.count({
-      where: {
-        createdAt: { gte: startOfMonth },
-      },
-    });
-
-    // --- inactiveClients ---
-    const inactiveClients = await prisma.clientCompany.count({
-      where: { statut: "ARCHIVED" },
-    });
-
-    // --- totalMasseSalariale : sum of payslips' salaireBrutEffectif for CLOSED periods ---
-    const closedPeriods = await prisma.payrollPeriod.findMany({
-      where: { statut: "CLOSED" },
-      select: { id: true },
-    });
-    const closedPeriodIds = closedPeriods.map((p) => p.id);
-
-    let totalMasseSalariale = 0;
-    if (closedPeriodIds.length > 0) {
-      const agg = await prisma.payslip.aggregate({
-        where: { periodId: { in: closedPeriodIds } },
-        _sum: { salaireBrutEffectif: true },
-      });
-      totalMasseSalariale = agg._sum.salaireBrutEffectif || 0;
-    }
-
-    // --- totalBulletins ---
-    const totalBulletins = await prisma.payslip.count();
-
-    // --- bulletinsLast12Months : payslips grouped by month for last 12 months ---
-    const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
-    const payslipsByMonth = await prisma.payslip.groupBy({
-      by: ["mois", "annee"],
-      where: {
-        createdAt: { gte: twelveMonthsAgo },
-      },
-      _count: { id: true },
-      orderBy: [{ annee: "asc" }, { mois: "asc" }],
-    });
-    const bulletinsLast12Months = payslipsByMonth.map((r) => ({
-      mois: r.mois,
-      annee: r.annee,
-      count: r._count.id,
-    }));
-
-    // --- cnssDeclarations ---
-    const currentQ = getCurrentQuarter();
-    const previousQ = getPreviousQuarter();
-
-    // aJour : declarations ARCHIVEE
-    const aJour = await prisma.cNSSDeclaration.count({
-      where: { statut: "ARCHIVEE" },
-    });
-
-    // enRetard : BROUILLON or CONTROLEE for past quarters
-    const enRetard = await prisma.cNSSDeclaration.count({
-      where: {
-        statut: { in: ["BROUILLON", "CONTROLEE"] },
-        OR: [
-          { annee: { lt: currentQ.annee } },
-          {
-            annee: currentQ.annee,
-            numeroTrimestre: { lt: currentQ.numeroTrimestre },
-          },
-        ],
-      },
-    });
-
-    // manquantes : active clients with no declaration for current or previous quarter
-    const activeClientsList = await prisma.clientCompany.findMany({
-      where: { statut: "ACTIVE" },
-      select: { id: true, workspaceId: true },
-    });
-
-    const relevantDeclarations = await prisma.cNSSDeclaration.findMany({
-      where: {
-        OR: [
-          { annee: previousQ.annee, numeroTrimestre: previousQ.numeroTrimestre },
-          { annee: currentQ.annee, numeroTrimestre: currentQ.numeroTrimestre },
-        ],
-      },
-      select: { clientCompanyId: true, annee: true, numeroTrimestre: true },
-    });
-
-    const declarationSet = new Set(
-      relevantDeclarations.map((d) => `${d.clientCompanyId}:${d.annee}:${d.numeroTrimestre}`)
-    );
-
-    let manquantes = 0;
-    for (const client of activeClientsList) {
-      for (const q of [previousQ, currentQ]) {
-        const key = `${client.id}:${q.annee}:${q.numeroTrimestre}`;
-        if (!declarationSet.has(key)) manquantes++;
-      }
-    }
-
-    const cnssDeclarations = { aJour, enRetard, manquantes };
-
-    // --- recentAuditLogs : last 10 entries ---
-    const recentAuditLogs = await prisma.auditLog.findMany({
-      take: 10,
-      orderBy: { createdAt: "desc" },
-    });
-
-    return res.json({
-      totalWorkspaces,
-      activeClients,
-      newClientsThisMonth,
-      inactiveClients,
-      totalMasseSalariale,
-      totalBulletins,
-      bulletinsLast12Months,
-      cnssDeclarations,
-      recentAuditLogs,
-    });
+    const stats = await computeCabinetStats(owned.map((o) => o.workspaceId));
+    return res.json(stats);
   } catch (error) {
     console.error("[dashboard] GET /cabinet error:", error);
+    return res.status(500).json({ error: "Erreur interne" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// GET /dashboard/cabinet/:ws — Vue du CABINET ACTIF (Phase 10)
+// ---------------------------------------------------------------------------
+// Scopé au cabinet :ws donné + ses dossiers délégués. C'est la route utilisée
+// par le frontend depuis la Phase 10 (l'espace actif du propriétaire).
+// ---------------------------------------------------------------------------
+router.get("/cabinet/:ws", requireAuth, requireWorkspaceOwner(), async (req: Request, res: Response) => {
+  try {
+    const stats = await computeCabinetStats([req.params.ws]);
+    return res.json(stats);
+  } catch (error) {
+    console.error("[dashboard] GET /cabinet/:ws error:", error);
     return res.status(500).json({ error: "Erreur interne" });
   }
 });
