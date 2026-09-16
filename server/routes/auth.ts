@@ -1,19 +1,31 @@
 // =============================================================================
 // Le Fiduciaire — Auth Routes
-// register | login | me | logout | pending | validate
+// register | login | me | logout | pending | validate | setup
+// invitation (consultation + acceptation — liens copiables, 7 jours, unique)
 // =============================================================================
 
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import prisma from "../lib/prisma.js";
 import { signToken, verifyToken } from "../lib/jwt.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
+import { auditLog } from "../lib/audit-log.js";
 
 const router = Router();
 
 // ---------------------------------------------------------------------------
 // POST /api/auth/register — Inscription ouverte
+// DÉSACTIVÉE (décision produit) : les nouveaux comptes passent par invitation.
+// Le code est conservé pour mémoire ; toute inscription publique reçoit 403.
 // ---------------------------------------------------------------------------
+router.post("/register", async (_req: Request, res: Response) => {
+  return res.status(403).json({
+    error: "Inscription désactivée — demandez une invitation au propriétaire de votre cabinet",
+  });
+});
+
+/*
 router.post("/register", async (req: Request, res: Response) => {
   try {
     const { email, password, fullName } = req.body;
@@ -55,6 +67,7 @@ router.post("/register", async (req: Request, res: Response) => {
     return res.status(500).json({ error: "Erreur interne" });
   }
 });
+*/
 
 // ---------------------------------------------------------------------------
 // POST /api/auth/login — Connexion
@@ -258,6 +271,176 @@ router.post("/validate", requireAuth, requireRole("PROPRIETAIRE"), async (req: R
     });
   } catch (error) {
     console.error("[auth] validate error:", error);
+    return res.status(500).json({ error: "Erreur interne" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/auth/invitation/:token — Consulter une invitation (public)
+// L'invité voit l'email, le workspace et le rôle proposés AVANT de définir
+// son mot de passe. Aucune information sensible au-delà de ces champs.
+// ---------------------------------------------------------------------------
+router.get("/invitation/:token", async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+    const invitation = await prisma.invitations.findUnique({
+      where: { tokenHash },
+      include: { workspaces: { select: { id: true, name: true } } },
+    });
+
+    if (!invitation) {
+      return res.status(404).json({ error: "Invitation introuvable" });
+    }
+    if (invitation.usedAt) {
+      return res.status(410).json({ error: "Cette invitation a déjà été utilisée" });
+    }
+    if (invitation.expiresAt < new Date()) {
+      return res.status(410).json({ error: "Cette invitation a expiré" });
+    }
+
+    // Un utilisateur ayant déjà un compte à cet email devra s'authentifier
+    const existingUser = await prisma.users.findUnique({ where: { email: invitation.email } });
+
+    return res.json({
+      email: invitation.email,
+      workspaceName: invitation.workspaces.name,
+      role: invitation.role,
+      expiresAt: invitation.expiresAt,
+      compteExistant: !!existingUser,
+    });
+  } catch (error) {
+    console.error("[auth] invitation consult error:", error);
+    return res.status(500).json({ error: "Erreur interne" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/auth/invitation/:token/accept — Accepter une invitation (public)
+// Définit le mot de passe, crée le compte VALIDE si nécessaire et — point
+// crucial qui manquait historiquement — CRÉE LE MEMBERSHIP au workspace.
+// Si un compte existe déjà à cet email, le mot de passe actuel est exigé
+// (preuve d'identité) avant de rattacher le workspace.
+// ---------------------------------------------------------------------------
+router.post("/invitation/:token/accept", async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    const { password, fullName, currentPassword } = req.body;
+
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const invitation = await prisma.invitations.findUnique({
+      where: { tokenHash },
+      include: { workspaces: { select: { id: true, name: true } } },
+    });
+
+    if (!invitation) {
+      return res.status(404).json({ error: "Invitation introuvable" });
+    }
+    if (invitation.usedAt) {
+      return res.status(410).json({ error: "Cette invitation a déjà été utilisée" });
+    }
+    if (invitation.expiresAt < new Date()) {
+      return res.status(410).json({ error: "Cette invitation a expiré" });
+    }
+
+    const existingUser = await prisma.users.findUnique({ where: { email: invitation.email } });
+
+    let user = existingUser;
+    if (existingUser) {
+      // Compte existant : seul le mot de passe ACTUEL est exigé (preuve
+      // d'identité) — aucun nouveau mot de passe n'est défini ici.
+      if (!currentPassword) {
+        return res.status(400).json({ error: "Un compte existe déjà pour cet email — saisissez votre mot de passe actuel pour confirmer" });
+      }
+      const ok = await bcrypt.compare(currentPassword, existingUser.passwordHash);
+      if (!ok) {
+        return res.status(401).json({ error: "Mot de passe actuel incorrect" });
+      }
+    } else {
+      // Nouveau compte : fullName + mot de passe (8 caractères min.) requis
+      if (!fullName) {
+        return res.status(400).json({ error: "fullName requis pour créer le compte" });
+      }
+      if (!password || password.length < 8) {
+        return res.status(400).json({ error: "Un mot de passe d'au moins 8 caractères est requis" });
+      }
+      const passwordHash = await bcrypt.hash(password, 12);
+      user = await prisma.users.create({
+        data: {
+          email: invitation.email,
+          passwordHash,
+          fullName,
+          role: invitation.role,
+          statut: "VALIDE",
+          updatedAt: new Date(),
+        },
+      });
+    }
+
+    // Créer le membership (le gap historique : comptes validés sans workspace)
+    const alreadyMember = await prisma.workspace_members.findUnique({
+      where: { userId_workspaceId: { userId: user!.id, workspaceId: invitation.workspaceId } },
+    });
+    if (!alreadyMember) {
+      await prisma.workspace_members.create({
+        data: {
+          userId: user!.id,
+          workspaceId: invitation.workspaceId,
+          role: invitation.role,
+        },
+      });
+    }
+
+    // Marquer l'invitation comme utilisée (usage unique)
+    await prisma.invitations.update({
+      where: { id: invitation.id },
+      data: { usedAt: new Date() },
+    });
+
+    await auditLog({
+      workspaceId: invitation.workspaceId,
+      userId: user!.id,
+      action: "INVITATION_ACCEPT",
+      entity: "invitations",
+      entityId: invitation.id,
+      details: JSON.stringify({ email: invitation.email, role: invitation.role, nouveauCompte: !existingUser }),
+      ipAddress: req.ip,
+    });
+
+    // Session + JWT : l'invité est immédiatement connecté
+    const { token: jwt, jti, expiresAt } = signToken({
+      userId: user!.id,
+      email: user!.email,
+      role: user!.role,
+    });
+    await prisma.session.create({
+      data: { userId: user!.id, token: jti, expiresAt },
+    });
+
+    const memberships = await prisma.workspace_members.findMany({
+      where: { userId: user!.id },
+      include: { workspaces: { select: { id: true, name: true } } },
+    });
+
+    return res.json({
+      message: "Invitation acceptée — bienvenue",
+      token: jwt,
+      user: {
+        id: user!.id,
+        email: user!.email,
+        fullName: user!.fullName,
+        role: user!.role,
+        statut: user!.statut,
+        workspaces: memberships.map((m) => ({
+          id: m.workspaces.id,
+          name: m.workspaces.name,
+          role: m.role,
+        })),
+      },
+    });
+  } catch (error) {
+    console.error("[auth] invitation accept error:", error);
     return res.status(500).json({ error: "Erreur interne" });
   }
 });

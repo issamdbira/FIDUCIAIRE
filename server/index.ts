@@ -28,6 +28,7 @@ import cnssRoutes from "./routes/cnss.js";
 import reportRoutes from "./routes/reports.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import employeeRoutes from "./routes/employees.js";
+import workspaceRoutes from "./routes/workspaces.js";
 import prisma, { initLog, initMode, initError } from "./lib/prisma.js";
 
 // ---------------------------------------------------------------------------
@@ -59,6 +60,7 @@ export function createApp() {
   app.use("/api/reports", reportRoutes);
   app.use("/api/dashboard", dashboardRoutes);
   app.use("/api/employees", employeeRoutes);
+  app.use("/api/workspaces", workspaceRoutes);
 
   // Health check with secure diagnostics
   app.get("/api/health", async (_req, res) => {

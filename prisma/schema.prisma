@@ -110,6 +110,7 @@ model users {
 
   sessions          Session[]
   workspace_members workspace_members[]
+  invitations_creees invitations[]        @relation("InvitationsCreees")
 
   @@map("users")
 }
@@ -154,6 +155,7 @@ model workspaces {
   convention_collectives  ConventionCollective[]
   regles_reglementaires   RegleReglementaire[]
   attendance_imports      AttendanceImport[]
+  invitations             invitations[]
 
   @@map("workspaces")
 }
@@ -173,6 +175,28 @@ model workspace_members {
 
   @@id([userId, workspaceId])
   @@map("workspace_members")
+}
+
+// ---------------------------------------------------------------------------
+// Invitations (gestion des memberships — lien copiable, 7 jours, usage unique)
+// ---------------------------------------------------------------------------
+
+model invitations {
+  id          String          @id @default(cuid())
+  workspaceId String
+  email       String          // Email invité (informatif — le lien suffit)
+  role        RoleUtilisateur @default(GESTIONNAIRE)
+  tokenHash   String          @unique // sha256 du token transmis dans le lien
+  expiresAt   DateTime        // J+7 à la création
+  usedAt      DateTime?       // null = en attente
+  createdBy   String          // PROPRIETAIRE émetteur
+  createdAt   DateTime        @default(now())
+
+  workspaces  workspaces      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  users       users           @relation("InvitationsCreees", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("invitations")
 }
 
 // ---------------------------------------------------------------------------

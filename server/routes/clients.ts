@@ -356,6 +356,14 @@ router.put("/:workspaceId/:id/establishments/:estId", requireAuth, requireWorksp
       return res.status(403).json({ error: "Accès refusé" });
     }
 
+    // IDOR : vérifier que la société appartient bien au workspace avant de
+    // toucher ses établissements (sinon un membre du ws A pouvait modifier
+    // un établissement d'une société du ws B)
+    const company = await prisma.clientCompany.findFirst({ where: { id, workspaceId } });
+    if (!company) {
+      return res.status(404).json({ error: "Entreprise introuvable" });
+    }
+
     const est = await prisma.establishment.findFirst({
       where: { id: estId, clientCompanyId: id },
     });

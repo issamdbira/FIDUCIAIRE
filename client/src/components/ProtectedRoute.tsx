@@ -4,6 +4,7 @@
 
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
+import AucunWorkspace from "@/pages/AucunWorkspace";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -60,6 +61,12 @@ export default function ProtectedRoute({ children, roles }: ProtectedRouteProps)
         </div>
       </div>
     );
+  }
+
+  // Authentifié mais membre d'aucun workspace (comptes historiques orphelins)
+  // → écran d'attente dédié plutôt qu'un contenu vide
+  if (user && (!user.workspaces || user.workspaces.length === 0)) {
+    return <AucunWorkspace />;
   }
 
   // Authentifié et rôle OK → afficher le contenu
