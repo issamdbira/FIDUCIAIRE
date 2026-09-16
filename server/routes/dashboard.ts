@@ -15,8 +15,8 @@ const router = Router();
 // ---------------------------------------------------------------------------
 // Helper : vérifier l'accès au workspace
 // ---------------------------------------------------------------------------
-async function checkWs(userId: string, role: string, ws: string): Promise<boolean> {
-  if (role === "PROPRIETAIRE") return true;
+async function checkWs(userId: string, _role: string, ws: string): Promise<boolean> {
+  // Sécurité (Phase 10) : plus de bypass « rôle global PROPRIETAIRE »
   const m = await prisma.workspace_members.findUnique({
     where: { userId_workspaceId: { userId, workspaceId: ws } },
   });

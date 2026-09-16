@@ -45,8 +45,9 @@ const upload = multer({
 });
 
 // Helper : vérifier l'accès au workspace
-async function checkWorkspaceAccess(userId: string, role: string, workspaceId: string): Promise<boolean> {
-  if (role === "PROPRIETAIRE") return true;
+async function checkWorkspaceAccess(userId: string, _role: string, workspaceId: string): Promise<boolean> {
+  // Sécurité (Phase 10) : plus de bypass « rôle global PROPRIETAIRE » — le rôle
+  // s entend PAR WORKSPACE, comme dans le middleware central rbac.ts.
   const membership = await prisma.workspace_members.findUnique({
     where: { userId_workspaceId: { userId, workspaceId } },
   });
