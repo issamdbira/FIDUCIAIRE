@@ -9,6 +9,8 @@ export default defineConfig({
   },
   test: {
     include: ["client/src/**/*.test.ts", "server/**/*.test.ts"],
+    // tests-e2e = suite E2E RÉELLE (base vivante, config dédiée vitest.e2e.config.ts)
+    exclude: ["server/tests-e2e/**", "node_modules/**"],
     environment: "node",
   },
 });

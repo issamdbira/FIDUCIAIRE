@@ -146,7 +146,7 @@ router.post("/import", requireAuth, upload.single("file"), requireWorkspaceWrite
       userId: req.user!.userId,
       action: "ATTENDANCE_IMPORT",
       entity: "AttendanceImport",
-      entityId: undefined,
+      entityId: attendanceImport.id, // P0-2 : undefined créait un NULL en base → crash DashboardCabinet (truncate(null))
       details: JSON.stringify({ clientCompanyId, mois: moisNum, annee: anneeNum, fichier: req.file?.originalname }),
       ipAddress: req.ip,
     });

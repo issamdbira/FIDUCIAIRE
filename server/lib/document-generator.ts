@@ -200,6 +200,38 @@ export function fileExists(cheminStockage: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// P0-3 / P1-7 : lecture durable d'un document.
+// Priorité : contenu en base (contenuBase64) → disque (dev local / cache).
+// Retourne null si le document est réellement indisponible (au lieu de 500).
+// ---------------------------------------------------------------------------
+
+export function readDocumentContent(doc: {
+  contenuBase64?: string | null;
+  cheminStockage: string;
+}): Buffer | null {
+  if (doc.contenuBase64) {
+    try {
+      return Buffer.from(doc.contenuBase64, "base64");
+    } catch {
+      // base64 corrompu — tenter le disque
+    }
+  }
+  try {
+    if (fs.existsSync(doc.cheminStockage)) {
+      return fs.readFileSync(doc.cheminStockage);
+    }
+  } catch {
+    // disque indisponible
+  }
+  return null;
+}
+
+/** Sérialise un contenu (string | Buffer) pour stockage en colonne base64. */
+export function toBase64(content: string | Buffer): string {
+  return Buffer.from(content).toString("base64");
+}
+
+// ---------------------------------------------------------------------------
 // Export Excel des bulletins d'une période
 // ---------------------------------------------------------------------------
 

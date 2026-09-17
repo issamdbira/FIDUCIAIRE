@@ -21,7 +21,7 @@ import {
   cnssFileExists,
   getMoisTrimestre,
 } from "../lib/cnss-export.js";
-import { storeFile } from "../lib/document-generator.js";
+import { readDocumentContent, toBase64 } from "../lib/document-generator.js";
 import { auditLog, AUDIT_ACTIONS } from "../lib/audit-log.js";
 
 const router = Router();
@@ -296,7 +296,7 @@ router.patch("/:ws/declarations/:id/generer", requireAuth, requireWorkspaceWrite
     const chemin = storeCnssFile(filename, exportText);
     const taille = Buffer.byteLength(exportText, "utf-8");
 
-    // Stocker en base
+    // Stocker en base (contenu durable serverless + métadonnées)
     const doc = await prisma.documentStorage.create({
       data: {
         workspaceId: ws,
@@ -305,6 +305,7 @@ router.patch("/:ws/declarations/:id/generer", requireAuth, requireWorkspaceWrite
         type: "EXPORT_CNSS",
         nomFichier: filename,
         cheminStockage: chemin,
+        contenuBase64: toBase64(exportText),
         tailleOctets: taille,
         mimeType: "text/plain",
         annee: decl.annee,
@@ -366,11 +367,11 @@ router.post("/declarations/:id/export", requireAuth, requireWorkspaceWriter(), a
     });
     if (!decl) return res.status(404).json({ error: "Déclaration introuvable" });
 
-    // Vérifier si export déjà généré
+    // Vérifier si export déjà généré (durabilité : contenu en base OU disque local)
     const existing = await prisma.documentStorage.findFirst({
       where: { cnssDeclarationId: id, type: "EXPORT_CNSS" },
     });
-    if (existing && cnssFileExists(existing.cheminStockage)) {
+    if (existing && (existing.contenuBase64 || cnssFileExists(existing.cheminStockage))) {
       return res.json({ document: existing, message: "Export CNSS déjà généré" });
     }
 
@@ -437,6 +438,7 @@ router.post("/declarations/:id/export", requireAuth, requireWorkspaceWriter(), a
         type: "EXPORT_CNSS",
         nomFichier: filename,
         cheminStockage: chemin,
+        contenuBase64: toBase64(exportText),
         tailleOctets: taille,
         mimeType: "text/plain",
         annee: decl.annee,
@@ -464,10 +466,12 @@ router.get("/declarations/:id/download", requireAuth, requireWorkspaceMember(), 
     });
     if (!doc) return res.status(404).json({ error: "Export CNSS non généré" });
 
-    if (!cnssFileExists(doc.cheminStockage)) return res.status(404).json({ error: "Fichier introuvable sur le stockage" });
+    // P0-3/P1-7 : lecture durable — base d'abord, disque en repli (dev local)
+    const content = readDocumentContent(doc);
+    if (!content) {
+      return res.status(404).json({ error: "Fichier introuvable — régénérez l'export depuis la déclaration" });
+    }
 
-    const fs = await import("fs");
-    const content = fs.readFileSync(doc.cheminStockage);
     res.setHeader("Content-Type", "text/plain");
     res.setHeader("Content-Disposition", `attachment; filename="${doc.nomFichier}"`);
     return res.send(content);

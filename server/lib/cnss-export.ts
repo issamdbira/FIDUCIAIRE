@@ -124,9 +124,13 @@ export function generateCnssExportCsv(data: CnssDeclarationData): string {
 
 // ---------------------------------------------------------------------------
 // Stockage fichier
+// P0-3 : sur Vercel (Lambda), le filesystem est read-only sauf /tmp — même
+// règle que document-generator.ts ; l'ancien code écrivait dans cwd()/storage
+// → 500 « Erreur interne » systématique en production.
 // ---------------------------------------------------------------------------
 
-const STORAGE_ROOT = process.env.DOCUMENT_STORAGE_PATH || path.resolve(process.cwd(), "storage");
+const STORAGE_ROOT = process.env.DOCUMENT_STORAGE_PATH ||
+  (process.env.VERCEL === "1" ? "/tmp/storage" : path.resolve(process.cwd(), "storage"));
 
 export function storeCnssFile(filename: string, content: string): string {
   if (!fs.existsSync(STORAGE_ROOT)) fs.mkdirSync(STORAGE_ROOT, { recursive: true });

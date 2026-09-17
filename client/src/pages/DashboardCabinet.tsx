@@ -69,8 +69,12 @@ const formatDate = (iso: string): string => {
   return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
 };
 
-const truncate = (s: string, n: number): string =>
-  s.length > n ? s.slice(0, n) + "…" : s;
+// P0-2 : null-safe — entityId/details peuvent être NULL en base (audits legacy) ;
+// un dashboard ne doit JAMAIS crasher sur des données.
+const truncate = (s: string | null | undefined, n: number): string => {
+  if (!s) return "—";
+  return s.length > n ? s.slice(0, n) + "…" : s;
+};
 
 /* ── Unauthorized View ─────────────────────────────────────────────── */
 

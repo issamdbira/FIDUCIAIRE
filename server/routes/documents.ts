@@ -17,8 +17,8 @@ import {
   generatePayrollExcel,
   generatePayrollCsv,
   storeFile,
-  readFile,
-  fileExists,
+  readDocumentContent,
+  toBase64,
 } from "../lib/document-generator.js";
 
 const router = Router();
@@ -46,11 +46,11 @@ router.post("/payslips/:id/pdf", requireAuth, requireWorkspaceWriter(), async (r
     });
     if (!payslip) return res.status(404).json({ error: "Bulletin introuvable" });
 
-    // Vérifier si déjà généré
+    // Vérifier si déjà généré (durabilité : contenu en base OU disque local)
     const existing = await prisma.documentStorage.findFirst({
       where: { payslipId: id, type: "BULLETIN_PDF" },
     });
-    if (existing && fileExists(existing.cheminStockage)) {
+    if (existing && (existing.contenuBase64 || readDocumentContent(existing))) {
       return res.json({ document: existing, message: "Bulletin déjà généré" });
     }
 
@@ -63,7 +63,7 @@ router.post("/payslips/:id/pdf", requireAuth, requireWorkspaceWriter(), async (r
 
     const html = generateBulletinHtml(payslip, clientInfo);
 
-    // Stocker
+    // Stocker : disque (dev/cache) + contenu en base (durabilité serverless)
     const filename = `bulletin_${payslip.annee}-${String(payslip.mois).padStart(2, "0")}_${payslip.matricule}.html`;
     const chemin = storeFile(filename, html);
     const taille = Buffer.byteLength(html, "utf-8");
@@ -77,6 +77,7 @@ router.post("/payslips/:id/pdf", requireAuth, requireWorkspaceWriter(), async (r
         type: "BULLETIN_PDF",
         nomFichier: filename,
         cheminStockage: chemin,
+        contenuBase64: toBase64(html),
         tailleOctets: taille,
         mimeType: "text/html",
         mois: payslip.mois,
@@ -106,9 +107,12 @@ router.get("/payslips/:id/download", requireAuth, requireWorkspaceMember(), asyn
     });
     if (!doc) return res.status(404).json({ error: "Document non généré" });
 
-    if (!fileExists(doc.cheminStockage)) return res.status(404).json({ error: "Fichier introuvable sur le stockage" });
+    // P1-7 : lecture durable — base d'abord, disque en repli (dev local)
+    const content = readDocumentContent(doc);
+    if (!content) {
+      return res.status(404).json({ error: "Fichier introuvable — régénérez le document" });
+    }
 
-    const content = readFile(doc.cheminStockage);
     res.setHeader("Content-Type", doc.mimeType);
     res.setHeader("Content-Disposition", `attachment; filename="${doc.nomFichier}"`);
     return res.send(content);
@@ -135,7 +139,7 @@ router.post("/periods/:id/excel", requireAuth, requireWorkspaceWriter(), async (
     const periode = `${period.mois}/${period.annee}`;
     const buffer = generatePayrollExcel(payslips as any, periode);
 
-    // Stocker
+    // Stocker : disque (dev/cache) + contenu en base (durabilité serverless)
     const filename = `export_paie_${period.annee}-${String(period.mois).padStart(2, "0")}.xlsx`;
     const chemin = storeFile(filename, buffer);
 
@@ -146,6 +150,7 @@ router.post("/periods/:id/excel", requireAuth, requireWorkspaceWriter(), async (
         type: "EXPORT_EXCEL",
         nomFichier: filename,
         cheminStockage: chemin,
+        contenuBase64: toBase64(buffer),
         tailleOctets: buffer.length,
         mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         mois: period.mois,
@@ -189,6 +194,7 @@ router.post("/periods/:id/csv", requireAuth, requireWorkspaceWriter(), async (re
         type: "EXPORT_CSV",
         nomFichier: filename,
         cheminStockage: chemin,
+        contenuBase64: toBase64(csv),
         tailleOctets: taille,
         mimeType: "text/csv",
         mois: period.mois,

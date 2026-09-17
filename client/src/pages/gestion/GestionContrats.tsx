@@ -295,24 +295,11 @@ export default function GestionContrats() {
   const fetchEmployees = useCallback(async () => {
     if (!workspaceId) return;
     try {
-      const data = await api.get<EmployeeSimple[]>(`/clients/${workspaceId}?statut=ACTIVE`);
-      // The clients endpoint returns companies; we need to get employees from each
-      // Actually the API /api/clients/:wsId returns companies with nested employees
-      // But for the contract form we need a flat list of employees
-      // Let's fetch all employees from the workspace directly
-      // Since there's no dedicated employees endpoint, we get them from clients
-      interface ClientWithEmployees {
-        id: string;
-        employees?: EmployeeSimple[];
-      }
-      const clients = await api.get<ClientWithEmployees[]>(`/clients/${workspaceId}?statut=ACTIVE`);
-      const allEmployees: EmployeeSimple[] = [];
-      for (const client of clients) {
-        if (client.employees) {
-          allEmployees.push(...client.employees);
-        }
-      }
-      setEmployees(allEmployees);
+      // P0-1 : le sélecteur employé était TOUJOURS vide — l'ancien code lisait
+      // `client.employees` sur la LISTE /clients/:ws qui ne renvoie que _count.
+      // Le endpoint dédié existe et renvoie les salariés actifs directement.
+      const data = await api.get<EmployeeSimple[]>(`/employees/${workspaceId}?activeOnly=true`);
+      setEmployees(data);
     } catch {
       // Silently fail — employees list is not critical
     }
@@ -852,7 +839,9 @@ export default function GestionContrats() {
                 </SelectContent>
               </Select>
               {employees.length === 0 && (
-                <p className="text-xs text-muted-foreground">Aucun employé trouvé. Ajoutez des employés via la gestion des clients.</p>
+                <p className="text-xs text-muted-foreground">
+                  Aucun salarié actif trouvé. Créez d'abord vos salariés dans « Salariés », puis revenez créer leur contrat.
+                </p>
               )}
             </div>
 

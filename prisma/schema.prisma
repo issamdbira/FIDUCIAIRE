@@ -1189,6 +1189,7 @@ model DocumentStorage {
   type           TypeDocument // Type de document
   nomFichier     String // Nom du fichier (ex: "bulletin_2026-06_ahmed.pdf")
   cheminStockage String // Chemin/URL de stockage (local ou OSS)
+  contenuBase64  String? // P0-3/P1-7 : contenu en base (durable serverless) — /tmp est éphémère par instance
   tailleOctets   Int? // Taille en octets
   mimeType       String // "application/pdf", "application/vnd.ms-excel", etc.
 

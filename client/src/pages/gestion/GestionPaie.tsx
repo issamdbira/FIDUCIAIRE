@@ -105,6 +105,15 @@ interface PayrollPeriod {
   _count: { payslips: number; anomalies: number };
 }
 
+// Miroir de MassPayrollResult (server/lib/payroll-engine.ts) — P1-1
+interface CalculateResult {
+  bulletinsCreated: number;
+  anomaliesCreated: number;
+  skippedNoContract: number;
+  skippedNoAttendance: number;
+  errors: string[];
+}
+
 interface Payslip {
   id: string;
   nomPrenom: string;
@@ -272,12 +281,37 @@ export default function GestionPaie() {
   };
 
   // ── Actions ──────────────────────────────────────────────────────────
+  // P1-1 : 200 ≠ succès métier — le moteur renvoie { result: { errors[],
+  // bulletinsCreated, skippedNoContract, skippedNoAttendance } }. L'ancien
+  // code affichait « Calcul effectué » même avec 0 bulletin et des erreurs.
   const handleCalculate = async (period: PayrollPeriod) => {
     if (!workspaceId) return;
     setCalculatingId(period.id);
     try {
-      await api.patch(`/payroll/${workspaceId}/periods/${period.id}/calculate`);
-      toast.success(`Calcul de la paie effectué — ${period.client_company.raisonSociale} ${MOIS_LABELS[period.mois - 1]} ${period.annee}`);
+      const data = await api.patch<{ period: PayrollPeriod; result: CalculateResult }>(
+        `/payroll/${workspaceId}/periods/${period.id}/calculate`
+      );
+      const r = data?.result;
+      const label = `${period.client_company.raisonSociale} — ${MOIS_LABELS[period.mois - 1]} ${period.annee}`;
+
+      if (r && r.errors.length > 0) {
+        toast.error(`Calcul échoué (${label}) : ${r.errors.slice(0, 2).join(" ; ")}${r.errors.length > 2 ? "…" : ""}`);
+      } else if (r && r.bulletinsCreated === 0) {
+        const causes: string[] = [];
+        if (r.skippedNoContract > 0) causes.push(`${r.skippedNoContract} salarié(s) sans contrat actif`);
+        if (r.skippedNoAttendance > 0) causes.push(`${r.skippedNoAttendance} salarié(s) sans pointage`);
+        toast.warning(
+          `Aucun bulletin généré (${label})${causes.length ? " — " + causes.join(", ") : " — vérifiez les salariés, contrats et pointages"}`,
+          { duration: 7000 }
+        );
+      } else {
+        const details: string[] = [`${r?.bulletinsCreated ?? "?"} bulletin(s)`];
+        if (r?.anomaliesCreated) details.push(`${r.anomaliesCreated} anomalie(s)`);
+        if (r?.skippedNoContract) details.push(`${r.skippedNoContract} sans contrat`);
+        if (r?.skippedNoAttendance) details.push(`${r.skippedNoAttendance} sans pointage`);
+        toast.success(`Paie calculée — ${details.join(", ")} (${label})`, { duration: 7000 });
+      }
+
       fetchPeriods();
       // If detail view is open for this period, refresh it
       if (detailPeriod?.id === period.id) {

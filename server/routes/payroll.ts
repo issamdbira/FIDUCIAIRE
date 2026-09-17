@@ -184,7 +184,11 @@ router.patch("/:ws/periods/:id/validate", requireAuth, requireWorkspaceWriter(),
 router.patch("/:ws/periods/:id/close", requireAuth, requireWorkspaceOwner(), async (req: Request, res: Response) => {
   try {
     const { ws, id } = req.params;
-    if (req.user!.role !== "PROPRIETAIRE") return res.status(403).json({ error: "Rôle PROPRIETAIRE requis" });
+    // P1-4 : l'ancienne vérification req.user.role (rôle GLOBAL du JWT, souvent
+    // GESTIONNAIRE pour un propriétaire d'espace Entreprise) entrait en conflit
+    // avec requireWorkspaceOwner() qui vérifie le rôle DANS LE WORKSPACE.
+    // Un utilisateur promu propriétaire de l'espace sans re-login était bloqué (403).
+    // requireWorkspaceOwner() est seul juge — il est résolu en base à chaque requête.
 
     const period = await prisma.payrollPeriod.findUnique({ where: { id } });
     if (!period || period.workspaceId !== ws) return res.status(404).json({ error: "Période introuvable" });
@@ -352,7 +356,8 @@ router.post("/periods/:id/complementary", requireAuth, requireWorkspaceWriter(),
 router.get("/:ws/audit", requireAuth, requireWorkspaceOwner(), async (req: Request, res: Response) => {
   try {
     const { ws } = req.params;
-    if (req.user!.role !== "PROPRIETAIRE") return res.status(403).json({ error: "Rôle PROPRIETAIRE requis" });
+    // P1-4 (idem /close) : seul requireWorkspaceOwner() décide — rôle workspace
+    // résolu en base, pas le rôle global du JWT.
 
     const where: Record<string, unknown> = { workspaceId: ws };
     // Filtres combinés (intersection AND)
