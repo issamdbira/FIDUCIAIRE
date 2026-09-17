@@ -48,6 +48,7 @@ import GestionCNSS from "./pages/gestion/GestionCNSS";
 import GestionDocuments from "./pages/gestion/GestionDocuments";
 import GestionEmployes from "./pages/gestion/GestionEmployes";
 import GestionMembres from "./pages/gestion/GestionMembres";
+import MessagesContact from "./pages/gestion/MessagesContact";
 
 function AppRoutes() {
   const routes = (
@@ -147,6 +148,11 @@ function AppRoutes() {
       <Route path="/gestion/membres">
         <ProtectedRoute roles={["PROPRIETAIRE"]}>
           <GestionMembres />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/gestion/messages">
+        <ProtectedRoute roles={["PROPRIETAIRE"]}>
+          <MessagesContact />
         </ProtectedRoute>
       </Route>
       <Route path="/404" component={NotFound} />

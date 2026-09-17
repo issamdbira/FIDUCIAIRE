@@ -265,6 +265,31 @@ model login_attempts {
 }
 
 // ---------------------------------------------------------------------------
+// Lot 4 — Messages du formulaire de contact (fin du mock « envoi simulé »)
+// ---------------------------------------------------------------------------
+// La page publique /contact enregistrait localement puis affichait un faux
+// accusé de réception : personne ne lisait jamais les messages. Chaque envoi
+// valide est désormais une ligne ; le PROPRIETAIRE (rôle global) consulte,
+// marque lu et supprime via /gestion/messages. Anti-abus : max 5 messages
+// par heure et par IP (comptage en base — multi-instances OK, miroir du
+// principe login_attempts). Aucune relation : contenu public par nature.
+model contact_messages {
+  id        String   @id @default(cuid())
+  nom       String
+  email     String
+  objet     String
+  categorie String
+  message   String
+  ip        String? // origine de l'envoi (anti-abus + traçabilité)
+  lu        Boolean  @default(false) // marqué par le PROPRIETAIRE
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([ip, createdAt])
+  @@map("contact_messages")
+}
+
+// ---------------------------------------------------------------------------
 // Phase 10 — Espaces CABINET / ENTREPRISE + accès délégué
 // ---------------------------------------------------------------------------
 // Modèle métier (document d'orientation, fait autorité) :

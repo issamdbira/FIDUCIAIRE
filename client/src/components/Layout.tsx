@@ -17,6 +17,7 @@ import {
   UserPlus,
   Users,
   Settings,
+  Inbox,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "./ThemeToggle";
@@ -79,9 +80,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       { href: "/gestion/documents", label: "Documents", icon: FileDown, visible: can(role, "read") },
       { href: "/gestion/membres", label: "Membres", icon: Users, visible: can(role, "manageMembers") },
       { href: "/admin", label: "Config", icon: Settings, visible: can(role, "configWrite") },
+      // Lot 4 — messages du formulaire public : niveau APPLICATION (rôle
+      // global du compte), pas du workspace actif
+      { href: "/gestion/messages", label: "Messages", icon: Inbox, visible: user?.role === "PROPRIETAIRE" },
     ];
     return base.filter((l) => l.visible);
-  }, [role]);
+  }, [role, user?.role]);
 
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden max-w-[100vw]">
@@ -249,6 +253,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {can(role, "manageMembers") && (
               <Link href="/gestion/membres" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
                 <Users className="size-4" /> Membres & invitations
+              </Link>
+            )}
+            {user?.role === "PROPRIETAIRE" && (
+              <Link href="/gestion/messages" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
+                <Inbox className="size-4" /> Messages de contact
               </Link>
             )}
           </div>

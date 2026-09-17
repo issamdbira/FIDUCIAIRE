@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, CheckCircle2, Mail, ShieldCheck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, Mail, ShieldCheck } from "lucide-react";
 import BackToTools from "@/components/BackToTools";
+import { api, ApiError } from "@/lib/api";
 
 /**
  * Page Contact — Support Technique LE FIDUCIAIRE
@@ -14,6 +15,10 @@ import BackToTools from "@/components/BackToTools";
  * Formulaire sobre avec avertissement de sécurité obligatoire :
  * aucune donnée de paie confidentielle ne doit transiter par ce canal.
  * Anonymat total : signé au nom de la marque uniquement.
+ *
+ * Lot 4 : l'envoi est RÉEL — POST /api/contact persiste le message
+ * (anti-abus 5/h/IP côté serveur), le PROPRIETAIRE le consulte dans
+ * /gestion/messages. L'accusé de réception affiche la référence serveur.
  */
 
 const CATEGORIES = [
@@ -31,9 +36,12 @@ export default function Contact() {
   const [objet, setObjet] = useState("");
   const [categorie, setCategorie] = useState("");
   const [message, setMessage] = useState("");
-  const [envoye, setEnvoye] = useState(false);
+  const [envoiEnCours, setEnvoiEnCours] = useState(false);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [reference, setReference] = useState<string | null>(null);
 
   const peutEnvoyer =
+    !envoiEnCours &&
     nom.trim() !== "" &&
     email.trim() !== "" &&
     email.includes("@") &&
@@ -41,14 +49,34 @@ export default function Contact() {
     categorie !== "" &&
     message.trim().length >= 20;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!peutEnvoyer) return;
-    // Envoi simulé — en production, brancher un endpoint ou service email
-    setEnvoye(true);
+    setEnvoiEnCours(true);
+    setErreur(null);
+    try {
+      // Lot 4 — envoi réel : le message est persisté côté serveur
+      const reponse = await api.post<{ reference: string }>("/contact", {
+        nom: nom.trim(),
+        email: email.trim(),
+        objet: objet.trim(),
+        categorie,
+        message: message.trim(),
+      });
+      setReference(reponse.reference);
+    } catch (err) {
+      const apiErr = err as ApiError;
+      setErreur(
+        apiErr?.message === "Failed to fetch"
+          ? "Connexion au serveur impossible — vérifiez votre réseau."
+          : apiErr?.message || "L'envoi a échoué. Réessayez dans un instant."
+      );
+    } finally {
+      setEnvoiEnCours(false);
+    }
   };
 
-  if (envoye) {
+  if (reference) {
     return (
       <div className="max-w-2xl mx-auto py-8 px-4">
         <BackToTools />
@@ -65,9 +93,17 @@ export default function Contact() {
             répondra dans les meilleurs délais à l'adresse indiquée.
           </p>
           <p className="text-xs text-muted-foreground">
-            Référence : {new Date().toISOString().slice(0, 10)}-{Math.random().toString(36).slice(2, 8).toUpperCase()}
+            Référence : {new Date().toISOString().slice(0, 10)}-{reference}
           </p>
-          <Button variant="outline" className="mt-6" onClick={() => setEnvoye(false)}>
+          <Button
+            variant="outline"
+            className="mt-6"
+            onClick={() => {
+              setReference(null);
+              setMessage("");
+              setObjet("");
+            }}
+          >
             Envoyer un autre message
           </Button>
         </Card>
@@ -190,10 +226,20 @@ export default function Contact() {
               <span>Signé : Support Technique LE FIDUCIAIRE</span>
             </div>
             <Button type="submit" disabled={!peutEnvoyer} className="gap-2">
-              <Mail className="h-4 w-4" />
-              Envoyer
+              {envoiEnCours ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Mail className="h-4 w-4" />
+              )}
+              {envoiEnCours ? "Envoi…" : "Envoyer"}
             </Button>
           </div>
+
+          {erreur && (
+            <p className="text-sm text-destructive" role="alert">
+              {erreur}
+            </p>
+          )}
         </form>
       </Card>
     </div>

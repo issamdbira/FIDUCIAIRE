@@ -30,6 +30,7 @@ import reportRoutes from "./routes/reports.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import employeeRoutes from "./routes/employees.js";
 import workspaceRoutes from "./routes/workspaces.js";
+import contactRoutes from "./routes/contact.js";
 import prisma, { initLog, initMode, initError } from "./lib/prisma.js";
 import { enTetesSecurite } from "./lib/security-headers.js";
 
@@ -94,6 +95,8 @@ export function createApp() {
   app.use("/api/dashboard", dashboardRoutes);
   app.use("/api/employees", employeeRoutes);
   app.use("/api/workspaces", workspaceRoutes);
+  // Lot 4 — messages du formulaire de contact (POST public + consultation P)
+  app.use("/api/contact", contactRoutes);
 
   // Health check with secure diagnostics
   app.get("/api/health", async (_req, res) => {
