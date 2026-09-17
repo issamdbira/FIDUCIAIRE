@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "./ThemeToggle";
 import WorkspaceSelector from "./WorkspaceSelector";
+import UserMenu, { MobileLogoutEntry } from "./UserMenu";
 import { useAuth } from "@/contexts/AuthContext";
 import { getWorkspaceId, setActiveWorkspaceId } from "@/lib/workspace";
 import { can, roleInWorkspace } from "@/lib/permissions";
@@ -103,7 +104,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <WorkspaceSelector />
           </div>
 
-          {/* Right side : Theme toggle + navigation filtrée par rôle (desktop) */}
+          {/* Right side : Theme toggle + navigation filtrée par rôle (desktop) + Compte */}
           <div className="flex items-center gap-2">
             <div className="hidden lg:flex items-center gap-2">
               <ThemeToggle />
@@ -115,6 +116,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </Button>
                 </Link>
               ))}
+            </div>
+
+            {/* Lot 1 — Menu Compte : déconnexion visible depuis toute page protégée */}
+            <div className="flex items-center gap-1">
+              <UserMenu />
+              <div className="lg:hidden">
+                <ThemeToggle />
+              </div>
             </div>
 
             {/* Mobile hamburger */}
@@ -259,7 +268,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {role ? role.charAt(0) + role.slice(1).toLowerCase() : ""} — accès lecture
               </span>
             )}
-            <ThemeToggle />
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              {/* Lot 1 — déconnexion visible sur mobile */}
+              <MobileLogoutEntry />
+            </div>
           </div>
         </SheetContent>
       </Sheet>
