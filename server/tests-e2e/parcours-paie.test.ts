@@ -236,6 +236,68 @@ describe("Parcours métier E2E — Entreprise (réel, sans mock)", () => {
     expect(res.body.variablesCreated).toBeGreaterThanOrEqual(0);
   });
 
+  // ── Exigence TPE : saisie manuelle (sans fichier) — Lot 6 ────────────────
+  test("6b. Saisie manuelle du pointage (mois suivant, sans fichier)", async () => {
+    const res = await authed("post", `/api/attendance/${workspaceId}/manual`).send({
+      clientCompanyId: company!.id,
+      mois: 10,
+      annee: 2026,
+      lignes: [
+        {
+          matricule: MATRICULE,
+          nomPrenom: "Ali BenE2E",
+          joursTravaillesReels: 21,
+          congesPayes: 1,
+          absencesJustifiees: 0,
+          absencesNonJustifiees: 0,
+          heuresSupplementaires: 4,
+        },
+      ],
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.import.statut).toBe("VALIDE");
+    expect(res.body.import.nomFichier).toBe("saisie-manuelle");
+    expect(res.body.summariesCreated).toBe(1);
+    expect(res.body.message).toContain("1 ligne");
+
+    // P1-6 (réévaluation) : 21 jours réels + 1 congé payé = 22 jours
+    // rémunérés sur 22 comptés → taux de présence 100%. Les congés payés
+    // sont RÉMUNÉRÉS (règle tunisienne) — l'ancienne formule renvoyait
+    // 21/22 = 95.45% et amputait le salaire.
+    const summaries = await authed("get", `/api/attendance/${workspaceId}/summaries/${res.body.import.id}`);
+    expect(summaries.status).toBe(200);
+    expect((summaries.body as Array<{ tauxPresence: number }>).length).toBe(1);
+    expect((summaries.body as Array<{ tauxPresence: number }>)[0].tauxPresence).toBe(1);
+  });
+
+  test("6c. Saisie manuelle idempotente — remplace la précédente (même période)", async () => {
+    const res = await authed("post", `/api/attendance/${workspaceId}/manual`).send({
+      clientCompanyId: company!.id,
+      mois: 10,
+      annee: 2026,
+      lignes: [
+        {
+          matricule: MATRICULE,
+          nomPrenom: "Ali BenE2E",
+          joursTravaillesReels: 22,
+          congesPayes: 0,
+          absencesJustifiees: 0,
+          absencesNonJustifiees: 0,
+          heuresSupplementaires: 0,
+        },
+      ],
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.summariesCreated).toBe(1);
+
+    // Une SEULE saisie manuelle pour octobre subsiste (l'ancienne partie en cascade)
+    const list = await authed("get", `/api/attendance/${workspaceId}/imports`);
+    expect(list.status).toBe(200);
+    const manuelsOctobre = (list.body as Array<{ nomFichier: string; mois: number }>)
+      .filter((i) => i.nomFichier === "saisie-manuelle" && i.mois === 10);
+    expect(manuelsOctobre.length).toBe(1);
+  });
+
   test("7. Ouverture de la période de paie", async () => {
     const res = await authed("post", "/api/payroll/periods").send({
       workspaceId,

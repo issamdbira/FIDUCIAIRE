@@ -59,6 +59,7 @@ import {
   XCircle,
   Clock,
   FileSpreadsheet,
+  Keyboard,
   Loader2,
   RefreshCw,
   ChevronLeft,
@@ -71,6 +72,7 @@ import {
 interface ClientCompany {
   id: string;
   raisonSociale: string;
+  statut?: string;
 }
 
 interface AttendanceImport {
@@ -108,22 +110,49 @@ interface AttendanceSummary {
   _count?: { variables: number };
 }
 
+// P1-3 : miroir du VRAI modèle PayrollVariable — l'ancienne interface exposait
+// typeVariable/valeur qui n'existent pas → colonnes « Variable » et « Valeur »
+// toujours vides, validation « à l'aveugle ».
 interface PayrollVariable {
   id: string;
   workspaceId: string;
-  importId?: string;
   summaryId: string;
-  employeeId?: string;
+  employeeId: string;
   mois: number;
   annee: number;
-  typeVariable: string;
-  valeur: number;
+  salaireBrutMensuel: number;
+  tauxPresence: number;
+  salaireBrutEffectif: number;
+  heuresSupplementaires: number;
+  montantHeuresSup?: number | null;
+  joursTravailles: number;
+  joursAbsence: number;
+  montantAbsence?: number | null;
+  salaireNet?: number | null;
   statut: string;
-  motifRefus?: string | null;
   noteValidation?: string | null;
   createdAt: string;
   attendance_summary?: { matricule: string; nomPrenom: string };
 }
+
+// ── Saisie manuelle (exigence TPE — pointage sans fichier) ──────────────────
+
+interface EmployeeSimple {
+  id: string;
+  firstName: string;
+  lastName: string;
+  matriculeCnss?: string | null;
+}
+
+interface ManualLigne {
+  jt: string;   // jours travaillés réels
+  cp: string;   // congés payés
+  aj: string;   // absences justifiées
+  anj: string;  // absences non justifiées
+  hs: string;   // heures supplémentaires
+}
+
+const EMPTY_MANUAL_LIGNE: ManualLigne = { jt: "", cp: "0", aj: "0", anj: "0", hs: "0" };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -216,6 +245,16 @@ export default function GestionPointage() {
   const [actingVariable, setActingVariable] = useState<PayrollVariable | null>(null);
   const [motifRefus, setMotifRefus] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+
+  // ── Saisie manuelle state (exigence TPE — pointage sans fichier) ──
+  const [manualDialogOpen, setManualDialogOpen] = useState(false);
+  const [manualClient, setManualClient] = useState("");
+  const [manualMois, setManualMois] = useState(String(new Date().getMonth() + 1));
+  const [manualAnnee, setManualAnnee] = useState(String(new Date().getFullYear()));
+  const [manualEmployees, setManualEmployees] = useState<EmployeeSimple[]>([]);
+  const [manualRows, setManualRows] = useState<Record<string, ManualLigne>>({});
+  const [manualLoading, setManualLoading] = useState(false);
+  const [manualSubmitting, setManualSubmitting] = useState(false);
 
   // ── Fetch imports ──
   const fetchImports = useCallback(async () => {
@@ -359,6 +398,106 @@ export default function GestionPointage() {
     await fetchSummaries(imp.id);
   };
 
+  // ── Saisie manuelle : charger les salariés de la société choisie ──
+  const fetchManualEmployees = useCallback(async (clientId: string) => {
+    if (!workspaceId || !clientId) {
+      setManualEmployees([]);
+      return;
+    }
+    setManualLoading(true);
+    try {
+      const data = await api.get<EmployeeSimple[]>(
+        `/employees/${workspaceId}?activeOnly=true&clientId=${clientId}`
+      );
+      setManualEmployees(data);
+      setManualRows({});
+    } catch (err) {
+      const apiErr = err as ApiError;
+      toast.error(apiErr.message || "Erreur lors du chargement des salariés");
+    } finally {
+      setManualLoading(false);
+    }
+  }, [workspaceId]);
+
+  const setManualField = (employeeId: string, field: keyof ManualLigne, value: string) => {
+    setManualRows((prev) => ({
+      ...prev,
+      [employeeId]: { ...(prev[employeeId] ?? EMPTY_MANUAL_LIGNE), [field]: value },
+    }));
+  };
+
+  // Charger les salariés quand la société (ou l'ouverture du dialogue) change
+  useEffect(() => {
+    if (manualDialogOpen && manualClient) {
+      fetchManualEmployees(manualClient);
+    }
+  }, [manualDialogOpen, manualClient, fetchManualEmployees]);
+
+  // ── Saisie manuelle : soumettre ──
+  const handleManualSubmit = async () => {
+    if (!manualClient || !manualMois || !manualAnnee) {
+      toast.error("Veuillez choisir la société, le mois et l'année");
+      return;
+    }
+    const pointables = manualEmployees.filter((e) => e.matriculeCnss);
+    if (pointables.length === 0) {
+      toast.error("Aucun salarié avec matricule CNSS dans cette société — complétez les fiches salariés");
+      return;
+    }
+    const lignes = pointables.map((emp) => {
+      const r = manualRows[emp.id] ?? EMPTY_MANUAL_LIGNE;
+      return {
+        matricule: emp.matriculeCnss!,
+        nomPrenom: `${emp.firstName} ${emp.lastName}`,
+        joursTravaillesReels: r.jt === "" ? 0 : parseFloat(r.jt) || 0,
+        congesPayes: parseFloat(r.cp) || 0,
+        absencesJustifiees: parseFloat(r.aj) || 0,
+        absencesNonJustifiees: parseFloat(r.anj) || 0,
+        heuresSupplementaires: parseFloat(r.hs) || 0,
+      };
+    });
+    const joursSaisis = lignes.filter((l) => l.joursTravaillesReels > 0).length;
+    if (lignes.length > 0 && joursSaisis === 0) {
+      toast.error("Saisissez au moins un nombre de jours travaillés");
+      return;
+    }
+
+    setManualSubmitting(true);
+    try {
+      const result = await api.post<{
+        message: string;
+        summariesCreated: number;
+        variablesCreated: number;
+        anomalies: Array<{ matricule: string; type: string; message: string; severity: string }>;
+      }>(`/attendance/${workspaceId}/manual`, {
+        clientCompanyId: manualClient,
+        mois: manualMois,
+        annee: manualAnnee,
+        lignes,
+      });
+
+      const bloquantes = (result.anomalies ?? []).filter((a) => a.severity === "BLOQUANTE");
+      if (bloquantes.length > 0) {
+        toast.warning(
+          `${result.message} — anomalies : ${bloquantes.slice(0, 2).map((a) => a.message).join(" ; ")}${bloquantes.length > 2 ? "…" : ""}`,
+          { duration: 8000 }
+        );
+      } else {
+        toast.success(`${result.message} (${result.summariesCreated} salarié(s), ${result.variablesCreated} variable(s))`);
+      }
+
+      setManualDialogOpen(false);
+      setManualRows({});
+      fetchImports();
+      fetchVariables();
+    } catch (err) {
+      const apiErr = err as ApiError;
+      toast.error(apiErr.message || "Erreur lors de l'enregistrement de la saisie");
+    } finally {
+      setManualSubmitting(false);
+    }
+  };
+
   // ── Validate variable ──
   const handleValidateVariable = async () => {
     if (!actingVariable) return;
@@ -382,8 +521,10 @@ export default function GestionPointage() {
     if (!actingVariable) return;
     setActionLoading(true);
     try {
+      // P1-3 : le serveur lit noteValidation — l'ancien champ motifRefus
+      // envoyé était silencieusement ignoré (motif jamais enregistré)
       await api.patch(`/attendance/${workspaceId}/variables/${actingVariable.id}/refuse`, {
-        motifRefus: motifRefus || undefined,
+        noteValidation: motifRefus || undefined,
       });
       toast.success("Variable refusée");
       setRefuseDialogOpen(false);
@@ -445,7 +586,10 @@ export default function GestionPointage() {
               Détail de l'import
             </CardTitle>
             <CardDescription>
-              {selectedImport.nomFichier} — {formatMoisAnnee(selectedImport.mois, selectedImport.annee)}
+              {selectedImport.nomFichier === "saisie-manuelle"
+                ? "Saisie manuelle"
+                : selectedImport.nomFichier}{" "}
+              — {formatMoisAnnee(selectedImport.mois, selectedImport.annee)}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -596,6 +740,20 @@ export default function GestionPointage() {
                   </Button>
                   {peutEcrire && (
                     <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => {
+                        setManualClient(clients.find((c) => c.statut !== "ARCHIVED")?.id ?? "");
+                        setManualDialogOpen(true);
+                      }}
+                    >
+                      <Keyboard className="size-4" />
+                      <span className="hidden sm:inline">Saisie manuelle</span>
+                    </Button>
+                  )}
+                  {peutEcrire && (
+                    <Button
                       size="sm"
                       className="gap-1.5 bg-primary hover:bg-primary/90"
                       onClick={() => setImportDialogOpen(true)}
@@ -622,7 +780,8 @@ export default function GestionPointage() {
                     </EmptyMedia>
                     <EmptyTitle>Aucun import</EmptyTitle>
                     <EmptyDescription>
-                      Importez un fichier Excel ou CSV de pointage mensuel pour commencer.
+                      Importez un fichier Excel/CSV de pointage, ou utilisez la saisie
+                      manuelle pour pointer vos salariés sans fichier.
                     </EmptyDescription>
                   </EmptyHeader>
                 </Empty>
@@ -723,7 +882,7 @@ export default function GestionPointage() {
                     </EmptyMedia>
                     <EmptyTitle>Aucune variable</EmptyTitle>
                     <EmptyDescription>
-                      Les variables de paie apparaîtront ici après l'import d'un fichier de pointage.
+                      Les variables de paie apparaissent ici après l'import d'un pointage ou une saisie manuelle.
                     </EmptyDescription>
                   </EmptyHeader>
                 </Empty>
@@ -733,8 +892,10 @@ export default function GestionPointage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Employé</TableHead>
-                        <TableHead>Variable</TableHead>
-                        <TableHead className="text-right">Valeur</TableHead>
+                        <TableHead className="text-right">Jours travaillés</TableHead>
+                        <TableHead className="text-right">Taux présence</TableHead>
+                        <TableHead className="text-right">Brut effectif</TableHead>
+                        <TableHead className="text-right">Heures supp.</TableHead>
                         <TableHead>Période</TableHead>
                         <TableHead>Statut</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -746,8 +907,32 @@ export default function GestionPointage() {
                           <TableCell className="font-medium">
                             {v.attendance_summary?.nomPrenom || "—"}
                           </TableCell>
-                          <TableCell className="text-sm">{v.typeVariable}</TableCell>
-                          <TableCell className="text-right font-mono">{v.valeur}</TableCell>
+                          <TableCell className="text-right font-mono">
+                            {v.joursTravailles}
+                            {v.joursAbsence > 0 && (
+                              <span className="text-destructive ml-1">(-{v.joursAbsence} j)</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-mono">
+                            {(v.tauxPresence * 100).toFixed(1)}%
+                          </TableCell>
+                          <TableCell className="text-right font-mono">
+                            {v.salaireBrutEffectif.toLocaleString("fr-TN", { maximumFractionDigits: 3 })} TND
+                          </TableCell>
+                          <TableCell className="text-right font-mono">
+                            {v.heuresSupplementaires > 0 ? (
+                              <>
+                                {v.heuresSupplementaires} h
+                                {v.montantHeuresSup != null && (
+                                  <span className="text-muted-foreground ml-1">
+                                    ({v.montantHeuresSup.toLocaleString("fr-TN", { maximumFractionDigits: 3 })} TND)
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              "—"
+                            )}
+                          </TableCell>
                           <TableCell className="text-sm">{formatMoisAnnee(v.mois, v.annee)}</TableCell>
                           <TableCell>{getVariableStatutBadge(v.statut)}</TableCell>
                           <TableCell className="text-right">
@@ -922,6 +1107,151 @@ export default function GestionPointage() {
         </DialogContent>
       </Dialog>
 
+      {/* ═══ Saisie manuelle Dialog (exigence TPE) ═══ */}
+      <Dialog open={manualDialogOpen} onOpenChange={setManualDialogOpen}>
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Keyboard className="size-5 text-primary" />
+              Saisie manuelle du pointage
+            </DialogTitle>
+            <DialogDescription>
+              Pointez vos salariés directement, sans fichier. Les mêmes contrôles que l'import
+              sont appliqués (jours cohérents, matricules, salariés actifs) et les variables
+              de paie sont créées à valider.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <Label>Société</Label>
+              <Select value={manualClient} onValueChange={(v) => setManualClient(v)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choisir une société" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.filter((c) => c.statut !== "ARCHIVED").map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.raisonSociale}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Mois</Label>
+              <Select value={manualMois} onValueChange={setManualMois}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MOIS_LABELS.map((m, i) => (
+                    <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Année</Label>
+              <Input
+                type="number"
+                min="2000"
+                max="2100"
+                value={manualAnnee}
+                onChange={(e) => setManualAnnee(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Chargement des salariés à la sélection de la société */}
+          {manualClient && manualEmployees.length === 0 && !manualLoading && (
+            <p className="text-sm text-muted-foreground">
+              Aucun salarié actif dans cette société — créez d'abord vos salariés (avec matricule CNSS).
+            </p>
+          )}
+          {manualLoading && (
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          )}
+
+          {manualEmployees.length > 0 && (
+            <div className="overflow-x-auto border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Salarié</TableHead>
+                    <TableHead className="w-[90px]">J. travaillés</TableHead>
+                    <TableHead className="w-[80px]">Congés</TableHead>
+                    <TableHead className="w-[80px]">Abs. just.</TableHead>
+                    <TableHead className="w-[80px]">Abs. non just.</TableHead>
+                    <TableHead className="w-[90px]">H. supp.</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {manualEmployees.map((emp) => {
+                    const row = manualRows[emp.id] ?? EMPTY_MANUAL_LIGNE;
+                    const saisissable = Boolean(emp.matriculeCnss);
+                    return (
+                      <TableRow key={emp.id} className={!saisissable ? "opacity-50" : ""}>
+                        <TableCell className="text-sm font-medium">
+                          {emp.lastName} {emp.firstName}
+                          {!saisissable && (
+                            <span className="block text-[11px] text-muted-foreground">
+                              Matricule CNSS manquant — non pointable
+                            </span>
+                          )}
+                        </TableCell>
+                        {(["jt", "cp", "aj", "anj", "hs"] as const).map((field) => (
+                          <TableCell key={field} className="p-1">
+                            <Input
+                              type="number"
+                              min="0"
+                              step={field === "hs" ? "0.5" : "0.5"}
+                              disabled={!saisissable}
+                              className="h-8 text-right text-sm font-mono"
+                              value={row[field]}
+                              onChange={(e) => setManualField(emp.id, field, e.target.value)}
+                            />
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+              <p className="text-[11px] text-muted-foreground px-3 py-2">
+                Laisser « J. travaillés » vide = 0 jour pour ce salarié. Une resaisie pour le même
+                mois remplace la saisie manuelle précédente.
+              </p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManualDialogOpen(false)} disabled={manualSubmitting}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handleManualSubmit}
+              disabled={manualSubmitting || !manualClient || manualEmployees.length === 0}
+              className="bg-primary hover:bg-primary/90"
+            >
+              {manualSubmitting ? (
+                <>
+                  <Loader2 className="size-4 animate-spin mr-1.5" />
+                  Enregistrement…
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="size-4 mr-1.5" />
+                  Enregistrer le pointage
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ═══ Validate Dialog ═══ */}
       <Dialog open={validateDialogOpen} onOpenChange={setValidateDialogOpen}>
         <DialogContent className="sm:max-w-md">
@@ -931,10 +1261,12 @@ export default function GestionPointage() {
               Valider la variable
             </DialogTitle>
             <DialogDescription>
-              Confirmez la validation de cette variable de paie.
+              Confirmez la validation de ce pointage converti en variable de paie.
               {actingVariable && (
                 <span className="block mt-2 font-medium text-foreground">
-                  {actingVariable.typeVariable} = {actingVariable.valeur} — {actingVariable.attendance_summary?.nomPrenom}
+                  {actingVariable.attendance_summary?.nomPrenom} — {formatMoisAnnee(actingVariable.mois, actingVariable.annee)} :{" "}
+                  {actingVariable.joursTravailles} j travaillés, {actingVariable.tauxPresence * 100 > 0 ? (actingVariable.tauxPresence * 100).toFixed(1) : "0"}% de présence,{" "}
+                  brut effectif {actingVariable.salaireBrutEffectif.toLocaleString("fr-TN", { maximumFractionDigits: 3 })} TND
                 </span>
               )}
             </DialogDescription>
@@ -971,7 +1303,8 @@ export default function GestionPointage() {
               Indiquez le motif de refus de cette variable.
               {actingVariable && (
                 <span className="block mt-2 font-medium text-foreground">
-                  {actingVariable.typeVariable} = {actingVariable.valeur} — {actingVariable.attendance_summary?.nomPrenom}
+                  {actingVariable.attendance_summary?.nomPrenom} — {formatMoisAnnee(actingVariable.mois, actingVariable.annee)} :{" "}
+                  {actingVariable.joursTravailles} j travaillés, brut effectif {actingVariable.salaireBrutEffectif.toLocaleString("fr-TN", { maximumFractionDigits: 3 })} TND
                 </span>
               )}
             </DialogDescription>

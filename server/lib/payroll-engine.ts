@@ -142,7 +142,11 @@ export function calculatePayroll(input: PayrollInput): CalculatePayrollOutput {
   if (input.attendance && input.attendance.tauxPresence !== null) {
     tauxPresence = input.attendance.tauxPresence;
   } else if (input.attendance && input.attendance.joursOuvresTotal && input.attendance.joursOuvresTotal > 0) {
-    tauxPresence = input.attendance.joursTravaillesReels / input.attendance.joursOuvresTotal;
+    // P1-6 (réévaluation) : les congés payés sont RÉMUNÉRÉS — réels + congés
+    // au numérateur ; seules les absences justifiées (indemnisées CNSS)
+    // réduisent la rémunération d'activité.
+    tauxPresence = (input.attendance.joursTravaillesReels + input.attendance.congesPayes)
+      / input.attendance.joursOuvresTotal;
   }
 
   // Clamp tauxPresence between 0 and 1

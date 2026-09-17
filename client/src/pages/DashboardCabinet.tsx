@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Link } from "wouter";
+import { useLocation } from "wouter";
 import BackToTools from "@/components/BackToTools";
 import { useAuth } from "@/contexts/AuthContext";
 import { getWorkspaceId } from "@/lib/workspace";
@@ -108,6 +109,7 @@ function Unauthorized() {
 
 export default function DashboardCabinet() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const [data, setData] = useState<CabinetData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -142,6 +144,19 @@ export default function DashboardCabinet() {
         setLoading(false);
       });
   }, [user]);
+
+  // P1-5 : ce dashboard n'a de sens que pour un espace CABINET. Si
+  // l'utilisateur CHANGE d'espace actif (sélecteur) vers une ENTREPRISE
+  // pendant qu'il est ici, on le renvoie vers le dashboard workspace au
+  // lieu d'afficher des compteurs cabinet vides/hors sujet.
+  // (après les hooks — jamais de return conditionnel avant useEffect)
+  const wsIdActif = getWorkspaceId(user);
+  const typeActif = user?.workspaces?.find((w) => w.id === wsIdActif)?.type;
+  useEffect(() => {
+    if (typeActif && typeActif !== "CABINET") {
+      navigate("/dashboard/workspace");
+    }
+  }, [typeActif, navigate]);
 
   /* ── Guards ────────────────────────────────────────────────────── */
 

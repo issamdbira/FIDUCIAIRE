@@ -35,12 +35,16 @@ export default function LoginPage() {
     try {
       const result = await login(email, password);
 
-      // Rediriger selon le rôle DANS LE WORKSPACE ACTIF (et non le rôle
-      // global du compte) — cohérent avec le backend qui vérifie
-      // workspace_members.role à chaque requête
+      // P1-5 (réévaluation réelle) : rediriger selon le TYPE D'ESPACE, pas
+      // selon le rôle. Un PROPRIÉTAIRE d'espace ENTREPRISE atterrissait sur
+      // le dashboard « Cabinet » (compteurs cabinet à zéro, concepts hors
+      // sujet). Le dashboard cabinet n'a de sens que pour le propriétaire
+      // d'un espace CABINET.
       const wsId = getWorkspaceId(result.user);
-      const role = roleInWorkspace(result.user, wsId);
-      if (role === "PROPRIETAIRE") {
+      const activeWs = result.user.workspaces?.find((w) => w.id === wsId);
+      const estProprietaireCabinet =
+        activeWs?.type === "CABINET" && roleInWorkspace(result.user, wsId) === "PROPRIETAIRE";
+      if (estProprietaireCabinet) {
         navigate("/dashboard/cabinet");
       } else {
         navigate("/dashboard/workspace");

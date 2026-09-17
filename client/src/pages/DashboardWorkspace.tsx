@@ -16,6 +16,12 @@ import BackToTools from "@/components/BackToTools";
 import { useAuth } from "@/contexts/AuthContext";
 import { getWorkspaceId } from "@/lib/workspace";
 
+// P2-3 : libellé lisible du type d'espace
+const TYPE_LABEL: Record<string, string> = {
+  CABINET: "Cabinet",
+  ENTREPRISE: "Entreprise",
+};
+
 /* ── Types ─────────────────────────────────────────────────────────── */
 
 interface PeriodeOuverte {
@@ -210,6 +216,12 @@ export default function DashboardWorkspace() {
 
   /* ── Derived ───────────────────────────────────────────────────── */
 
+  // P2-3 : afficher le NOM de l'espace (et son type) — l'ID technique
+  // (cuid) n'a aucun sens pour un utilisateur métier.
+  const activeWs = user?.workspaces?.find((w) => w.id === workspaceId);
+  const nomEspace = activeWs?.name ?? workspaceId;
+  const typeEspace = activeWs?.type ? (TYPE_LABEL[activeWs.type] ?? activeWs.type) : "";
+
   // Défensif : si l'API omet repartitionCnss (forme inattendue), on dégrade
   // l'affichage plutôt que de crasher toute la page.
   const repartition = data.repartitionCnss ?? { salarial: 0, patronal: 0 };
@@ -234,15 +246,15 @@ export default function DashboardWorkspace() {
 
       {/* Title */}
       <h1
-        className="text-2xl sm:text-3xl font-bold text-primary mb-6"
+        className="text-2xl sm:text-3xl font-bold text-primary mb-2"
         style={{ fontFamily: "Montserrat, sans-serif" }}
       >
-        Tableau de bord — Workspace
+        Tableau de bord — {nomEspace}
       </h1>
 
-      {/* Workspace selector info */}
-      <p className="text-sm text-muted-foreground mb-4">
-        Workspace : <span className="font-mono text-foreground">{workspaceId}</span>
+      {/* Espace info (P2-3 : nom lisible, plus jamais l'ID brut) */}
+      <p className="text-sm text-muted-foreground mb-6">
+        {typeEspace ? `Espace ${typeEspace}` : "Espace de travail"}
       </p>
 
       {/* KPI Grid */}

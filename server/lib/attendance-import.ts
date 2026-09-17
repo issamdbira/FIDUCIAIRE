@@ -55,25 +55,50 @@ export interface ImportResult {
 const COLUMN_MAPPINGS: Record<string, string[]> = {
   matricule: ["matricule", "matricule cnss", "matricule_cnss", "cnss", "n° matricule", "n°matricule"],
   nomPrenom: ["nom & prénom", "nom et prenom", "nom_prenom", "nom prénom", "nom", "name"],
-  joursTravaillesReels: ["jours travaillés réels", "jours travaillés", "jours_travailles", "jt", "jours réels", "travaillés"],
+  joursTravaillesReels: ["jours travaillés réels", "jours travaillés", "jours_travailles", "jt", "jours réels", "travaillés", "jours reels"],
   congesPayes: ["congés payés", "conges payes", "cp", "congés", "conges"],
   absencesJustifiees: ["absences justifiées", "absences justifiees", "aj", "abs. justifiées", "abs justifiées"],
   absencesNonJustifiees: ["absences non justifiées", "absences non justifiees", "anj", "abs. non justifiées", "abs non justifiées"],
-  heuresSupplementaires: ["heures supplémentaires", "heures supplementaires", "hs", "h supp", "heures supp"],
+  heuresSupplementaires: ["heures supplémentaires", "heures supplementaires", "hs", "h supp", "heures supp", "heures sup"],
 };
 
 // ---------------------------------------------------------------------------
 // Normalisation de nom de colonne
+// P1-2 : les CSV « UTF-8 » d'Excel/LibreOffice arrivaient décodés en latin1
+// (« jours travaillés réels » → « jours travaillÃ©s rÃ©els ») → colonne
+// requise introuvable → import rejeté. Trois parades cumulées :
+//   1) codepage: 65001 au XLSX.read + retrait du BOM ;
+//   2) réparation du mojibake (latin1 → utf8) sur l'en-tête ;
+//   3) comparaison INSENSIBLE AUX ACCENTS des deux côtés.
 // ---------------------------------------------------------------------------
 
+function stripAccents(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
 function normalizeColumnName(col: string): string {
-  return col.trim().toLowerCase().replace(/[_\-./\\]/g, " ").replace(/\s+/g, " ");
+  let c = col
+    .replace(/\uFEFF/g, "") // BOM UTF-8
+    .trim()
+    .toLowerCase()
+    .replace(/[_\-./\\]/g, " ")
+    .replace(/\s+/g, " ");
+  // Mojibake UTF-8 lu en latin1 (Ã©, Ã¨, Ã…) — réparable par réencodage
+  if (/Ã|Â/.test(c)) {
+    try {
+      const fixed = Buffer.from(c, "latin1").toString("utf8");
+      if (!fixed.includes("\uFFFD") && fixed !== c) c = fixed;
+    } catch {
+      // Buffer indisponible — la normalisation accents suffira souvent
+    }
+  }
+  return stripAccents(c);
 }
 
 function mapColumn(header: string): string | null {
   const normalized = normalizeColumnName(header);
   for (const [field, variants] of Object.entries(COLUMN_MAPPINGS)) {
-    if (variants.includes(normalized)) return field;
+    if (variants.some((v) => normalizeColumnName(v) === normalized)) return field;
   }
   return null;
 }
@@ -83,7 +108,13 @@ function mapColumn(header: string): string | null {
 // ---------------------------------------------------------------------------
 
 export function parseFile(buffer: Buffer, filename: string): AttendanceRow[] {
-  const workbook = XLSX.read(buffer, { type: "buffer" });
+  // P1-2 : CSV UTF-8 — sans codepage, SheetJS décode en latin1 (mojibake).
+  // Le BOM éventuel est retiré (il préfixait la 1re colonne « ﻿Matricule »).
+  let data: Buffer = buffer;
+  if (buffer.length > 2 && buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf) {
+    data = buffer.subarray(3);
+  }
+  const workbook = XLSX.read(data, { type: "buffer", codepage: 65001 });
   const sheetName = workbook.SheetNames[0]; // Première feuille
   const sheet = workbook.Sheets[sheetName];
 
@@ -153,10 +184,17 @@ export function parseFile(buffer: Buffer, filename: string): AttendanceRow[] {
 // Validation stricte avec détection d'anomalies
 // ---------------------------------------------------------------------------
 
+export interface PlageJoursOuvres {
+  /** Plancher : jours ouvrés 40h (lundi-vendri) — convention administrative */
+  plancher: number;
+  /** Plafond : jours ouvrés 48h (lundi-samedi) — convention sectorielle tunisienne */
+  plafond: number;
+}
+
 export async function validateRows(
   rows: AttendanceRow[],
   workspaceId: string,
-  joursOuvresMois: number,  // Jours ouvrés standard du mois (ex: 26)
+  plageJoursOuvres: PlageJoursOuvres,
 ): Promise<ImportResult> {
   const anomalies: Anomalie[] = [];
 
@@ -230,21 +268,23 @@ export async function validateRows(
     }
 
     // --- Incohérence des jours ---
+    // Référence : les DEUX conventions tunisiennes coexistent. 40h (lundi-vendri,
+    // ~21-23 j/mois) et 48h (lundi-samedi, ~25-27 j/mois). Un total dans la plage
+    // est TOUJOURS cohérent ; sous le plancher = sous-déclaration suspecte
+    // (typo « 2 » au lieu de « 22 », embauche fin de mois à confirmer) ;
+    // au-dessus du plafond + marge 2j = sur-déclaration.
     const totalJours = row.joursTravaillesReels + row.congesPayes + row.absencesJustifiees + row.absencesNonJustifiees;
     if (!isNaN(totalJours)) {
-      // Si total > jours ouvrés du mois + marge (2 jours), avertissement
-      if (totalJours > joursOuvresMois + 2) {
+      if (totalJours > plageJoursOuvres.plafond + 2) {
         anomalies.push({
           ligne: row.ligne, matricule: row.matricule, type: "JOURS_EXCESSIFS",
-          message: `Total jours (${totalJours}) dépasse les jours ouvrés du mois (${joursOuvresMois}) + marge 2j`,
+          message: `Total jours (${totalJours}) dépasse les jours ouvrés du mois (${plageJoursOuvres.plafond} en 48h) + marge 2j`,
           severity: "AVERTISSEMENT",
         });
-      }
-      // Si total ≠ jours ouvrés (incohérence), avertissement
-      if (totalJours !== joursOuvresMois && totalJours <= joursOuvresMois + 2) {
+      } else if (totalJours < plageJoursOuvres.plancher) {
         anomalies.push({
           ligne: row.ligne, matricule: row.matricule, type: "INCOHERENCE_JOURS",
-          message: `Total jours (${totalJours}) ≠ jours ouvrés standard (${joursOuvresMois}). Écart: ${joursOuvresMois - totalJours} jour(s)`,
+          message: `Total jours (${totalJours}) inférieur aux jours ouvrés 40h du mois (${plageJoursOuvres.plancher}) — vérifier le pointage (embauche/fin de contrat en cours de mois ?)`,
           severity: "AVERTISSEMENT",
         });
       }
@@ -320,9 +360,15 @@ export async function createSummariesAndVariables(
     if (!employee) continue; // Déjà signalé en anomalie
 
     // Champs calculés
+    // joursOuvresTotal = jours « comptés » du mois (réels + congés + absences
+    // justifiées). P1-6 (réévaluation) : les congés payés sont RÉMUNÉRÉS en
+    // Tunisie — ils comptent au numérateur ET au dénominateur du taux de
+    // présence. Seules les absences justifiées (indemnisées côté CNSS) et non
+    // justifiées réduisent la rémunération d'activité.
     const joursOuvresTotal = row.joursTravaillesReels + row.congesPayes + row.absencesJustifiees;
+    const joursRemuneres = row.joursTravaillesReels + row.congesPayes;
     const tauxPresence = joursOuvresTotal > 0
-      ? row.joursTravaillesReels / joursOuvresTotal
+      ? joursRemuneres / joursOuvresTotal
       : 0;
 
     // Créer le résumé
@@ -378,13 +424,43 @@ export async function createSummariesAndVariables(
 }
 
 // ---------------------------------------------------------------------------
-// Jours ouvrés standard pour un mois donné (simple : 26 par défaut)
-// Peut être affiné avec le WorkCalendar du client
+// Jours ouvrés standard pour un mois donné
+// Dualité tunisienne : 48h = lundi-samedi (plafond), 40h = lundi-vendri
+// (plancher). Les deux sont des régimes normaux — la validation accepte la
+// plage entière (l'ancien « 26 en dur » générait un avertissement fallacieux
+// sur chaque mois réel, 21 à 27 jours).
 // ---------------------------------------------------------------------------
 
 export function getJoursOuvresMois(mois: number, annee: number): number {
-  // Approximation standard Tunisie : 26 jours ouvrés
-  // Les week-ends (samedi+dimanche) sont exclus dans le secteur administratif
-  // Pour le secteur 48h (samedi travaillé), c'est ~30 jours - 4 dimanches = ~26
-  return 26;
+  // Convention 48h (lundi-samedi) — alignée sur le moteur de paie
+  return compterJours(mois, annee, false);
+}
+
+export function getJoursOuvresMois40h(mois: number, annee: number): number {
+  // Convention 40h (lundi-vendri)
+  return compterJours(mois, annee, true);
+}
+
+export function getPlageJoursOuvres(mois: number, annee: number): PlageJoursOuvres {
+  return {
+    plancher: getJoursOuvresMois40h(mois, annee),
+    plafond: getJoursOuvresMois(mois, annee),
+  };
+}
+
+function compterJours(mois: number, annee: number, lundiVendriSeulement: boolean): number {
+  const premierJour = new Date(annee, mois - 1, 1);
+  const dernierJour = new Date(annee, mois, 0);
+  let joursOuvres = 0;
+
+  for (let d = new Date(premierJour); d <= dernierJour; d.setDate(d.getDate() + 1)) {
+    const jour = d.getDay();
+    // Lundi(1) à Samedi(6) = ouvré, Dimanche(0) = repos ;
+    // en 40h, le samedi(6) est également chômé
+    if (jour >= 1 && (jour <= 5 || (!lundiVendriSeulement && jour === 6))) {
+      joursOuvres++;
+    }
+  }
+
+  return joursOuvres;
 }

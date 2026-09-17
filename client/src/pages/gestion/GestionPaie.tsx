@@ -134,7 +134,7 @@ interface Payslip {
 
 interface Anomaly {
   id: string;
-  type: string;
+  code: string; // P2-4 : le modèle Anomaly porte « code » (ex. CONTRAT_MANQUANT) — « type » n’existe pas
   message: string;
   niveau: "BLOQUANTE" | "AVERTISSEMENT" | "INFO";
   estResolue: boolean;
@@ -603,7 +603,7 @@ export default function GestionPaie() {
                                 {a.niveau}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-muted-foreground">{a.type}</TableCell>
+                            <TableCell className="text-muted-foreground font-mono text-xs">{a.code}</TableCell>
                             <TableCell className="max-w-xs truncate">{a.message}</TableCell>
                             <TableCell>{a.employeeName || "—"}</TableCell>
                             <TableCell>

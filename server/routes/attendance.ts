@@ -21,7 +21,8 @@ import {
   parseFile,
   validateRows,
   createSummariesAndVariables,
-  getJoursOuvresMois,
+  getPlageJoursOuvres,
+  type AttendanceRow,
 } from "../lib/attendance-import.js";
 import * as XLSX from "xlsx";
 
@@ -98,9 +99,9 @@ router.post("/import", requireAuth, upload.single("file"), requireWorkspaceWrite
       });
     }
 
-    // Valider les lignes
-    const joursOuvres = getJoursOuvresMois(moisNum, anneeNum);
-    const validationResult = await validateRows(rows, workspaceId, joursOuvres);
+    // Valider les lignes (plage 40h/48h — cf. lib pour la règle)
+    const plageJours = getPlageJoursOuvres(moisNum, anneeNum);
+    const validationResult = await validateRows(rows, workspaceId, plageJours);
 
     // Créer l'enregistrement import
     const statutImport = validationResult.hasBloquantes
@@ -135,7 +136,7 @@ router.post("/import", requireAuth, upload.single("file"), requireWorkspaceWrite
         workspaceId,
         moisNum,
         anneeNum,
-        joursOuvres,
+        plageJours.plafond,
       );
       summariesCreated = result.summariesCreated;
       variablesCreated = result.variablesCreated;
@@ -158,14 +159,140 @@ router.post("/import", requireAuth, upload.single("file"), requireWorkspaceWrite
       message: statutImport === "REJETE"
         ? "Import rejeté — toutes les lignes contiennent des anomalies bloquantes"
         : statutImport === "ANOMALIES"
-          ? `Import partiel: ${validationResult.lignesOk} lignes valides, ${validationResult.lignesAnomalie} avec anomalies`
-          : `Import validé: ${validationResult.lignesOk} lignes importées`,
+          ? `Import partiel : ${summariesCreated} salarié(s) enregistré(s), ${validationResult.lignesAnomalie} ligne(s) avec anomalies`
+          : `Import validé : ${summariesCreated} salarié(s) pointé(s) sur ${validationResult.lignesTotal} ligne(s) lue(s)`,
     });
   } catch (error) {
     console.error("[attendance] POST import error:", error);
     if (error instanceof multer.MulterError) {
       return res.status(400).json({ error: `Erreur upload: ${error.message}` });
     }
+    return res.status(500).json({ error: "Erreur interne" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/attendance/:workspaceId/manual — Saisie manuelle du pointage
+// (exigence TPE : sans fichier Excel). Même pipeline que l'import :
+// validateRows → anomalies → summaries + variables PROPOSEE.
+// Idempotent par société/mois/année : remplace la saisie manuelle précédente.
+// ---------------------------------------------------------------------------
+router.post("/:workspaceId/manual", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
+  try {
+    const { workspaceId } = req.params;
+    const { clientCompanyId, mois, annee, lignes } = req.body;
+
+    if (!clientCompanyId || !mois || !annee) {
+      return res.status(400).json({ error: "clientCompanyId, mois et annee sont requis" });
+    }
+    const moisNum = parseInt(mois, 10);
+    const anneeNum = parseInt(annee, 10);
+    if (moisNum < 1 || moisNum > 12 || anneeNum < 2000 || anneeNum > 2100) {
+      return res.status(400).json({ error: "mois (1-12) et annee (2000-2100) invalides" });
+    }
+    if (!Array.isArray(lignes) || lignes.length === 0) {
+      return res.status(400).json({ error: "lignes (saisie des salariés) sont requises" });
+    }
+
+    const hasAccess = await checkWorkspaceAccess(req.user!.userId, req.user!.role, workspaceId);
+    if (!hasAccess) return res.status(403).json({ error: "Accès refusé" });
+
+    const client = await prisma.clientCompany.findFirst({ where: { id: clientCompanyId, workspaceId } });
+    if (!client) return res.status(404).json({ error: "Entreprise cliente introuvable" });
+    if (client.statut === "ARCHIVED") {
+      return res.status(409).json({ error: "Client archivé — réactivez-le avant de saisir du pointage" });
+    }
+
+    // Construire les lignes au même format que l'import (validation partagée)
+    const toNum = (v: unknown): number => {
+      const n = typeof v === "number" ? v : parseFloat(String(v ?? ""));
+      return Number.isFinite(n) && n >= 0 ? n : NaN;
+    };
+    const rows: AttendanceRow[] = [];
+    for (let i = 0; i < lignes.length; i++) {
+      const l = lignes[i] ?? {};
+      rows.push({
+        ligne: i + 2, // cohérent avec l'import (1 = en-tête)
+        matricule: String(l.matricule ?? "").trim(),
+        nomPrenom: String(l.nomPrenom ?? "").trim(),
+        joursTravaillesReels: toNum(l.joursTravaillesReels),
+        congesPayes: toNum(l.congesPayes),
+        absencesJustifiees: toNum(l.absencesJustifiees),
+        absencesNonJustifiees: toNum(l.absencesNonJustifiees),
+        heuresSupplementaires: toNum(l.heuresSupplementaires),
+      });
+    }
+
+    const plageJours = getPlageJoursOuvres(moisNum, anneeNum);
+    const validationResult = await validateRows(rows, workspaceId, plageJours);
+
+    const statutSaisie = validationResult.hasBloquantes
+      ? (validationResult.lignesOk === 0 ? "REJETE" : "ANOMALIES")
+      : "VALIDE";
+
+    // Idempotence : remplacer la saisie manuelle précédente de la même période
+    // (summaries et variables partent en cascade — pas de doublons au recalcul)
+    const MANUEL_NOM = "saisie-manuelle";
+    await prisma.attendanceImport.deleteMany({
+      where: { workspaceId, clientCompanyId, mois: moisNum, annee: anneeNum, nomFichier: MANUEL_NOM },
+    });
+
+    const attendanceImport = await prisma.attendanceImport.create({
+      data: {
+        workspaceId,
+        clientCompanyId,
+        mois: moisNum,
+        annee: anneeNum,
+        nomFichier: MANUEL_NOM,
+        tailleFichier: null,
+        statut: statutSaisie,
+        lignesTotal: validationResult.lignesTotal,
+        lignesOk: validationResult.lignesOk,
+        lignesAnomalie: validationResult.lignesAnomalie,
+        anomalies: validationResult.anomalies as any,
+        importedBy: req.user!.userId,
+      },
+    });
+
+    let summariesCreated = 0;
+    let variablesCreated = 0;
+    if (statutSaisie !== "REJETE") {
+      const result = await createSummariesAndVariables(
+        attendanceImport.id,
+        validationResult.rows,
+        validationResult.anomalies,
+        workspaceId,
+        moisNum,
+        anneeNum,
+        plageJours.plafond,
+      );
+      summariesCreated = result.summariesCreated;
+      variablesCreated = result.variablesCreated;
+    }
+
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "ATTENDANCE_MANUAL",
+      entity: "AttendanceImport",
+      entityId: attendanceImport.id,
+      details: JSON.stringify({ clientCompanyId, mois: moisNum, annee: anneeNum, lignes: rows.length }),
+      ipAddress: req.ip,
+    });
+
+    return res.status(201).json({
+      import: attendanceImport,
+      summariesCreated,
+      variablesCreated,
+      anomalies: validationResult.anomalies,
+      message: statutSaisie === "REJETE"
+        ? "Saisie rejetée — toutes les lignes contiennent des anomalies bloquantes"
+        : statutSaisie === "ANOMALIES"
+          ? `Saisie partielle : ${summariesCreated} ligne(s) enregistrée(s), ${validationResult.lignesAnomalie} avec anomalies`
+          : `Saisie enregistrée : ${summariesCreated} ligne(s) enregistrée(s), ${variablesCreated} variable(s) de paie créée(s)`,
+    });
+  } catch (error) {
+    console.error("[attendance] POST manual error:", error);
     return res.status(500).json({ error: "Erreur interne" });
   }
 });
