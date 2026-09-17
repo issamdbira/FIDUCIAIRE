@@ -2,7 +2,7 @@
 // Le Fiduciaire — Gestion des Clients (CRUD complet)
 // =============================================================================
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { getWorkspaceId } from "@/lib/workspace";
@@ -65,6 +65,7 @@ import {
   Mail,
   Users,
   ChevronRight,
+  AlertCircle,
 } from "lucide-react";
 
 // =============================================================================
@@ -206,6 +207,7 @@ export default function GestionClients() {
   // ── State ────────────────────────────────────────────────────────────────
   const [clients, setClients] = useState<ClientCompany[]>([]);
   const [loading, setLoading] = useState(true);
+  const [erreur, setErreur] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterTab>("ACTIVE");
   const [searchDebounce, setSearchDebounce] = useState("");
@@ -231,24 +233,46 @@ export default function GestionClients() {
   const fetchClients = useCallback(async () => {
     if (!workspaceId) return;
     setLoading(true);
+    setErreur(null);
     try {
-      let path = `/clients/${workspaceId}?`;
-      if (filter !== "ALL") path += `statut=${filter}&`;
-      if (searchDebounce) path += `search=${encodeURIComponent(searchDebounce)}&`;
-
-      const data = await api.get<ClientCompany[]>(path);
+      // Lot 1 : chargement complet — les filtres sont appliqués côté client
+      // pour garantir la cohérence compteur / liste / état vide en toutes
+      // circonstances (une erreur de chargement n'affiche plus un faux état vide).
+      const data = await api.get<ClientCompany[]>(`/clients/${workspaceId}`);
       setClients(data);
     } catch (err) {
       const apiErr = err as ApiError;
+      setErreur(apiErr.message || "Erreur lors du chargement des clients");
       toast.error(apiErr.message || "Erreur lors du chargement des clients");
     } finally {
       setLoading(false);
     }
-  }, [workspaceId, filter, searchDebounce]);
+  }, [workspaceId]);
 
   useEffect(() => {
     fetchClients();
   }, [fetchClients]);
+
+  // ── Filtres côté client (cohérence garantie avec les compteurs) ──────────
+  const clientsFiltres = useMemo(() => {
+    let liste = clients;
+    if (filter !== "ALL") {
+      liste = liste.filter((c) => c.statut === filter);
+    }
+    const q = searchDebounce.trim().toLowerCase();
+    if (q) {
+      liste = liste.filter(
+        (c) =>
+          c.raisonSociale?.toLowerCase().includes(q) ||
+          c.matriculeFiscal?.toLowerCase().includes(q) ||
+          c.matriculeCnss?.toLowerCase().includes(q),
+      );
+    }
+    return liste;
+  }, [clients, filter, searchDebounce]);
+
+  const nbActifs = useMemo(() => clients.filter((c) => c.statut === "ACTIVE").length, [clients]);
+  const nbArchives = useMemo(() => clients.filter((c) => c.statut === "ARCHIVED").length, [clients]);
 
   // ── Create / Update ──────────────────────────────────────────────────────
   const handleSubmit = async () => {
@@ -427,7 +451,7 @@ export default function GestionClients() {
                   : ""
               }
             >
-              {tab === "ACTIVE" ? "Actifs" : tab === "ARCHIVED" ? "Archivés" : "Tous"}
+              {tab === "ACTIVE" ? `Actifs (${nbActifs})` : tab === "ARCHIVED" ? `Archivés (${nbArchives})` : `Tous (${clients.length})`}
             </Button>
           ))}
         </div>
@@ -448,14 +472,28 @@ export default function GestionClients() {
                 </div>
               ))}
             </div>
-          ) : clients.length === 0 ? (
+          ) : erreur ? (
+            /* Lot 1 — une erreur de chargement n'est JAMAIS un état vide :
+               message distinct + action de reprise, compteur et liste absents */
+            <div className="py-16 text-center space-y-3">
+              <AlertCircle className="size-12 text-destructive/60 mx-auto" />
+              <p className="text-muted-foreground">Impossible de charger les clients : {erreur}</p>
+              <Button variant="outline" size="sm" onClick={() => fetchClients()}>
+                Réessayer
+              </Button>
+            </div>
+          ) : clientsFiltres.length === 0 ? (
             <div className="py-16 text-center">
               <Building2 className="size-12 text-muted-foreground/40 mx-auto mb-3" />
               <p className="text-muted-foreground">
                 {searchDebounce
                   ? "Aucun client ne correspond à votre recherche"
                   : filter === "ARCHIVED"
-                  ? "Aucun client archivé"
+                  ? nbActifs > 0
+                    ? `Aucun client archivé — ${nbActifs} client${nbActifs > 1 ? "s" : ""} actif${nbActifs > 1 ? "s" : ""} à ce jour`
+                    : "Aucun client archivé"
+                  : filter === "ACTIVE" && nbArchives > 0
+                  ? `Aucun client actif — ${nbArchives} client${nbArchives > 1 ? "s" : ""} archivé${nbArchives > 1 ? "s" : ""} (onglet « Archivés »)`
                   : "Aucun client. Créez votre premier client."}
               </p>
             </div>
@@ -473,7 +511,7 @@ export default function GestionClients() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {clients.map((client) => (
+                {clientsFiltres.map((client) => (
                   <TableRow
                     key={client.id}
                     className="cursor-pointer hover:bg-muted/20 transition-colors"
@@ -561,10 +599,12 @@ export default function GestionClients() {
         </CardContent>
       </Card>
 
-      {/* ── Count ── */}
-      {!loading && clients.length > 0 && (
+      {/* ── Count (Lot 1 : affiché dès qu'il y a un résultat, filtré ET non filtré
+           pour ne jamais contredire la liste ni l'état vide) ── */}
+      {!loading && !erreur && clients.length > 0 && (
         <p className="text-xs text-muted-foreground mt-3 text-right">
-          {clients.length} client{clients.length > 1 ? "s" : ""} trouvé{clients.length > 1 ? "s" : ""}
+          {clientsFiltres.length} client{clientsFiltres.length > 1 ? "s" : ""} affiché{clientsFiltres.length > 1 ? "s" : ""}
+          {clientsFiltres.length < clients.length && ` sur ${clients.length}`}
         </p>
       )}
 
