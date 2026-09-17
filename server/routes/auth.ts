@@ -13,7 +13,7 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 import { auditLog } from "../lib/audit-log.js";
 import { provisionWorkspace } from "../lib/provision-workspace.js";
 import { setSessionCookie, clearSessionCookie } from "../lib/session-cookie.js";
-import { estBloque, enregistrerEchec, reussite } from "../lib/rate-limiter.js";
+import { estBloque, estBloqueCompte, enregistrerEchec, reussite } from "../lib/rate-limiter.js";
 import { purgeExpirationsSilencieuse } from "../lib/session-cleanup.js";
 
 const router = Router();
@@ -156,6 +156,13 @@ router.post("/login", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "email et password requis" });
     }
 
+    // Lot 2 — verrou PAR COMPTE (toutes IP) en priorité : force brute répartie
+    if (estBloqueCompte(String(email))) {
+      return res.status(429).json({
+        error: "Compte temporairement verrouillé après de trop nombreux échecs de connexion. Réessayez dans environ 30 minutes.",
+      });
+    }
+
     // Lot 1 — limitation des tentatives : refus AVANT toute vérification
     if (estBloque(String(email), req.ip)) {
       return res.status(429).json({
@@ -179,7 +186,13 @@ router.post("/login", async (req: Request, res: Response) => {
         action: "LOGIN_FAILED",
         entity: "auth",
         entityId: email,
-        details: JSON.stringify({ raison: "inconnu", echecs: etat.echecs }),
+        details: JSON.stringify({
+          raison: "inconnu",
+          echecs: etat.echecs,
+          echecsCompte: etat.echecsCompte,
+          // Lot 2 — renseigné uniquement sur l'échec qui DÉCLENCHE le verrou du compte
+          ...(etat.verrouCompteMin ? { verrouCompteMin: etat.verrouCompteMin } : {}),
+        }),
         ipAddress: req.ip,
       });
       return res.status(401).json({ error: "Identifiants invalides" });
@@ -194,7 +207,12 @@ router.post("/login", async (req: Request, res: Response) => {
         action: "LOGIN_FAILED",
         entity: "auth",
         entityId: user.email,
-        details: JSON.stringify({ raison: "mot_de_passe", echecs: etat.echecs }),
+        details: JSON.stringify({
+          raison: "mot_de_passe",
+          echecs: etat.echecs,
+          echecsCompte: etat.echecsCompte,
+          ...(etat.verrouCompteMin ? { verrouCompteMin: etat.verrouCompteMin } : {}),
+        }),
         ipAddress: req.ip,
       });
       return res.status(401).json({ error: "Identifiants invalides" });
