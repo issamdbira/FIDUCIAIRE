@@ -14,6 +14,7 @@
  * sont traités avec plafond individuel par point puis contrôle global 5%.
  */
 
+import { round2Exact } from "./money";
 import { calculerCotisationCNSS, calculerCSSAnnuelle } from "./cnss";
 import { calculerDeductionsAnnuelles, calculerFraisProfessionnels, calculerIRPPAnnuel } from "./irpp";
 import { getPayrollConfig } from "./config";
@@ -198,6 +199,8 @@ export function runPayrollEngine(input: PayrollInput): PayrollResult {
   };
 }
 
+// Lot 1 — décimales exactes : arrondi demi-sup corrigé du piège flottant
+// (Math.round(1.005*100)=100 alors que l'arrondi exact est 101).
 function round2(n: number): number {
-  return Math.round(n * 100) / 100;
+  return round2Exact(n);
 }

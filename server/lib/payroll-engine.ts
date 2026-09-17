@@ -4,6 +4,7 @@
 // =============================================================================
 
 import prisma from "./prisma.js";
+import { round2Exact } from "./money.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -307,29 +308,29 @@ export function calculatePayroll(input: PayrollInput): CalculatePayrollOutput {
 
   return {
     payslip: {
-      salaireBrutContractuel,
+      salaireBrutContractuel: round2Exact(salaireBrutContractuel),
       tauxPresence,
       joursTravailles,
       joursAbsence,
       heuresSupplementaires,
-      salaireBrutEffectif,
-      montantHeuresSup,
-      montantAbsence,
-      baseImposable,
-      retenueCnssSalarial,
-      retenueCss,
-      totalRetenuesSalariales,
-      retenueCnssPatronal,
-      fraisProfessionnels: fraisProAppliques,
-      netImposableAvantDeductions,
-      deductionChefFamille,
-      deductionEnfants,
-      deductionParents,
-      totalDeductionsFamiliales,
-      baseIrpp,
-      retenueIrpp,
-      salaireNet,
-      tauxHoraire,
+      salaireBrutEffectif: round2Exact(salaireBrutEffectif),
+      montantHeuresSup: round2Exact(montantHeuresSup),
+      montantAbsence: round2Exact(montantAbsence),
+      baseImposable: round2Exact(baseImposable),
+      retenueCnssSalarial: round2Exact(retenueCnssSalarial),
+      retenueCss: round2Exact(retenueCss),
+      totalRetenuesSalariales: round2Exact(totalRetenuesSalariales),
+      retenueCnssPatronal: round2Exact(retenueCnssPatronal),
+      fraisProfessionnels: round2Exact(fraisProAppliques),
+      netImposableAvantDeductions: round2Exact(netImposableAvantDeductions),
+      deductionChefFamille: round2Exact(deductionChefFamille),
+      deductionEnfants: round2Exact(deductionEnfants),
+      deductionParents: round2Exact(deductionParents),
+      totalDeductionsFamiliales: round2Exact(totalDeductionsFamiliales),
+      baseIrpp: round2Exact(baseIrpp),
+      retenueIrpp: round2Exact(retenueIrpp),
+      salaireNet: round2Exact(salaireNet),
+      tauxHoraire: tauxHoraire !== null ? round2Exact(tauxHoraire) : null,
     },
     anomalies,
   };

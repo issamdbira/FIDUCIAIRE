@@ -18,6 +18,7 @@
  * de gestion) détaillant les plafonds jusqu'en 2028.
  */
 
+import { round2Exact } from "./money";
 import { getSmigPourAnnee } from "./cnss";
 
 // ─── Points SMIG (plafond calculable) ───────────────────────────────
@@ -357,8 +358,9 @@ export function controlerPlafondGlobal5pct(
 
 // ─── Arrondis ───────────────────────────────────────────────────────
 
+// Lot 1 — décimales exactes (arrondi demi-sup corrigé du piège flottant)
 function round2(n: number): number {
-  return Math.round(n * 100) / 100;
+  return round2Exact(n);
 }
 function round3(n: number): number {
   return Math.round(n * 1000) / 1000;
