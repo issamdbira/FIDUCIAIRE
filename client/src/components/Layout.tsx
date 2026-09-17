@@ -26,6 +26,7 @@ import UserMenu, { MobileLogoutEntry } from "./UserMenu";
 import { useAuth } from "@/contexts/AuthContext";
 import { getWorkspaceId, setActiveWorkspaceId } from "@/lib/workspace";
 import { can, roleInWorkspace } from "@/lib/permissions";
+import { useConfigSync } from "@/hooks/useConfigSync";
 import { ArrowLeftRight, CornerUpLeft } from "lucide-react";
 import {
   Sheet,
@@ -50,6 +51,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [sheetOpen, setSheetOpen] = useState(false);
   const { user } = useAuth();
+
+  // Lot 5 — config paie des calculateurs synchronisée sur le workspace actif
+  // (source de vérité serveur) à chaque montage de page ; fin de l'écart
+  // multi-postes relevé par l'audit de données.
+  useConfigSync();
 
   // Rôle dans le workspace ACTIF — pilote l'affichage du menu (miroir du backend)
   const wsId = getWorkspaceId(user);

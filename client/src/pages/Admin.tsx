@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/api";
 import { getWorkspaceId } from "@/lib/workspace";
 import { CONFIG_PAR_DEFAUT, getPayrollConfig, setPayrollConfig, type PayrollConfig } from "@/lib/payroll/config";
+import { remoteVersLocale, type RemoteConfig } from "@/lib/payroll/config-sync";
 
 /**
  * Panneau d'administration — paramétrage centralisé du moteur de paie.
@@ -21,61 +22,11 @@ import { CONFIG_PAR_DEFAUT, getPayrollConfig, setPayrollConfig, type PayrollConf
  * PROPRIETAIRE du workspace actif, et le paramétrage est lu/écrit dans la
  * base via GET/PUT /api/config/:ws.
  *
- * Les calculateurs publics du navigateur continuent de lire la config locale
- * (localStorage) : à chaque sauvegarde serveur, la copie locale est
- * synchronisée pour rester cohérente.
+ * Les calculateurs publics du navigateur continuent de lire la copie locale
+ * (mémoire + localStorage) : à chaque sauvegarde serveur, la copie locale est
+ * synchronisée — et depuis le Lot 5, le Layout resynchronise tous les postes
+ * au montage de chaque page (lib/payroll/config-sync.ts).
  */
-
-/** Réponse GET /api/config/:ws (champs DB + tranchesIrpp) */
-interface RemoteConfig {
-  source?: string;
-  cnssSalarialNonAgricole?: number;
-  cnssPatronalNonAgricole?: number;
-  cnssSalarialAgricole?: number;
-  cnssPatronalAgricole?: number;
-  cssActive?: boolean;
-  cssTaux?: number;
-  cssSeuilExonerationAnnuel?: number;
-  fraisProTauxActifs?: number;
-  fraisProPlafondActifsAnnuel?: number;
-  fraisProTauxRetraites?: number;
-  deductionChefFamille?: number;
-  deductionEnfant?: number;
-  deductionEtudiant?: number;
-  plafondNombreEnfantsEtudiants?: number;
-  deductionInfirme?: number;
-  parentsEnChargeActif?: boolean;
-  parentsEnChargeTaux?: number;
-  parentsEnChargePlafondParAnnuel?: number;
-  tranchesIrpp?: { min: number; max: number | null; taux: number }[];
-}
-
-/** Convertit la réponse API vers la forme utilisée par le moteur client */
-function remoteVersLocale(r: RemoteConfig): PayrollConfig {
-  return {
-    cnssSalarialNonAgricole: r.cnssSalarialNonAgricole ?? CONFIG_PAR_DEFAUT.cnssSalarialNonAgricole,
-    cnssPatronalNonAgricole: r.cnssPatronalNonAgricole ?? CONFIG_PAR_DEFAUT.cnssPatronalNonAgricole,
-    cnssSalarialAgricole: r.cnssSalarialAgricole ?? CONFIG_PAR_DEFAUT.cnssSalarialAgricole,
-    cnssPatronalAgricole: r.cnssPatronalAgricole ?? CONFIG_PAR_DEFAUT.cnssPatronalAgricole,
-    cssActive: r.cssActive ?? CONFIG_PAR_DEFAUT.cssActive,
-    cssTaux: r.cssTaux ?? CONFIG_PAR_DEFAUT.cssTaux,
-    cssSeuilExonerationAnnuel: r.cssSeuilExonerationAnnuel ?? CONFIG_PAR_DEFAUT.cssSeuilExonerationAnnuel,
-    fraisProTauxActifs: r.fraisProTauxActifs ?? CONFIG_PAR_DEFAUT.fraisProTauxActifs,
-    fraisProPlafondActifsAnnuel: r.fraisProPlafondActifsAnnuel ?? CONFIG_PAR_DEFAUT.fraisProPlafondActifsAnnuel,
-    fraisProTauxRetraites: r.fraisProTauxRetraites ?? CONFIG_PAR_DEFAUT.fraisProTauxRetraites,
-    deductionChefFamille: r.deductionChefFamille ?? CONFIG_PAR_DEFAUT.deductionChefFamille,
-    deductionEnfant: r.deductionEnfant ?? CONFIG_PAR_DEFAUT.deductionEnfant,
-    deductionEtudiant: r.deductionEtudiant ?? CONFIG_PAR_DEFAUT.deductionEtudiant,
-    plafondNombreEnfantsEtudiants: r.plafondNombreEnfantsEtudiants ?? CONFIG_PAR_DEFAUT.plafondNombreEnfantsEtudiants,
-    deductionInfirme: r.deductionInfirme ?? CONFIG_PAR_DEFAUT.deductionInfirme,
-    parentsEnChargeActif: r.parentsEnChargeActif ?? CONFIG_PAR_DEFAUT.parentsEnChargeActif,
-    parentsEnChargeTaux: r.parentsEnChargeTaux ?? CONFIG_PAR_DEFAUT.parentsEnChargeTaux,
-    parentsEnChargePlafondParAnnuel: r.parentsEnChargePlafondParAnnuel ?? CONFIG_PAR_DEFAUT.parentsEnChargePlafondParAnnuel,
-    baremeIRPP: (r.tranchesIrpp && r.tranchesIrpp.length > 0)
-      ? r.tranchesIrpp.map((t) => ({ min: t.min, max: t.max, taux: t.taux }))
-      : CONFIG_PAR_DEFAUT.baremeIRPP,
-  };
-}
 
 /** Charge la config du workspace actif (base de données), avec repli local */
 async function chargerConfigServeur(workspaceId: string): Promise<PayrollConfig> {

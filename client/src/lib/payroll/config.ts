@@ -118,3 +118,8 @@ export function reinitialiserPayrollConfig(): PayrollConfig {
   setPayrollConfig({ ...CONFIG_PAR_DEFAUT });
   return getPayrollConfig();
 }
+
+/** Vide le cache mémoire — réservé aux tests (isolation entre cas). */
+export function __reinitialiserPourTests(): void {
+  configEnMemoire = null;
+}
