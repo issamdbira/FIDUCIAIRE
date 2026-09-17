@@ -6,6 +6,7 @@ import { Request, Response, NextFunction } from "express";
 import { verifyToken, JwtPayload } from "../lib/jwt.js";
 import prisma from "../lib/prisma.js";
 import { SESSION_COOKIE } from "../lib/session-cookie.js";
+import { purgeExpirationsSilencieuse } from "../lib/session-cleanup.js";
 
 // Extend Express Request type
 declare global {
@@ -45,6 +46,10 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   if (!user || user.statut !== "VALIDE") {
     return res.status(403).json({ error: "Compte non validé ou suspendu" });
   }
+
+  // Lot 2 — purge opportuniste des sessions/tokens expirés (porte 1 h,
+  // au plus une exécution par instance ; jamais bloquante)
+  await purgeExpirationsSilencieuse();
 
   req.user = payload;
   next();

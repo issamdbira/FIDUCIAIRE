@@ -30,7 +30,9 @@ export function signToken(payload: { userId: string; email: string; role: string
   const token = jwt.sign(
     { userId: payload.userId, email: payload.email, role: payload.role },
     JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN, jwtid: jti }
+    // Typage des nouveaux @types/jsonwebtoken : expiresIn attend number | StringValue
+    // (type gabarit du paquet « ms ») — un string générique doit être affirmé.
+    { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions["expiresIn"], jwtid: jti }
   );
 
   return { token, jti, expiresAt };

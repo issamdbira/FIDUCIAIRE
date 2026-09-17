@@ -48,6 +48,32 @@ export function createApp() {
   // Lot 1 — session en cookie HttpOnly (lecture côté requireAuth)
   app.use(cookieParser());
 
+  // -------------------------------------------------------------------------
+  // Lot 2 — IP client réelle derrière le proxy Vercel
+  // -------------------------------------------------------------------------
+  // Sans ce correctif, req.ip = adresse du proxy INTERNE Vercel : le limiteur
+  // de tentatives et ~40 logs d'audit perdaient l'IP réelle. On n'utilise que
+  // des en-têtes POSÉS PAR LA PLATEFORME (invérifiables côté client) :
+  //   - x-vercel-forwarded-for (Vercel, garanti non forgé) ;
+  //   - x-real-ip (Vercel) ;
+  //   - à défaut req.ip (connexion directe — dev local).
+  // x-forwarded-for est volontairement IGNORÉ : forgable par le client.
+  // En local ces en-têtes sont absents → comportement inchangé.
+  // -------------------------------------------------------------------------
+  app.use((req: import("express").Request, _res, next) => {
+    const h = req.headers;
+    const vff = Array.isArray(h["x-vercel-forwarded-for"]) ? h["x-vercel-forwarded-for"][0] : h["x-vercel-forwarded-for"];
+    const rip = Array.isArray(h["x-real-ip"]) ? h["x-real-ip"][0] : h["x-real-ip"];
+    const ip = (typeof vff === "string" && vff.trim()) || (typeof rip === "string" && rip.trim());
+    if (ip) {
+      // req.ip est un getter en lecture seule chez Express : on Le Surcharge au
+      // niveau de l'instance (defineProperty) pour TOUTES les lectures
+      // ultérieures (limiteur de tentatives, audit, ~40 call sites).
+      Object.defineProperty(req, "ip", { value: ip, configurable: true, writable: true, enumerable: true });
+    }
+    next();
+  });
+
   // API Routes
   app.use("/api/auth", authRoutes);
   app.use("/api/config", configRoutes);

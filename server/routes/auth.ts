@@ -14,6 +14,7 @@ import { auditLog } from "../lib/audit-log.js";
 import { provisionWorkspace } from "../lib/provision-workspace.js";
 import { setSessionCookie, clearSessionCookie } from "../lib/session-cookie.js";
 import { estBloque, enregistrerEchec, reussite } from "../lib/rate-limiter.js";
+import { purgeExpirationsSilencieuse } from "../lib/session-cleanup.js";
 
 const router = Router();
 
@@ -244,6 +245,9 @@ router.post("/login", async (req: Request, res: Response) => {
       details: JSON.stringify({ email: user.email }),
       ipAddress: req.ip,
     });
+
+    // Lot 2 — purge opportuniste des expirations (porte 1 h, non bloquante)
+    await purgeExpirationsSilencieuse();
 
     return res.json({
       user: {
