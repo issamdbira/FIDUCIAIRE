@@ -147,7 +147,7 @@ async function fusion(sourceId: string, targetId: string) {
         details: JSON.stringify({ fusionne: source.name, sourceId, clientsDeplaces: clients.length }),
       },
     });
-  });
+  }, { timeout: 60_000, maxWait: 10_000 });
 
   log("RUN", "Fusion exécutée — le cabinet source est archivé (masqué), aucune donnée supprimée.");
 }
@@ -310,7 +310,7 @@ async function migrerEspaces(cabinetId: string) {
           status: "EXECUTED",
         },
       });
-    });
+    }, { timeout: 60_000, maxWait: 10_000 });
   }
 
   if (!RUN) {
@@ -383,7 +383,7 @@ async function reverseEspaces() {
       await tx.workspaces.delete({ where: { id: m.newWorkspaceId } });
 
       await tx.migration_map.update({ where: { id: m.id }, data: { status: "REVERSED", reversedAt: new Date() } });
-    });
+    }, { timeout: 60_000, maxWait: 10_000 });
   }
 
   if (!RUN) log("DRY", "Dry-run — relancez avec --run pour annuler réellement.");
