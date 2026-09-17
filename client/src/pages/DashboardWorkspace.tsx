@@ -12,6 +12,7 @@ import {
   FileText,
 } from "lucide-react";
 import { Link } from "wouter";
+import { CheckCircle2, Circle, ArrowRight } from "lucide-react";
 import BackToTools from "@/components/BackToTools";
 import { useAuth } from "@/contexts/AuthContext";
 import { getWorkspaceId } from "@/lib/workspace";
@@ -40,6 +41,15 @@ interface WorkspaceData {
     patronal: number;
   };
   periodesOuvertes: PeriodeOuverte[];
+  // P2-6 : parcours guidé — état réel des étapes du cycle de paie
+  parcours?: {
+    salariesActifs: number;
+    salariesAvecContratActif: number;
+    dernierePeriode: { mois: number; annee: number; statut: string } | null;
+    pointageDernierePeriode: boolean;
+    bulletinsDernierePeriode: number;
+    declarationCnssDernierePeriode: boolean;
+  };
 }
 
 interface ContratExpirant {
@@ -80,6 +90,77 @@ const MOIS_NOMS = [
 
 const periodeLabel = (mois: number, annee: number): string =>
   `${MOIS_NOMS[mois - 1] ?? mois} ${annee}`;
+
+/* ── P2-6 : Parcours guidé — le test des 30 secondes ────────────────── */
+/* « Je sais où j'en suis, ce qui reste à faire, et par où continuer. »  */
+
+interface EtapeParcours {
+  label: string;
+  fait: boolean;
+  href?: string; // lien « continuer » de l'étape
+  cta?: string;
+}
+
+function calculerEtapes(data: WorkspaceData): EtapeParcours[] {
+  const p = data.parcours;
+  if (!p) return [];
+  const periode = p.dernierePeriode;
+  const statutCalcule = periode !== null && ["CALCULATED", "TO_REVIEW", "VALIDATED", "CLOSED"].includes(periode.statut);
+  const statutValide = periode !== null && ["VALIDATED", "CLOSED"].includes(periode.statut);
+  const statutCloture = periode?.statut === "CLOSED";
+
+  const etapes: EtapeParcours[] = [
+    {
+      label: "Créer les salariés",
+      fait: p.salariesActifs > 0,
+      href: "/gestion/employes",
+      cta: "Créer un salarié",
+    },
+    {
+      label: "Établir leurs contrats",
+      fait: p.salariesAvecContratActif > 0,
+      href: "/gestion/contrats",
+      cta: "Créer un contrat",
+    },
+    {
+      label: "Ouvrir la période de paie",
+      fait: periode !== null,
+      href: "/gestion/paie",
+      cta: "Ouvrir la période",
+    },
+    {
+      label: "Saisir le pointage du mois",
+      fait: periode !== null && p.pointageDernierePeriode,
+      href: "/gestion/pointage",
+      cta: "Saisir / importer le pointage",
+    },
+    {
+      label: "Calculer la paie",
+      fait: statutCalcule && p.bulletinsDernierePeriode > 0,
+      href: "/gestion/paie",
+      cta: "Calculer la paie",
+    },
+    {
+      label: "Valider les bulletins",
+      fait: statutValide,
+      href: "/gestion/paie",
+      cta: "Valider les bulletins",
+    },
+    {
+      label: "Clôturer la période",
+      fait: statutCloture,
+      href: "/gestion/paie",
+      cta: "Clôturer la période",
+    },
+    {
+      label: "Déclarer à la CNSS",
+      fait: statutCloture === true && p.declarationCnssDernierePeriode,
+      href: "/gestion/cnss",
+      cta: "Créer la déclaration",
+    },
+  ];
+  return etapes;
+}
 
 /* ── Unauthorized View ─────────────────────────────────────────────── */
 
@@ -222,6 +303,12 @@ export default function DashboardWorkspace() {
   const nomEspace = activeWs?.name ?? workspaceId;
   const typeEspace = activeWs?.type ? (TYPE_LABEL[activeWs.type] ?? activeWs.type) : "";
 
+  // P2-6 : parcours guidé — étapes réelles + prochaine étape à faire
+  const etapesParcours = data ? calculerEtapes(data) : [];
+  const prochaineEtapeIndex = etapesParcours.findIndex((e) => !e.fait);
+  const prochaineEtape = prochaineEtapeIndex >= 0 ? etapesParcours[prochaineEtapeIndex] : null;
+  const periodeParcours = data?.parcours?.dernierePeriode;
+
   // Défensif : si l'API omet repartitionCnss (forme inattendue), on dégrade
   // l'affichage plutôt que de crasher toute la page.
   const repartition = data.repartitionCnss ?? { salarial: 0, patronal: 0 };
@@ -253,9 +340,68 @@ export default function DashboardWorkspace() {
       </h1>
 
       {/* Espace info (P2-3 : nom lisible, plus jamais l'ID brut) */}
-      <p className="text-sm text-muted-foreground mb-6">
+      <p className="text-sm text-muted-foreground mb-4">
         {typeEspace ? `Espace ${typeEspace}` : "Espace de travail"}
       </p>
+
+      {/* P2-6 : Parcours guidé — où suis-je, quoi faire ensuite */}
+      {etapesParcours.length > 0 && (
+        <Card className="border border-slate-200 dark:border-slate-700 mb-6">
+          <CardHeader className="flex flex-row items-center justify-between pb-3 gap-2">
+            <CardTitle className="text-sm font-semibold text-primary">
+              Parcours de paie — où en êtes-vous ?
+            </CardTitle>
+            {prochaineEtape && (
+              <Link href={prochaineEtape.href ?? "/gestion/paie"}>
+                <button className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors whitespace-nowrap">
+                  {prochaineEtape.cta}
+                  <ArrowRight className="size-3.5" />
+                </button>
+              </Link>
+            )}
+          </CardHeader>
+          <CardContent>
+            <ol className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-x-6 gap-y-2">
+              {etapesParcours.map((etape, i) => (
+                <li key={i} className="flex items-center gap-2 text-sm">
+                  {etape.fait ? (
+                    <CheckCircle2 className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                  ) : (
+                    <Circle
+                      className={
+                        "size-4 shrink-0 " +
+                        (prochaineEtapeIndex === i ? "text-primary" : "text-muted-foreground/40")
+                      }
+                    />
+                  )}
+                  <span
+                    className={
+                      etape.fait
+                        ? "text-muted-foreground line-through decoration-muted-foreground/40"
+                        : prochaineEtapeIndex === i
+                          ? "font-semibold text-foreground"
+                          : "text-muted-foreground"
+                    }
+                  >
+                    {etape.label}
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <p className="text-xs text-muted-foreground mt-3">
+              {prochaineEtape ? (
+                <>
+                  Prochaine étape :{" "}
+                  <span className="font-medium text-foreground">{prochaineEtape.label}</span>
+                  {periodeParcours && " — période " + periodeLabel(periodeParcours.mois, periodeParcours.annee)}
+                </>
+              ) : (
+                "Cycle de paie complet — salariés, contrats, pointage, calcul, validation, clôture et déclaration CNSS à jour."
+              )}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

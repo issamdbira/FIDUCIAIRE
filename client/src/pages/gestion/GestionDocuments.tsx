@@ -97,12 +97,42 @@ interface ClientCompany {
   raisonSociale: string;
 }
 
+// P2-1 : sélecteurs réels — plus jamais d'ID technique à copier-coller
+interface PeriodePaie {
+  id: string;
+  mois: number;
+  annee: number;
+  statut: string;
+  client_company?: { raisonSociale: string } | null;
+  _count?: { payslips: number; anomalies: number };
+}
+
+interface PayslipSimple {
+  id: string;
+  matricule: string;
+  nomPrenom: string;
+  mois: number;
+  annee: number;
+  salaireNet?: number | null;
+  salaireBrutEffectif?: number | null;
+}
+
+const MOIS_COURTS = [
+  "Janv.", "Fév.", "Mars", "Avr.", "Mai", "Juin",
+  "Juil.", "Août", "Sept.", "Oct.", "Nov.", "Déc.",
+];
+
+const periodeLabel = (p: { mois: number; annee: number; statut?: string }) =>
+  `${MOIS_COURTS[p.mois - 1] ?? p.mois} ${p.annee}${p.statut ? ` — ${p.statut}` : ""}`;
+
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const TYPE_OPTIONS: { value: TypeDocument; label: string; badgeClass: string }[] = [
   {
     value: "BULLETIN_PDF",
-    label: "PDF",
+    // P2-2 : honnêteté — le bulletin généré est du HTML imprimable (le
+    // bouton « PDF » d'avant promettait un PDF qui n'existait pas)
+    label: "Bulletin",
     badgeClass:
       "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800",
   },
@@ -195,9 +225,13 @@ export default function GestionDocuments() {
   const [showExcelDialog, setShowExcelDialog] = useState(false);
   const [showCsvDialog, setShowCsvDialog] = useState(false);
 
-  // Inputs pour génération
-  const [payslipIdInput, setPayslipIdInput] = useState("");
-  const [periodIdInput, setPeriodIdInput] = useState("");
+  // P2-1 : sélecteurs (période → bulletin) — remplacement des inputs d'ID
+  const [periods, setPeriods] = useState<PeriodePaie[]>([]);
+  const [periodsLoading, setPeriodsLoading] = useState(false);
+  const [selectedPeriodId, setSelectedPeriodId] = useState("");
+  const [payslips, setPayslips] = useState<PayslipSimple[]>([]);
+  const [payslipsLoading, setPayslipsLoading] = useState(false);
+  const [selectedPayslipId, setSelectedPayslipId] = useState("");
 
   // Dialog détail
   const [detailDoc, setDetailDoc] = useState<DocumentStorage | null>(null);
@@ -246,10 +280,58 @@ export default function GestionDocuments() {
     fetchClients();
   }, [fetchClients]);
 
-  // ── Generate Bulletin PDF ────────────────────────────────────────────
+  // P2-1 : charger les périodes à l'ouverture d'un dialog de génération
+  const fetchPeriods = useCallback(async () => {
+    if (!workspaceId) return;
+    setPeriodsLoading(true);
+    try {
+      const data = await api.get<PeriodePaie[]>(`/payroll/${workspaceId}/periods`);
+      setPeriods(data);
+    } catch {
+      toast.error("Impossible de charger les périodes de paie");
+    } finally {
+      setPeriodsLoading(false);
+    }
+  }, [workspaceId]);
+
+  useEffect(() => {
+    if (showPdfDialog || showExcelDialog || showCsvDialog) {
+      setSelectedPeriodId("");
+      setSelectedPayslipId("");
+      setPayslips([]);
+      fetchPeriods();
+    }
+  }, [showPdfDialog, showExcelDialog, showCsvDialog, fetchPeriods]);
+
+  // P2-1 : charger les bulletins de la période choisie (dialog PDF)
+  useEffect(() => {
+    if (!showPdfDialog || !workspaceId || !selectedPeriodId) {
+      setPayslips([]);
+      return;
+    }
+    let cancelled = false;
+    setPayslipsLoading(true);
+    setSelectedPayslipId("");
+    api
+      .get<PayslipSimple[]>(`/payroll/${workspaceId}/payslips?periodId=${selectedPeriodId}`)
+      .then((data) => {
+        if (!cancelled) setPayslips(data);
+      })
+      .catch(() => {
+        if (!cancelled) toast.error("Impossible de charger les bulletins de la période");
+      })
+      .finally(() => {
+        if (!cancelled) setPayslipsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showPdfDialog, workspaceId, selectedPeriodId]);
+
+  // ── Generate Bulletin (P2-1 : depuis le sélecteur, P2-2 : HTML imprimable)
   const handleGeneratePdf = async () => {
-    if (!payslipIdInput.trim()) {
-      toast.error("Veuillez saisir l'ID du bulletin");
+    if (!selectedPayslipId) {
+      toast.error("Sélectionnez d'abord la période puis le bulletin");
       return;
     }
     setIsGenerating(true);
@@ -257,10 +339,9 @@ export default function GestionDocuments() {
       const result = await api.post<{
         message: string;
         document: DocumentStorage;
-      }>(`/documents/payslips/${payslipIdInput.trim()}/pdf`, { workspaceId });
-      toast.success(result.message || "Bulletin PDF généré avec succès");
+      }>(`/documents/payslips/${selectedPayslipId}/pdf`, { workspaceId });
+      toast.success(result.message || "Bulletin généré — prêt à imprimer / enregistrer en PDF");
       setShowPdfDialog(false);
-      setPayslipIdInput("");
       fetchDocuments();
     } catch (err) {
       const apiErr = err as ApiError;
@@ -272,8 +353,8 @@ export default function GestionDocuments() {
 
   // ── Export Excel ──────────────────────────────────────────────────────
   const handleExportExcel = async () => {
-    if (!periodIdInput.trim()) {
-      toast.error("Veuillez saisir l'ID de la période");
+    if (!selectedPeriodId) {
+      toast.error("Sélectionnez la période à exporter");
       return;
     }
     setIsGenerating(true);
@@ -281,10 +362,9 @@ export default function GestionDocuments() {
       const result = await api.post<{
         message: string;
         document: DocumentStorage;
-      }>(`/documents/periods/${periodIdInput.trim()}/excel`, { workspaceId });
+      }>(`/documents/periods/${selectedPeriodId}/excel`, { workspaceId });
       toast.success(result.message || "Export Excel généré avec succès");
       setShowExcelDialog(false);
-      setPeriodIdInput("");
       fetchDocuments();
     } catch (err) {
       const apiErr = err as ApiError;
@@ -296,8 +376,8 @@ export default function GestionDocuments() {
 
   // ── Export CSV ────────────────────────────────────────────────────────
   const handleExportCsv = async () => {
-    if (!periodIdInput.trim()) {
-      toast.error("Veuillez saisir l'ID de la période");
+    if (!selectedPeriodId) {
+      toast.error("Sélectionnez la période à exporter");
       return;
     }
     setIsGenerating(true);
@@ -305,10 +385,9 @@ export default function GestionDocuments() {
       const result = await api.post<{
         message: string;
         document: DocumentStorage;
-      }>(`/documents/periods/${periodIdInput.trim()}/csv`, { workspaceId });
+      }>(`/documents/periods/${selectedPeriodId}/csv`, { workspaceId });
       toast.success(result.message || "Export CSV généré avec succès");
       setShowCsvDialog(false);
-      setPeriodIdInput("");
       fetchDocuments();
     } catch (err) {
       const apiErr = err as ApiError;
@@ -414,13 +493,13 @@ export default function GestionDocuments() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <FileText className="size-4 text-red-600" />
-              Générer bulletin PDF
+              Générer un bulletin
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-xs text-muted-foreground mb-3">
-              Générer le bulletin de paie au format PDF pour un bulletin
-              spécifique.
+              Bulletin de paie prêt à imprimer — sélectionnez la période puis
+              le salarié (imprimer ou enregistrer en PDF depuis le navigateur).
             </p>
             {peutEcrire && (
               <Button
@@ -429,7 +508,7 @@ export default function GestionDocuments() {
                 onClick={() => setShowPdfDialog(true)}
               >
               <FileText className="size-3.5" />
-              Générer PDF
+              Générer le bulletin
             </Button>
             )}
           </CardContent>
@@ -662,49 +741,78 @@ export default function GestionDocuments() {
         </CardContent>
       </Card>
 
-      {/* ─── Dialog: Générer Bulletin PDF ─── */}
+      {/* ─── Dialog: Générer Bulletin (P2-1 : sélecteurs, P2-2 : honnête) ─── */}
       <Dialog open={showPdfDialog} onOpenChange={setShowPdfDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="size-5 text-red-600" />
-              Générer bulletin PDF
+              Générer un bulletin de paie
             </DialogTitle>
             <DialogDescription>
-              Saisissez l&apos;identifiant du bulletin de paie pour générer le
-              fichier PDF correspondant.
+              Sélectionnez la période de paie puis le salarié. Le bulletin est
+              généré en HTML prêt à imprimer — utilisez « Imprimer → Enregistrer
+              en PDF » depuis le navigateur pour un PDF.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="payslip-id" className="text-sm">
-                ID du bulletin
-              </Label>
-              <Input
-                id="payslip-id"
-                placeholder="ex: clxxxx..."
-                value={payslipIdInput}
-                onChange={(e) => setPayslipIdInput(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Workspace : {workspaceId || "non défini"}
-              </p>
+              <Label className="text-sm">Période de paie</Label>
+              <Select value={selectedPeriodId} onValueChange={setSelectedPeriodId}>
+                <SelectTrigger className="w-full" disabled={periodsLoading}>
+                  <SelectValue placeholder={periodsLoading ? "Chargement…" : "Choisir la période"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {periods.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {periodeLabel(p)}
+                      {p._count ? ` (${p._count.payslips} bulletin(s))` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Bulletin (salarié)</Label>
+              <Select
+                value={selectedPayslipId}
+                onValueChange={setSelectedPayslipId}
+                disabled={!selectedPeriodId || payslipsLoading}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={
+                      !selectedPeriodId
+                        ? "Choisissez d'abord la période"
+                        : payslipsLoading
+                          ? "Chargement…"
+                          : payslips.length === 0
+                            ? "Aucun bulletin calculé pour cette période"
+                            : "Choisir le salarié"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {payslips.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nomPrenom} — {s.matricule}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => {
-                setShowPdfDialog(false);
-                setPayslipIdInput("");
-              }}
+              onClick={() => setShowPdfDialog(false)}
               disabled={isGenerating}
             >
               Annuler
             </Button>
             <Button
               onClick={handleGeneratePdf}
-              disabled={isGenerating || !payslipIdInput.trim()}
+              disabled={isGenerating || !selectedPayslipId}
               className="bg-navy hover:bg-navy/90 text-white gap-1.5"
             >
               {isGenerating && <Loader2 className="size-3.5 animate-spin" />}
@@ -714,7 +822,7 @@ export default function GestionDocuments() {
         </DialogContent>
       </Dialog>
 
-      {/* ─── Dialog: Exporter Excel ─── */}
+      {/* ─── Dialog: Exporter Excel (P2-1 : sélecteur de période) ─── */}
       <Dialog open={showExcelDialog} onOpenChange={setShowExcelDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -723,40 +831,43 @@ export default function GestionDocuments() {
               Exporter période Excel
             </DialogTitle>
             <DialogDescription>
-              Saisissez l&apos;identifiant de la période de paie pour exporter
-              les données au format Excel.
+              Sélectionnez la période de paie à exporter au format Excel.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="period-id-excel" className="text-sm">
-                ID de la période
-              </Label>
-              <Input
-                id="period-id-excel"
-                placeholder="ex: clxxxx..."
-                value={periodIdInput}
-                onChange={(e) => setPeriodIdInput(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Workspace : {workspaceId || "non défini"}
-              </p>
+              <Label className="text-sm">Période de paie</Label>
+              <Select value={selectedPeriodId} onValueChange={setSelectedPeriodId}>
+                <SelectTrigger className="w-full" disabled={periodsLoading}>
+                  <SelectValue placeholder={periodsLoading ? "Chargement…" : "Choisir la période"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {periods.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {periodeLabel(p)}
+                      {p._count ? ` (${p._count.payslips} bulletin(s))` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {periods.length === 0 && !periodsLoading && (
+                <p className="text-xs text-muted-foreground">
+                  Aucune période — ouvrez d'abord une période dans « Paie du mois ».
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => {
-                setShowExcelDialog(false);
-                setPeriodIdInput("");
-              }}
+              onClick={() => setShowExcelDialog(false)}
               disabled={isGenerating}
             >
               Annuler
             </Button>
             <Button
               onClick={handleExportExcel}
-              disabled={isGenerating || !periodIdInput.trim()}
+              disabled={isGenerating || !selectedPeriodId}
               className="bg-navy hover:bg-navy/90 text-white gap-1.5"
             >
               {isGenerating && <Loader2 className="size-3.5 animate-spin" />}
@@ -766,7 +877,7 @@ export default function GestionDocuments() {
         </DialogContent>
       </Dialog>
 
-      {/* ─── Dialog: Exporter CSV ─── */}
+      {/* ─── Dialog: Exporter CSV (P2-1 : sélecteur de période) ─── */}
       <Dialog open={showCsvDialog} onOpenChange={setShowCsvDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -775,40 +886,43 @@ export default function GestionDocuments() {
               Exporter période CSV
             </DialogTitle>
             <DialogDescription>
-              Saisissez l&apos;identifiant de la période de paie pour exporter
-              les données au format CSV.
+              Sélectionnez la période de paie à exporter au format CSV.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="period-id-csv" className="text-sm">
-                ID de la période
-              </Label>
-              <Input
-                id="period-id-csv"
-                placeholder="ex: clxxxx..."
-                value={periodIdInput}
-                onChange={(e) => setPeriodIdInput(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Workspace : {workspaceId || "non défini"}
-              </p>
+              <Label className="text-sm">Période de paie</Label>
+              <Select value={selectedPeriodId} onValueChange={setSelectedPeriodId}>
+                <SelectTrigger className="w-full" disabled={periodsLoading}>
+                  <SelectValue placeholder={periodsLoading ? "Chargement…" : "Choisir la période"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {periods.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {periodeLabel(p)}
+                      {p._count ? ` (${p._count.payslips} bulletin(s))` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {periods.length === 0 && !periodsLoading && (
+                <p className="text-xs text-muted-foreground">
+                  Aucune période — ouvrez d'abord une période dans « Paie du mois ».
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => {
-                setShowCsvDialog(false);
-                setPeriodIdInput("");
-              }}
+              onClick={() => setShowCsvDialog(false)}
               disabled={isGenerating}
             >
               Annuler
             </Button>
             <Button
               onClick={handleExportCsv}
-              disabled={isGenerating || !periodIdInput.trim()}
+              disabled={isGenerating || !selectedPeriodId}
               className="bg-navy hover:bg-navy/90 text-white gap-1.5"
             >
               {isGenerating && <Loader2 className="size-3.5 animate-spin" />}

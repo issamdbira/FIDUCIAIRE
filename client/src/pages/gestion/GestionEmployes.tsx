@@ -155,6 +155,12 @@ export default function GestionEmployes() {
   const [search, setSearch] = useState("");
   const [filterActive, setFilterActive] = useState(true);
 
+  // P2-5 : en espace ENTREPRISE il n'y a qu'une société (la sienne) — le
+  // sélecteur « Entreprise » y est du bruit ; on le pré-sélectionne et
+  // l'affiche en lecture seule.
+  const typeEspace = user?.workspaces?.find((ws) => ws.id === workspaceId)?.type;
+  const entrepriseUnique = typeEspace === "ENTREPRISE" && clients.length === 1 ? clients[0] : null;
+
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -199,7 +205,7 @@ export default function GestionEmployes() {
   // ── Open create dialog ──
   const openCreate = () => {
     setEditingId(null);
-    setForm(EMPTY_FORM);
+    setForm(entrepriseUnique ? { ...EMPTY_FORM, clientCompanyId: entrepriseUnique.id } : EMPTY_FORM);
     setDialogOpen(true);
   };
 
@@ -462,17 +468,25 @@ export default function GestionEmployes() {
           </DialogHeader>
 
           <div className="grid gap-4 py-2">
-            {/* Entreprise cliente */}
+            {/* Entreprise cliente — P2-5 : en espace Entreprise, une seule
+                société possible → pré-sélectionnée et verrouillée */}
             <div className="space-y-1.5">
               <Label>Entreprise <span className="text-destructive">*</span></Label>
-              <Select value={form.clientCompanyId} onValueChange={(v) => setForm({ ...form, clientCompanyId: v, establishmentId: "" })}>
-                <SelectTrigger><SelectValue placeholder="Sélectionner une entreprise" /></SelectTrigger>
-                <SelectContent>
-                  {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.raisonSociale}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {entrepriseUnique ? (
+                <div className="rounded-md border border-input bg-muted/50 px-3 py-2 text-sm text-foreground">
+                  {entrepriseUnique.raisonSociale}
+                  <span className="ml-2 text-xs text-muted-foreground">(votre société)</span>
+                </div>
+              ) : (
+                <Select value={form.clientCompanyId} onValueChange={(v) => setForm({ ...form, clientCompanyId: v, establishmentId: "" })}>
+                  <SelectTrigger><SelectValue placeholder="Sélectionner une entreprise" /></SelectTrigger>
+                  <SelectContent>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.raisonSociale}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             {/* Matricule CNSS */}
@@ -486,15 +500,27 @@ export default function GestionEmployes() {
               />
             </div>
 
-            {/* Nom / Prénom */}
+            {/* Nom / Prénom — P2-5 : placeholders explicites + aria-labels */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Nom <span className="text-destructive">*</span></Label>
-                <Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+                <Label htmlFor="emp-lastname">Nom <span className="text-destructive">*</span></Label>
+                <Input
+                  id="emp-lastname"
+                  aria-required="true"
+                  placeholder="Ex. Ben Salah"
+                  value={form.lastName}
+                  onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                />
               </div>
               <div className="space-y-1.5">
-                <Label>Prénom <span className="text-destructive">*</span></Label>
-                <Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
+                <Label htmlFor="emp-firstname">Prénom <span className="text-destructive">*</span></Label>
+                <Input
+                  id="emp-firstname"
+                  aria-required="true"
+                  placeholder="Ex. Mohamed"
+                  value={form.firstName}
+                  onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                />
               </div>
             </div>
 

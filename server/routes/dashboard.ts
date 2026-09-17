@@ -352,6 +352,51 @@ router.get("/workspace/:ws", requireAuth, requireWorkspaceMember(), async (req: 
       orderBy: [{ annee: "desc" }, { mois: "desc" }],
     });
 
+    // --- P2-6 (réévaluation) : parcours guidé — état RÉEL des étapes métier
+    // du cycle de paie, pour afficher « prochaine étape » sur l'Accueil ---
+    // 1. Salariés actifs (avec ou sans contrat)
+    const salariesActifs = await prisma.employees.count({
+      where: { workspaceId: ws, isActive: true },
+    });
+    // 2. Salariés actifs SANS contrat ACTIF (le contrat est l'étape bloquante
+    // du calcul de paie — cf. P0-1)
+    const salariesAvecContratActif = uniqueEmployeeIds.size;
+    // 3. Dernière période du workspace, tout statut confondu (la plus récente)
+    const dernierePeriode = await prisma.payrollPeriod.findFirst({
+      where: { workspaceId: ws },
+      orderBy: [{ annee: "desc" }, { mois: "desc" }],
+      select: { id: true, mois: true, annee: true, statut: true, nombreBulletins: true },
+    });
+    // 4. Pointage de la dernière période (import ou saisie manuelle, non rejeté)
+    let pointageDernierePeriode = false;
+    let bulletinsDernierePeriode = 0;
+    let declarationCnssDernierePeriode = false;
+    if (dernierePeriode) {
+      const pointage = await prisma.attendanceImport.findFirst({
+        where: {
+          workspaceId: ws,
+          mois: dernierePeriode.mois,
+          annee: dernierePeriode.annee,
+          statut: { not: "REJETE" },
+        },
+        select: { id: true },
+      });
+      pointageDernierePeriode = Boolean(pointage);
+      bulletinsDernierePeriode = dernierePeriode.nombreBulletins;
+      if (dernierePeriode.statut === "CLOSED") {
+        const trimestre = Math.floor((dernierePeriode.mois - 1) / 3) + 1;
+        const declaration = await prisma.cNSSDeclaration.findFirst({
+          where: {
+            workspaceId: ws,
+            annee: dernierePeriode.annee,
+            numeroTrimestre: trimestre,
+          },
+          select: { id: true },
+        });
+        declarationCnssDernierePeriode = Boolean(declaration);
+      }
+    }
+
     return res.json({
       effectifActif,
       entreesMois: entrees,
@@ -361,6 +406,21 @@ router.get("/workspace/:ws", requireAuth, requireWorkspaceMember(), async (req: 
       variationMasseSalariale,
       repartitionCnss: repartitionCNSS,
       periodesOuvertes: periodesOuvertes.map((p) => ({ mois: p.mois, annee: p.annee })),
+      // P2-6 : parcours guidé (l'Accueil affiche la prochaine étape à faire)
+      parcours: {
+        salariesActifs,
+        salariesAvecContratActif,
+        dernierePeriode: dernierePeriode
+          ? {
+              mois: dernierePeriode.mois,
+              annee: dernierePeriode.annee,
+              statut: dernierePeriode.statut,
+            }
+          : null,
+        pointageDernierePeriode,
+        bulletinsDernierePeriode,
+        declarationCnssDernierePeriode,
+      },
     });
   } catch (error) {
     console.error("[dashboard] GET /workspace/:ws error:", error);

@@ -72,18 +72,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Liens de navigation desktop, filtrés par rôle
+  // Liens de navigation desktop, filtrés par rôle.
+  // Réévaluation §9 : libellés orientés PROCESSUS (fin des 11 entrées
+  // « objets » équivalentes) + concept client masqué dans les espaces
+  // Entreprise (une seule société : la leur).
+  const typeEspaceActif = activeWs?.type;
   const liensDesktop = useMemo(() => {
     const base = [
-      { href: "/dashboard/workspace", label: "Dashboard", icon: LayoutDashboard, visible: can(role, "read") },
-      { href: "/gestion/clients", label: "Clients", icon: Building2, visible: can(role, "read") },
-      { href: "/gestion/employes", label: "Employés", icon: UserPlus, visible: can(role, "read") },
+      { href: "/dashboard/workspace", label: "Accueil", icon: LayoutDashboard, visible: can(role, "read") },
+      {
+        href: "/gestion/clients",
+        label: typeEspaceActif === "ENTREPRISE" ? "Ma société" : "Clients",
+        icon: Building2,
+        visible: can(role, "read"),
+      },
+      { href: "/gestion/employes", label: "Salariés", icon: UserPlus, visible: can(role, "read") },
       { href: "/gestion/contrats", label: "Contrats", icon: FileText, visible: can(role, "read") },
-      { href: "/gestion/paie", label: "Paie", icon: Banknote, visible: can(role, "read") },
-      { href: "/gestion/pointage", label: "Pointage", icon: Clock, visible: can(role, "read") },
-      { href: "/gestion/cnss", label: "CNSS", icon: Shield, visible: can(role, "read") },
-      { href: "/gestion/conventions", label: "Conventions", icon: BookOpen, visible: can(role, "read") },
+      { href: "/gestion/paie", label: "Paie du mois", icon: Banknote, visible: can(role, "read") },
+      { href: "/gestion/pointage", label: "Temps & absences", icon: Clock, visible: can(role, "read") },
+      { href: "/gestion/cnss", label: "Déclarations CNSS", icon: Shield, visible: can(role, "read") },
       { href: "/gestion/documents", label: "Documents", icon: FileDown, visible: can(role, "read") },
+      // Paramètres (fonctions de configuration, hors processus)
+      { href: "/gestion/conventions", label: "Conventions", icon: BookOpen, visible: can(role, "read") },
       { href: "/gestion/membres", label: "Membres", icon: Users, visible: can(role, "manageMembers") },
       { href: "/admin", label: "Config", icon: Settings, visible: can(role, "configWrite") },
       // Lot 4 — messages du formulaire public : niveau APPLICATION (rôle
@@ -91,7 +101,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       { href: "/gestion/messages", label: "Messages", icon: Inbox, visible: user?.role === "PROPRIETAIRE" },
     ];
     return base.filter((l) => l.visible);
-  }, [role, user?.role]);
+  }, [role, user?.role, typeEspaceActif]);
 
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden max-w-[100vw]">
@@ -215,7 +225,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 onClick={() => setSheetOpen(false)}
                 className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors"
               >
-                <BarChart3 className="size-4" /> Workspace
+                <BarChart3 className="size-4" /> Accueil de l&apos;espace
               </Link>
             )}
             {can(role, "audit") && (
@@ -231,30 +241,33 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {can(role, "read") && (
               <>
                 <Link href="/gestion/clients" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
-                  <Building2 className="size-4" /> Clients
+                  <Building2 className="size-4" /> {typeEspaceActif === "ENTREPRISE" ? "Ma société" : "Clients"}
                 </Link>
                 <Link href="/gestion/employes" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
-                  <UserPlus className="size-4" /> Employés
+                  <UserPlus className="size-4" /> Salariés
                 </Link>
                 <Link href="/gestion/contrats" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
                   <FileText className="size-4" /> Contrats
                 </Link>
                 <Link href="/gestion/paie" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
-                  <Banknote className="size-4" /> Paie
+                  <Banknote className="size-4" /> Paie du mois
                 </Link>
                 <Link href="/gestion/pointage" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
-                  <Clock className="size-4" /> Pointage
+                  <Clock className="size-4" /> Temps & absences
                 </Link>
                 <Link href="/gestion/cnss" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
-                  <Shield className="size-4" /> CNSS
-                </Link>
-                <Link href="/gestion/conventions" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
-                  <BookOpen className="size-4" /> Conventions
+                  <Shield className="size-4" /> Déclarations CNSS
                 </Link>
                 <Link href="/gestion/documents" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
                   <FileDown className="size-4" /> Documents
                 </Link>
               </>
+            )}
+            <div className="pt-2 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Paramètres</div>
+            {can(role, "read") && (
+              <Link href="/gestion/conventions" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
+                <BookOpen className="size-4" /> Conventions collectives
+              </Link>
             )}
             {can(role, "manageMembers") && (
               <Link href="/gestion/membres" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
