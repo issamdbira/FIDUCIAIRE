@@ -4,8 +4,23 @@
 
 import { syncActiveWorkspaceId, clearActiveWorkspaceId } from "@/lib/workspace";
 
-const TOKEN_KEY = "fiduciaire_token";
 const BASE_URL = "/api";
+
+// ── Session (Lot 1 — sécurité) ─────────────────────────────────────────
+// Le jeton de session vit UNIQUEMENT dans un cookie HttpOnly posé par le
+// serveur : il n'est ni lu ni stocké par le JavaScript. Les requêtes
+// l'embarquent automatiquement (credentials: "include" + same-origin).
+// getStoredUser() reste un simple cache d'affichage du profil (aucun secret).
+const LEGACY_TOKEN_KEY = "fiduciaire_token"; // clé d'avant la V1 — à purger
+
+/** Hygiène de migration : supprime l'éventuel jeton localStorage hérité (V0). */
+export function cleanupLegacyToken(): void {
+  try {
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+  } catch {
+    // localStorage indisponible
+  }
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -41,31 +56,17 @@ export interface AuthUser {
 }
 
 export interface LoginResponse {
-  token: string;
   user: AuthUser;
 }
 
-// ── Token helpers ──────────────────────────────────────────────────────────
+// ── Token helpers (SUPPRIMÉS — Lot 1) ─────────────────────────────────────
+// getToken/setToken/removeToken n'existent plus : la session est portée par
+// le cookie HttpOnly `fiduciaire_session`. removeToken() est conservé comme
+// nettoyage local (cache profil + workspace) pour les flux 401/logout.
 
-export function getToken(): string | null {
+function removeToken(): void {
   try {
-    return localStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-export function setToken(token: string): void {
-  try {
-    localStorage.setItem(TOKEN_KEY, token);
-  } catch {
-    // localStorage indisponible
-  }
-}
-
-export function removeToken(): void {
-  try {
-    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
     clearActiveWorkspaceId();
   } catch {
     // localStorage indisponible
@@ -80,20 +81,16 @@ async function request<T>(
   body?: unknown,
   options?: { headers?: Record<string, string> }
 ): Promise<T> {
-  const token = getToken();
-
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...options?.headers,
   };
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
+  // Session par cookie HttpOnly — jamais d'en-tête Authorization côté navigateur
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
     headers,
+    credentials: "include",
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
@@ -158,8 +155,8 @@ export const api = {
 export async function login(email: string, password: string): Promise<LoginResponse> {
   const result = await api.post<LoginResponse>("/auth/login", { email, password });
 
-  // Stocker le token et les infos utilisateur
-  setToken(result.token);
+  // Le serveur a posé le cookie de session HttpOnly. On ne stocke que le
+  // profil (cache d'affichage, aucun secret) et le workspace actif.
   localStorage.setItem("fiduciaire_user", JSON.stringify(result.user));
 
   // Synchroniser le workspace actif : conserve le choix précédent s'il est

@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/table";
 
 // Icons
-import { Users, UserPlus, Copy, Trash2, Crown, ShieldCheck, RefreshCw, Link2, Ban } from "lucide-react";
+import { Users, UserPlus, Copy, Trash2, Crown, ShieldCheck, RefreshCw, Link2, Ban, KeyRound } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -106,6 +106,25 @@ export default function GestionMembres() {
   const [transferCible, setTransferCible] = useState<Membre | null>(null);
   const [transferConfirmation, setTransferConfirmation] = useState("");
   const [transferSoumission, setTransferSoumission] = useState(false);
+
+  // Lot 1 — réinitialisation de mot de passe (lien copiable P)
+  const [resetGenere, setResetGenere] = useState<{ email: string; link: string; expiresAt: string } | null>(null);
+  const [resetSoumission, setResetSoumission] = useState(false);
+
+  const demanderReset = async (membre: Membre) => {
+    if (!confirm(`Générer un lien de réinitialisation de mot de passe pour ${membre.fullName} (${membre.email}) ?`)) return;
+    setResetSoumission(true);
+    try {
+      const r = await api.post<{ email: string; link: string; expiresAt: string }>("/auth/password-reset/request", {
+        email: membre.email,
+      });
+      setResetGenere(r);
+    } catch (err) {
+      toast.error((err as { message?: string })?.message || "Erreur");
+    } finally {
+      setResetSoumission(false);
+    }
+  };
 
   const charger = useCallback(async () => {
     if (!workspaceId) return;
@@ -297,6 +316,16 @@ export default function GestionMembres() {
                       {new Date(m.joinedAt).toLocaleDateString("fr-FR")}
                     </TableCell>
                     <TableCell className="text-right">
+                      {/* Lot 1 — réinitialisation du mot de passe (lien copiable) */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => demanderReset(m)}
+                        disabled={resetSoumission}
+                        title="Réinitialiser le mot de passe"
+                      >
+                        <KeyRound className="size-4 text-primary" />
+                      </Button>
                       {m.role === "PROPRIETAIRE" ? (
                         <span className="text-xs text-muted-foreground">Transférez la propriété pour retirer</span>
                       ) : (
@@ -483,6 +512,36 @@ export default function GestionMembres() {
               <Button variant="destructive" onClick={transferrer} disabled={transferSoumission}>
                 {transferSoumission ? "Transfert…" : "Confirmer le transfert"}
               </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Lot 1 : lien de réinitialisation généré ── */}
+      <Dialog open={!!resetGenere} onOpenChange={(open) => { if (!open) setResetGenere(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="size-5 text-primary" /> Lien de réinitialisation
+            </DialogTitle>
+            <DialogDescription>
+              Pour <span className="font-medium text-foreground">{resetGenere?.email}</span> —
+              transmettez ce lien par votre canal habituel.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Input readOnly value={resetGenere?.link ?? ""} className="font-mono text-xs" onFocus={(e) => e.target.select()} />
+              <Button variant="outline" size="icon" onClick={() => resetGenere && copierLien(resetGenere.link)} title="Copier">
+                <Copy className="size-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Valable 24 heures · usage unique · toutes les sessions du compte seront révoquées
+              à la confirmation. L'utilisateur définit lui-même son nouveau mot de passe.
+            </p>
+            <DialogFooter>
+              <Button onClick={() => setResetGenere(null)}>Fermer</Button>
             </DialogFooter>
           </div>
         </DialogContent>

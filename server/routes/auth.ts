@@ -12,6 +12,8 @@ import { signToken, verifyToken } from "../lib/jwt.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { auditLog } from "../lib/audit-log.js";
 import { provisionWorkspace } from "../lib/provision-workspace.js";
+import { setSessionCookie, clearSessionCookie } from "../lib/session-cookie.js";
+import { estBloque, enregistrerEchec, reussite } from "../lib/rate-limiter.js";
 
 const router = Router();
 
@@ -153,6 +155,13 @@ router.post("/login", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "email et password requis" });
     }
 
+    // Lot 1 — limitation des tentatives : refus AVANT toute vérification
+    if (estBloque(String(email), req.ip)) {
+      return res.status(429).json({
+        error: "Trop de tentatives — compte temporairement verrouillé. Réessayez dans quelques minutes.",
+      });
+    }
+
     const user = await prisma.users.findUnique({
       where: { email },
       include: {
@@ -162,13 +171,36 @@ router.post("/login", async (req: Request, res: Response) => {
       },
     });
     if (!user) {
+      // Lot 1 — journaliser l'échec puis répondre 401
+      const etat = enregistrerEchec(email, req.ip);
+      await auditLog({
+        workspaceId: null,
+        action: "LOGIN_FAILED",
+        entity: "auth",
+        entityId: email,
+        details: JSON.stringify({ raison: "inconnu", echecs: etat.echecs }),
+        ipAddress: req.ip,
+      });
       return res.status(401).json({ error: "Identifiants invalides" });
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
+      const etat = enregistrerEchec(email, req.ip);
+      await auditLog({
+        workspaceId: null,
+        userId: user.id,
+        action: "LOGIN_FAILED",
+        entity: "auth",
+        entityId: user.email,
+        details: JSON.stringify({ raison: "mot_de_passe", echecs: etat.echecs }),
+        ipAddress: req.ip,
+      });
       return res.status(401).json({ error: "Identifiants invalides" });
     }
+
+    // Réussite — Lot 1 : purge du compteur de tentatives
+    reussite(user.email);
 
     // Refuser si EN_ATTENTE ou SUSPENDU
     if (user.statut === "EN_ATTENTE") {
@@ -197,8 +229,23 @@ router.post("/login", async (req: Request, res: Response) => {
       },
     });
 
+    // Lot 1 — sécurité : session déposée en cookie HttpOnly uniquement.
+    // Le jeton n'est PLUS renvoyé dans le corps de la réponse : aucune copie
+    // n'atteint le JavaScript du navigateur (exit localStorage).
+    setSessionCookie(res, token, expiresAt);
+
+    // Journaliser la connexion (audit §4.11)
+    await auditLog({
+      workspaceId: null,
+      userId: user.id,
+      action: "LOGIN",
+      entity: "auth",
+      entityId: user.id,
+      details: JSON.stringify({ email: user.email }),
+      ipAddress: req.ip,
+    });
+
     return res.json({
-      token,
       user: {
         id: user.id,
         email: user.email,
@@ -251,14 +298,172 @@ router.get("/me", requireAuth, async (req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 router.post("/logout", requireAuth, async (req: Request, res: Response) => {
   try {
-    // Supprimer la session courante
+    // Supprimer la session courante (révocation serveur)
     await prisma.session.deleteMany({
       where: { token: req.user!.jti },
     });
 
+    // Journaliser la déconnexion (audit §4.11)
+    await auditLog({
+      workspaceId: null,
+      userId: req.user!.userId,
+      action: "LOGOUT",
+      entity: "auth",
+      entityId: req.user!.userId,
+      details: JSON.stringify({ email: req.user!.email }),
+      ipAddress: req.ip,
+    });
+
+    // Lot 1 — sécurité : retirer également le cookie HttpOnly
+    clearSessionCookie(res);
+
     return res.json({ message: "Déconnecté" });
   } catch (error) {
     console.error("[auth] logout error:", error);
+    return res.status(500).json({ error: "Erreur interne" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Lot 1 — RÉCUPÉRATION DE COMPTE (roadmap §4.1)
+// ---------------------------------------------------------------------------
+// Sans service e-mail en V1, le lien copiable est généré par un PROPRIETAIRE
+// (page Membres) et transmis par son propre canal. Mécanique identique aux
+// invitations : token 64 hex, hash sha256 en base, TTL 24 h, usage unique.
+// La confirmation révoque TOUTES les sessions du compte (sécurité).
+// ---------------------------------------------------------------------------
+
+const RESET_TTL_HEURES = 24;
+
+// POST /api/auth/password-reset/request — PROPRIETAIRE uniquement
+router.post("/password-reset/request", requireAuth, requireRole("PROPRIETAIRE"), async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "email requis" });
+    }
+
+    const cible = await prisma.users.findUnique({ where: { email } });
+    if (!cible) {
+      return res.status(404).json({ error: "Aucun compte avec cet email" });
+    }
+    if (cible.role === "PROPRIETAIRE" && cible.id !== req.user!.userId) {
+      // Un propriétaire ne réinitialise pas un autre propriétaire :
+      // risque de prise de contrôle du cabinet — procédure manuelle.
+      return res.status(403).json({ error: "Réinitialisation d'un autre propriétaire interdite — contactez l'administrateur système" });
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const expiresAt = new Date(Date.now() + RESET_TTL_HEURES * 60 * 60 * 1000);
+
+    const reset = await prisma.password_resets.create({
+      data: { email, tokenHash, expiresAt, createdBy: req.user!.userId },
+    });
+
+    await auditLog({
+      workspaceId: null,
+      userId: req.user!.userId,
+      action: "PASSWORD_RESET_REQUEST",
+      entity: "auth",
+      entityId: cible.id,
+      details: JSON.stringify({ email, expiresAt: expiresAt.toISOString() }),
+      ipAddress: req.ip,
+    });
+
+    const origin = (req.headers.origin || `https://${req.headers.host}`) as string;
+    return res.status(201).json({
+      id: reset.id,
+      email,
+      expiresAt: reset.expiresAt,
+      link: `${origin}/reinitialisation?token=${token}`, // à transmettre manuellement
+      message: "Lien de réinitialisation créé — transmettez-le à l'utilisateur par votre canal habituel",
+    });
+  } catch (error) {
+    console.error("[auth] password-reset request error:", error);
+    return res.status(500).json({ error: "Erreur interne" });
+  }
+});
+
+// GET /api/auth/password-reset/:token — validation publique du lien
+router.get("/password-reset/:token", async (req: Request, res: Response) => {
+  try {
+    const tokenHash = crypto.createHash("sha256").update(req.params.token).digest("hex");
+    const reset = await prisma.password_resets.findUnique({ where: { tokenHash } });
+
+    if (!reset) {
+      return res.status(404).json({ error: "Lien de réinitialisation inconnu" });
+    }
+    if (reset.usedAt) {
+      return res.status(410).json({ error: "Lien déjà utilisé — demandez-en un nouveau" });
+    }
+    if (reset.expiresAt < new Date()) {
+      return res.status(410).json({ error: "Lien expiré — demandez-en un nouveau" });
+    }
+
+    // Le compte doit toujours exister et être actif
+    const cible = await prisma.users.findUnique({ where: { email: reset.email } });
+    if (!cible || cible.statut !== "VALIDE") {
+      return res.status(410).json({ error: "Compte introuvable ou non actif" });
+    }
+
+    return res.json({ email: reset.email, expiresAt: reset.expiresAt });
+  } catch (error) {
+    console.error("[auth] password-reset get error:", error);
+    return res.status(500).json({ error: "Erreur interne" });
+  }
+});
+
+// POST /api/auth/password-reset/confirm — définition du nouveau mot de passe
+router.post("/password-reset/confirm", async (req: Request, res: Response) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: "token et newPassword requis" });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: "Le mot de passe doit contenir au moins 8 caractères" });
+    }
+
+    const tokenHash = crypto.createHash("sha256").update(String(token)).digest("hex");
+    const reset = await prisma.password_resets.findUnique({ where: { tokenHash } });
+    if (!reset || reset.usedAt || reset.expiresAt < new Date()) {
+      return res.status(410).json({ error: "Lien invalide, expiré ou déjà utilisé" });
+    }
+
+    const cible = await prisma.users.findUnique({ where: { email: reset.email } });
+    if (!cible) {
+      return res.status(404).json({ error: "Compte introuvable" });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await prisma.users.update({
+      where: { id: cible.id },
+      data: { passwordHash, updatedAt: new Date() },
+    });
+
+    // Sécurité : révoquer TOUTES les sessions du compte (appareils inclus)
+    await prisma.session.deleteMany({ where: { userId: cible.id } });
+
+    // Usage unique
+    await prisma.password_resets.update({
+      where: { id: reset.id },
+      data: { usedAt: new Date() },
+    });
+
+    await auditLog({
+      workspaceId: null,
+      userId: cible.id,
+      action: "PASSWORD_RESET_CONFIRM",
+      entity: "auth",
+      entityId: cible.id,
+      details: JSON.stringify({ email: reset.email, sessionsRevoquees: true }),
+      ipAddress: req.ip,
+    });
+
+    return res.json({ message: "Mot de passe réinitialisé — connectez-vous avec votre nouveau mot de passe" });
+  } catch (error) {
+    console.error("[auth] password-reset confirm error:", error);
     return res.status(500).json({ error: "Erreur interne" });
   }
 });
@@ -483,9 +688,11 @@ router.post("/invitation/:token/accept", async (req: Request, res: Response) => 
       data: { userId: user!.id, token: jti, expiresAt },
     });
 
+    // Lot 1 — cookie HttpOnly (le jeton ne transite plus dans le corps JSON)
+    setSessionCookie(res, jwt, expiresAt);
+
     return res.json({
       message: "Invitation acceptée — bienvenue",
-      token: jwt,
       user: {
         id: user!.id,
         email: user!.email,
@@ -582,9 +789,11 @@ router.post("/create-space", async (req: Request, res: Response) => {
       data: { userId: user.id, token: jti, expiresAt },
     });
 
+    // Lot 1 — cookie HttpOnly (le jeton ne transite plus dans le corps JSON)
+    setSessionCookie(res, token, expiresAt);
+
     return res.status(201).json({
       message: "Votre espace entreprise est créé — bienvenue",
-      token,
       user: {
         id: user.id,
         email: user.email,

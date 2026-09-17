@@ -4,12 +4,11 @@
 
 import { useState, useEffect, useCallback, createContext, useContext, type ReactNode } from "react";
 import {
-  getToken,
+  cleanupLegacyToken,
   getStoredUser,
   fetchCurrentUser,
   login as apiLogin,
   logout as apiLogout,
-  removeToken,
   type AuthUser,
   type LoginResponse,
   type ApiError,
@@ -42,27 +41,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error: null,
   });
 
-  // ── Vérification initiale : token présent → valider via /auth/me
+  // ── Vérification initiale (Lot 1) : la session vit dans le cookie HttpOnly.
+  // On purge l'éventuel jeton localStorage hérité de la V0, puis on valide
+  // la session auprès du serveur (/auth/me répond 401 si cookie absent/révoqué).
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
-      setState({ isAuthenticated: false, isLoading: false, user: null, error: null });
-      return;
-    }
+    cleanupLegacyToken();
 
-    // Token présent → vérifier côté serveur
     fetchCurrentUser()
       .then((user) => {
         if (user) {
           setState({ isAuthenticated: true, isLoading: false, user, error: null });
         } else {
-          // Token invalide ou expiré
-          removeToken();
           setState({ isAuthenticated: false, isLoading: false, user: null, error: null });
         }
       })
       .catch(() => {
-        removeToken();
         setState({ isAuthenticated: false, isLoading: false, user: null, error: null });
       });
   }, []);

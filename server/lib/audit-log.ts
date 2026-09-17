@@ -22,7 +22,7 @@ export const AUDIT_ACTIONS = {
 // Log an audit entry
 // ---------------------------------------------------------------------------
 export async function auditLog(params: {
-  workspaceId: string;
+  workspaceId: string | null; // null = événement d'authentification (LOGIN, LOGOUT…)
   userId?: string;
   action: string;
   entity: string;

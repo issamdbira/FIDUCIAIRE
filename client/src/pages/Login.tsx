@@ -170,6 +170,16 @@ export default function LoginPage() {
               </>
             )}
           </Button>
+
+          {/* Lot 1 — récupération de compte */}
+          <div className="text-center">
+            <Link
+              href="/mot-de-passe-oublie"
+              className="text-xs text-muted-foreground hover:text-primary hover:underline"
+            >
+              Mot de passe oublié ?
+            </Link>
+          </div>
         </form>
 
         {/* Lien d'inscription futur */}

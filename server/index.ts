@@ -10,6 +10,7 @@ if (process.env.VERCEL !== "1") {
 
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -44,6 +45,8 @@ export function createApp() {
     credentials: true,
   }));
   app.use(express.json());
+  // Lot 1 — session en cookie HttpOnly (lecture côté requireAuth)
+  app.use(cookieParser());
 
   // API Routes
   app.use("/api/auth", authRoutes);

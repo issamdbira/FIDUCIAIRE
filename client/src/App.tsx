@@ -37,6 +37,8 @@ import AuditLog from "./pages/AuditLog";
 import Login from "./pages/Login";
 import CreerEspace from "./pages/CreerEspace";
 import Invitation from "./pages/Invitation";
+import Reinitialisation from "./pages/Reinitialisation";
+import MotDePasseOublie from "./pages/MotDePasseOublie";
 import GestionClients from "./pages/gestion/GestionClients";
 import GestionContrats from "./pages/gestion/GestionContrats";
 import GestionConventions from "./pages/gestion/GestionConventions";
@@ -61,6 +63,8 @@ function AppRoutes() {
       <Route path="/login" component={Login} />
       <Route path="/creer-espace" component={CreerEspace} />
       <Route path="/invitation" component={Invitation} />
+      <Route path="/reinitialisation" component={Reinitialisation} />
+      <Route path="/mot-de-passe-oublie" component={MotDePasseOublie} />
       <Route path="/calculateurs/calculer-salaire" component={CalculerSalaire} />
       <Route path="/referentiel-avantages-exclus" component={ReferentielAvantages} />
       <Route path="/formulaires-cnss" component={FormulairesCNSS} />

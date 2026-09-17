@@ -5,6 +5,7 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken, JwtPayload } from "../lib/jwt.js";
 import prisma from "../lib/prisma.js";
+import { SESSION_COOKIE } from "../lib/session-cookie.js";
 
 // Extend Express Request type
 declare global {
@@ -15,14 +16,19 @@ declare global {
   }
 }
 
-/** Require a valid JWT in Authorization header */
+/** Require a valid session.
+ *\n * Extraction du jeton (Lot 1 — sécurité) :
+ *   1. cookie HttpOnly `fiduciaire_session` (navigateur — aucune exposition JS) ;
+ *   2. en-tête `Authorization: Bearer` en repli (clients programmatiques, tests).
+ */
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith("Bearer ")) {
+  const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const token = (req.cookies?.[SESSION_COOKIE] as string | undefined) ?? bearerToken;
+
+  if (!token) {
     return res.status(401).json({ error: "Token manquant ou invalide" });
   }
-
-  const token = authHeader.slice(7);
   const payload = verifyToken(token);
   if (!payload) {
     return res.status(401).json({ error: "Token expiré ou invalide" });

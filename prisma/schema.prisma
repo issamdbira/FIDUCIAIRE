@@ -3,8 +3,8 @@
 // =============================================================================
 
 generator client {
-  provider          = "prisma-client-js"
-  binaryTargets     = ["native", "rhel-openssl-3.0.x"]
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -17,17 +17,17 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 enum RoleUtilisateur {
-  PROPRIETAIRE   // Propriétaire fiduciaire — accès global
-  GESTIONNAIRE   // Gestionnaire paie/comptable — accès limité par workspace
-  LECTEUR        // Lecture seule
-  CLIENT_VIEWER  // Client lecteur — accès limité à ses propres données
+  PROPRIETAIRE // Propriétaire fiduciaire — accès global
+  GESTIONNAIRE // Gestionnaire paie/comptable — accès limité par workspace
+  LECTEUR // Lecture seule
+  CLIENT_VIEWER // Client lecteur — accès limité à ses propres données
 }
 
 enum StatutValidation {
-  EN_ATTENTE     // Inscription en attente de validation
-  VALIDE         // Compte validé
-  REFUSE         // Inscription refusée
-  SUSPENDU       // Compte suspendu
+  EN_ATTENTE // Inscription en attente de validation
+  VALIDE // Compte validé
+  REFUSE // Inscription refusée
+  SUSPENDU // Compte suspendu
 }
 
 enum CivilStatus {
@@ -43,8 +43,8 @@ enum ContactType {
 }
 
 enum StatutClient {
-  ACTIVE      // Entreprise cliente active
-  ARCHIVED    // Archivée — historique conservé, pas de suppression
+  ACTIVE // Entreprise cliente active
+  ARCHIVED // Archivée — historique conservé, pas de suppression
 }
 
 enum SecteurActivite {
@@ -58,19 +58,19 @@ enum SecteurActivite {
 // --- Phase 3 : Contrats & Référentiels ---
 
 enum TypeContrat {
-  CDI             // Contrat à durée indéterminée
-  CDD             // Contrat à durée déterminée
-  TEMPS_PARTIEL   // Temps partiel (CDI ou CDD avec horaire réduit)
-  SAISONNIER      // Contrat saisonnier
-  STAGE           // Stage / PFE
-  INTERIM         // Intérim
+  CDI // Contrat à durée indéterminée
+  CDD // Contrat à durée déterminée
+  TEMPS_PARTIEL // Temps partiel (CDI ou CDD avec horaire réduit)
+  SAISONNIER // Contrat saisonnier
+  STAGE // Stage / PFE
+  INTERIM // Intérim
 }
 
 enum StatutContrat {
-  ACTIF           // Contrat en cours
-  SUSPENDU        // Contrat suspendu (maladie, etc.)
-  RESILIE         // Contrat résilié
-  TERMINE         // Contrat arrivé à échéance (CDD, saisonnier)
+  ACTIF // Contrat en cours
+  SUSPENDU // Contrat suspendu (maladie, etc.)
+  RESILIE // Contrat résilié
+  TERMINE // Contrat arrivé à échéance (CDD, saisonnier)
 }
 
 enum JourSemaine {
@@ -84,27 +84,27 @@ enum JourSemaine {
 }
 
 enum CategorieRegle {
-  CNSS            // Règles CNSS (taux salarial/patronal, plafonds)
-  IRPP            // Barème IRPP (tranches, déductions)
-  CSS             // Contribution de solidarité sociale
-  FRAIS_PRO       // Frais professionnels
-  DEDUCTION       // Déductions fiscales (chef famille, enfant, etc.)
-  RETRAITE        // Retraite / CNRPS
-  ACCIDENT        // Accident de travail / AT-MP
-  GENERAL         // Règle générale
+  CNSS // Règles CNSS (taux salarial/patronal, plafonds)
+  IRPP // Barème IRPP (tranches, déductions)
+  CSS // Contribution de solidarité sociale
+  FRAIS_PRO // Frais professionnels
+  DEDUCTION // Déductions fiscales (chef famille, enfant, etc.)
+  RETRAITE // Retraite / CNRPS
+  ACCIDENT // Accident de travail / AT-MP
+  GENERAL // Règle générale
 }
 
 // Phase 10 — Type d'espace métier (immuable après création)
 enum TypeEspace {
-  CABINET       // Cabinet professionnel : accès délégué vers des espaces Entreprise
-  ENTREPRISE    // Société autonome gérant sa propre paie
+  CABINET // Cabinet professionnel : accès délégué vers des espaces Entreprise
+  ENTREPRISE // Société autonome gérant sa propre paie
 }
 
 // Phase 10 — Cycle de vie d'une liaison d'accès délégué
 enum StatutDelegation {
-  PENDING       // Code de liaison généré par l'entreprise, pas encore accepté
-  ACTIVE        // Liaison active — le cabinet accède à l'espace cible
-  REVOKED       // Liaison révoquée (par l'entreprise ou le cabinet)
+  PENDING // Code de liaison généré par l'entreprise, pas encore accepté
+  ACTIVE // Liaison active — le cabinet accède à l'espace cible
+  REVOKED // Liaison révoquée (par l'entreprise ou le cabinet)
 }
 
 // ---------------------------------------------------------------------------
@@ -112,18 +112,19 @@ enum StatutDelegation {
 // ---------------------------------------------------------------------------
 
 model users {
-  id                String              @id @default(cuid())
-  email             String              @unique
-  passwordHash      String              // Hash bcrypt — JAMAIS en clair
-  fullName          String
-  role              RoleUtilisateur     @default(GESTIONNAIRE)
-  statut            StatutValidation    @default(EN_ATTENTE)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  id           String           @id @default(cuid())
+  email        String           @unique
+  passwordHash String // Hash bcrypt — JAMAIS en clair
+  fullName     String
+  role         RoleUtilisateur  @default(GESTIONNAIRE)
+  statut       StatutValidation @default(EN_ATTENTE)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
-  sessions          Session[]
-  workspace_members workspace_members[]
-  invitations_creees invitations[]        @relation("InvitationsCreees")
+  sessions           Session[]
+  workspace_members  workspace_members[]
+  invitations_creees invitations[]       @relation("InvitationsCreees")
+  resets_creees      password_resets[]   @relation("ResetsCrees")
 
   @@map("users")
 }
@@ -135,11 +136,11 @@ model users {
 model Session {
   id        String   @id @default(cuid())
   userId    String
-  token     String   @unique   // JWT jti pour lookup/révocation
+  token     String   @unique // JWT jti pour lookup/révocation
   expiresAt DateTime
   createdAt DateTime @default(now())
 
-  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  users users @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
@@ -149,30 +150,30 @@ model Session {
 // ---------------------------------------------------------------------------
 
 model workspaces {
-  id                String              @id @default(cuid())
-  name              String
-  type              TypeEspace          @default(CABINET) // CABINET | ENTREPRISE — immuable après création
-  matriculeCnss     String?
-  codeExploitation  String?
-  matriculeFiscal   String?
-  address           String?
-  tauxAtMp          Float               @default(0.01)
-  secteur           String              @default("non_agricole")
-  archivedAt        DateTime?           // null = actif ; utilisé p.ex. après fusion de cabinets (données préservées, espace masqué)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  id               String     @id @default(cuid())
+  name             String
+  type             TypeEspace @default(CABINET) // CABINET | ENTREPRISE — immuable après création
+  matriculeCnss    String?
+  codeExploitation String?
+  matriculeFiscal  String?
+  address          String?
+  tauxAtMp         Float      @default(0.01)
+  secteur          String     @default("non_agricole")
+  archivedAt       DateTime? // null = actif ; utilisé p.ex. après fusion de cabinets (données préservées, espace masqué)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 
-  contacts                contacts[]
-  employees               employees[]
-  payroll_configs         PayrollConfig?
-  workspace_members       workspace_members[]
-  client_companies        ClientCompany[]
-  convention_collectives  ConventionCollective[]
-  regles_reglementaires   RegleReglementaire[]
-  attendance_imports      AttendanceImport[]
-  invitations             invitations[]
-  delegations_as_cabinet  delegated_access[] @relation("DelegationCabinet")
-  delegations_as_target   delegated_access[] @relation("DelegationTarget")
+  contacts               contacts[]
+  employees              employees[]
+  payroll_configs        PayrollConfig?
+  workspace_members      workspace_members[]
+  client_companies       ClientCompany[]
+  convention_collectives ConventionCollective[]
+  regles_reglementaires  RegleReglementaire[]
+  attendance_imports     AttendanceImport[]
+  invitations            invitations[]
+  delegations_as_cabinet delegated_access[]     @relation("DelegationCabinet")
+  delegations_as_target  delegated_access[]     @relation("DelegationTarget")
 
   @@index([type])
   @@map("workspaces")
@@ -188,8 +189,8 @@ model workspace_members {
   role        RoleUtilisateur @default(GESTIONNAIRE)
   joinedAt    DateTime        @default(now())
 
-  users       users           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspaces  workspaces      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  users      users      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaces workspaces @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@id([userId, workspaceId])
   @@map("workspace_members")
@@ -202,19 +203,41 @@ model workspace_members {
 model invitations {
   id          String          @id @default(cuid())
   workspaceId String
-  email       String          // Email invité (informatif — le lien suffit)
+  email       String // Email invité (informatif — le lien suffit)
   role        RoleUtilisateur @default(GESTIONNAIRE)
   tokenHash   String          @unique // sha256 du token transmis dans le lien
-  expiresAt   DateTime        // J+7 à la création
-  usedAt      DateTime?       // null = en attente
-  createdBy   String          // PROPRIETAIRE émetteur
+  expiresAt   DateTime // J+7 à la création
+  usedAt      DateTime? // null = en attente
+  createdBy   String // PROPRIETAIRE émetteur
   createdAt   DateTime        @default(now())
 
-  workspaces  workspaces      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  users       users           @relation("InvitationsCreees", fields: [createdBy], references: [id], onDelete: Cascade)
+  workspaces workspaces @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  users      users      @relation("InvitationsCreees", fields: [createdBy], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
   @@map("invitations")
+}
+
+// ---------------------------------------------------------------------------
+// Lot 1 — Récupération de compte : liens de réinitialisation à usage unique
+// ---------------------------------------------------------------------------
+// Même mécanique éprouvée que les invitations (token 64 hex, hash sha256 en
+// base, TTL 24 h, usage unique). Sans service e-mail en V1, le lien copiable
+// est généré par le PROPRIETAIRE depuis la gestion des membres et transmis
+// par son propre canal — l'utilisateur bloque jamais sans recours.
+model password_resets {
+  id        String    @id @default(cuid())
+  email     String // Email du compte à réinitialiser
+  tokenHash String    @unique // sha256 du token transmis dans le lien
+  expiresAt DateTime // H+24 à la création
+  usedAt    DateTime? // null = en attente
+  createdBy String // PROPRIETAIRE émetteur
+  createdAt DateTime  @default(now())
+
+  users users @relation("ResetsCrees", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@map("password_resets")
 }
 
 // ---------------------------------------------------------------------------
@@ -238,17 +261,17 @@ model invitations {
 
 model delegated_access {
   id                 String           @id @default(cuid())
-  cabinetWorkspaceId String?          // null tant que le code n'a pas été accepté par un cabinet
-  targetWorkspaceId  String           // L'espace Entreprise ciblé (jamais null)
+  cabinetWorkspaceId String? // null tant que le code n'a pas été accepté par un cabinet
+  targetWorkspaceId  String // L'espace Entreprise ciblé (jamais null)
   statut             StatutDelegation @default(PENDING)
   code               String?          @unique // Code de liaison (uniquement en PENDING)
-  expiresAt          DateTime?        // Expiration du code (PENDING uniquement, J+7)
-  createdByUserId    String           // Générateur du code (propriétaire de l'espace cible)
+  expiresAt          DateTime? // Expiration du code (PENDING uniquement, J+7)
+  createdByUserId    String // Générateur du code (propriétaire de l'espace cible)
   createdAt          DateTime         @default(now())
   revokedAt          DateTime?
 
-  cabinet_workspace  workspaces?      @relation("DelegationCabinet", fields: [cabinetWorkspaceId], references: [id], onDelete: SetNull)
-  target_workspace   workspaces       @relation("DelegationTarget", fields: [targetWorkspaceId], references: [id], onDelete: Cascade)
+  cabinet_workspace workspaces? @relation("DelegationCabinet", fields: [cabinetWorkspaceId], references: [id], onDelete: SetNull)
+  target_workspace  workspaces  @relation("DelegationTarget", fields: [targetWorkspaceId], references: [id], onDelete: Cascade)
 
   @@unique([cabinetWorkspaceId, targetWorkspaceId])
   @@index([cabinetWorkspaceId])
@@ -267,9 +290,9 @@ model delegated_access {
 
 model migration_map {
   id              String    @id @default(cuid())
-  oldWorkspaceId  String    // Workspace cabinet d'origine
+  oldWorkspaceId  String // Workspace cabinet d'origine
   clientCompanyId String    @unique // Le ClientCompany migré
-  newWorkspaceId  String    // L'espace ENTREPRISE créé
+  newWorkspaceId  String // L'espace ENTREPRISE créé
   status          String    @default("EXECUTED") // EXECUTED | REVERSED
   executedAt      DateTime  @default(now())
   reversedAt      DateTime?
@@ -284,42 +307,42 @@ model migration_map {
 // ---------------------------------------------------------------------------
 
 model PayrollConfig {
-  id                                String          @id @default(cuid())
-  workspaceId                       String          @unique
+  id          String @id @default(cuid())
+  workspaceId String @unique
 
   // CNSS
-  cnssSalarialNonAgricole           Float           @default(0.0968)   // 9.68%
-  cnssPatronalNonAgricole           Float           @default(0.1707)   // 17.07%
-  cnssSalarialAgricole              Float           @default(0.0699)   // 6.99%
-  cnssPatronalAgricole              Float           @default(0.1248)   // 12.48%
+  cnssSalarialNonAgricole Float @default(0.0968) // 9.68%
+  cnssPatronalNonAgricole Float @default(0.1707) // 17.07%
+  cnssSalarialAgricole    Float @default(0.0699) // 6.99%
+  cnssPatronalAgricole    Float @default(0.1248) // 12.48%
 
   // CSS — 0% en 2026 (Loi de finances, art. 23)
-  cssActive                         Boolean         @default(false)
-  cssTaux                           Float           @default(0)
-  cssSeuilExonerationAnnuel         Int             @default(5000)
+  cssActive                 Boolean @default(false)
+  cssTaux                   Float   @default(0)
+  cssSeuilExonerationAnnuel Int     @default(5000)
 
   // Frais professionnels
-  fraisProTauxActifs                Float           @default(0.10)
-  fraisProPlafondActifsAnnuel       Int             @default(2000)
-  fraisProTauxRetraites             Float           @default(0.25)
+  fraisProTauxActifs          Float @default(0.10)
+  fraisProPlafondActifsAnnuel Int   @default(2000)
+  fraisProTauxRetraites       Float @default(0.25)
 
   // Déductions IRPP
-  deductionChefFamille              Int             @default(300)
-  deductionEnfant                   Int             @default(100)
-  deductionEtudiant                 Int             @default(1000)
-  plafondNombreEnfantsEtudiants     Int             @default(4)
-  deductionInfirme                  Int             @default(2000)
+  deductionChefFamille          Int @default(300)
+  deductionEnfant               Int @default(100)
+  deductionEtudiant             Int @default(1000)
+  plafondNombreEnfantsEtudiants Int @default(4)
+  deductionInfirme              Int @default(2000)
 
   // Parents en charge
-  parentsEnChargeActif              Boolean         @default(false)
-  parentsEnChargeTaux               Float           @default(0.05)
-  parentsEnChargePlafondParAnnuel   Int             @default(450)
+  parentsEnChargeActif            Boolean @default(false)
+  parentsEnChargeTaux             Float   @default(0.05)
+  parentsEnChargePlafondParAnnuel Int     @default(450)
 
-  createdAt                         DateTime        @default(now())
-  updatedAt                         DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  workspaces                        workspaces      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  tranches_irpp                     tranches_irpp[]
+  workspaces    workspaces      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tranches_irpp tranches_irpp[]
 
   @@map("payroll_configs")
 }
@@ -329,7 +352,7 @@ model PayrollConfig {
 // ---------------------------------------------------------------------------
 
 model tranches_irpp {
-  id              String        @id @default(cuid())
+  id              String @id @default(cuid())
   payrollConfigId String
   min             Int
   max             Int?
@@ -347,40 +370,40 @@ model tranches_irpp {
 // ---------------------------------------------------------------------------
 
 model ClientCompany {
-  id              String            @id @default(cuid())
-  workspaceId     String            // Isolation stricte par fiduciaire
-  raisonSociale   String            // Nom officiel de l'entreprise
-  matriculeFiscal String?           // Identifiant fiscal tunisien
-  matriculeCnss   String?           // Matricule CNSS employeur
-  codeTVA         String?           // Code TVA
-  secteur         SecteurActivite   @default(NON_AGRICOLE)
-  statut          StatutClient      @default(ACTIVE)
+  id              String          @id @default(cuid())
+  workspaceId     String // Isolation stricte par fiduciaire
+  raisonSociale   String // Nom officiel de l'entreprise
+  matriculeFiscal String? // Identifiant fiscal tunisien
+  matriculeCnss   String? // Matricule CNSS employeur
+  codeTVA         String? // Code TVA
+  secteur         SecteurActivite @default(NON_AGRICOLE)
+  statut          StatutClient    @default(ACTIVE)
 
   // Adresse siège social
-  adresse         String?
-  ville           String?
-  gouvernorat     String?
-  codePostal      String?
+  adresse     String?
+  ville       String?
+  gouvernorat String?
+  codePostal  String?
 
   // Contact principal
-  contactNom      String?
+  contactNom       String?
   contactTelephone String?
-  contactEmail    String?
+  contactEmail     String?
 
   // Métadonnées
-  archivedAt      DateTime?         // Date d'archivage (null si ACTIVE)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  archivedAt DateTime? // Date d'archivage (null si ACTIVE)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   // Relations
-  workspaces                workspaces              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  establishments            Establishment[]
-  employees                 employees[]
-  work_calendars            WorkCalendar[]
-  convention_adaptations    ConventionAdaptation[]
-  attendance_imports        AttendanceImport[]
-  payroll_periods           PayrollPeriod[]
-  cnss_declarations         CNSSDeclaration[]
+  workspaces             workspaces             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  establishments         Establishment[]
+  employees              employees[]
+  work_calendars         WorkCalendar[]
+  convention_adaptations ConventionAdaptation[]
+  attendance_imports     AttendanceImport[]
+  payroll_periods        PayrollPeriod[]
+  cnss_declarations      CNSSDeclaration[]
 
   @@index([workspaceId])
   @@index([statut])
@@ -393,29 +416,29 @@ model ClientCompany {
 // ---------------------------------------------------------------------------
 
 model Establishment {
-  id              String        @id @default(cuid())
-  clientCompanyId String        // Lien vers l'entreprise cliente
-  designation     String        // "Siège social", "Usine Tunis", etc.
-  isPrincipal     Boolean       @default(false)   // Établissement principal
+  id              String  @id @default(cuid())
+  clientCompanyId String // Lien vers l'entreprise cliente
+  designation     String // "Siège social", "Usine Tunis", etc.
+  isPrincipal     Boolean @default(false) // Établissement principal
 
   // Adresse spécifique
-  adresse         String?
-  ville           String?
-  gouvernorat     String?
-  codePostal      String?
+  adresse     String?
+  ville       String?
+  gouvernorat String?
+  codePostal  String?
 
   // Identifiants spécifiques à l'établissement
-  matriculeCnss   String?       // Peut différer de celui de l'entreprise
+  matriculeCnss    String? // Peut différer de celui de l'entreprise
   codeExploitation String?
 
   // Métadonnées
-  isActive        Boolean       @default(true)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  client_company  ClientCompany @relation(fields: [clientCompanyId], references: [id], onDelete: Cascade)
-  employees       employees[]
+  client_company ClientCompany @relation(fields: [clientCompanyId], references: [id], onDelete: Cascade)
+  employees      employees[]
 
   @@index([clientCompanyId])
   @@index([isPrincipal])
@@ -427,24 +450,24 @@ model Establishment {
 // ---------------------------------------------------------------------------
 
 model employees {
-  id               String        @id @default(cuid())
+  id               String      @id @default(cuid())
   workspaceId      String
-  clientCompanyId  String?       // Entreprise cliente (Phase 2)
-  establishmentId  String?       // Établissement rattaché (Phase 2)
+  clientCompanyId  String? // Entreprise cliente (Phase 2)
+  establishmentId  String? // Établissement rattaché (Phase 2)
   matriculeCnss    String
   firstName        String
   lastName         String
   baseSalary       Float
-  civilStatus      CivilStatus   @default(CELIBATAIRE)
-  numberOfChildren Int           @default(0)
-  isActive         Boolean       @default(true)
-  hiredAt          DateTime?     // Date d'embauche
-  departedAt       DateTime?     // Date de départ
+  civilStatus      CivilStatus @default(CELIBATAIRE)
+  numberOfChildren Int         @default(0)
+  isActive         Boolean     @default(true)
+  hiredAt          DateTime? // Date d'embauche
+  departedAt       DateTime? // Date de départ
 
-  workspaces       workspaces    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  client_company   ClientCompany? @relation(fields: [clientCompanyId], references: [id], onDelete: SetNull)
-  establishment    Establishment? @relation(fields: [establishmentId], references: [id], onDelete: SetNull)
-  contracts        Contract[]
+  workspaces           workspaces          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client_company       ClientCompany?      @relation(fields: [clientCompanyId], references: [id], onDelete: SetNull)
+  establishment        Establishment?      @relation(fields: [establishmentId], references: [id], onDelete: SetNull)
+  contracts            Contract[]
   attendance_summaries AttendanceSummary[]
 
   @@index([workspaceId])
@@ -460,7 +483,7 @@ model contacts {
   type            ContactType
   matriculeFiscal String?
 
-  workspaces      workspaces  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaces workspaces @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@map("contacts")
 }
@@ -474,28 +497,28 @@ model contacts {
 // ---------------------------------------------------------------------------
 
 model Contract {
-  id                    String          @id @default(cuid())
-  employeeId            String          // Employé concerné
-  workspaceId           String          // Isolation workspace
+  id          String @id @default(cuid())
+  employeeId  String // Employé concerné
+  workspaceId String // Isolation workspace
 
-  type                  TypeContrat     // CDI, CDD, temps partiel, saisonnier, etc.
-  statut                StatutContrat   @default(ACTIF)
+  type   TypeContrat // CDI, CDD, temps partiel, saisonnier, etc.
+  statut StatutContrat @default(ACTIF)
 
-  poste                 String          // Intitulé du poste
-  conventionCollectiveId String?       // Convention collective applicable
+  poste                  String // Intitulé du poste
+  conventionCollectiveId String? // Convention collective applicable
 
-  dateDebut             DateTime        // Date de début du contrat
-  dateFin               DateTime?       // Date de fin (null pour CDI)
-  periodeEssai          Int?            // Période d'essai en jours
+  dateDebut    DateTime // Date de début du contrat
+  dateFin      DateTime? // Date de fin (null pour CDI)
+  periodeEssai Int? // Période d'essai en jours
 
-  motifRupture          String?         // Motif de résiliation/fin
-  dateRupture           DateTime?       // Date effective de rupture
+  motifRupture String? // Motif de résiliation/fin
+  dateRupture  DateTime? // Date effective de rupture
 
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  employee              employees       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee              employees             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   convention_collective ConventionCollective? @relation(fields: [conventionCollectiveId], references: [id], onDelete: SetNull)
   versions              ContractVersion[]
 
@@ -512,29 +535,29 @@ model Contract {
 // ---------------------------------------------------------------------------
 
 model ContractVersion {
-  id                      String    @id @default(cuid())
-  contractId              String    // Contrat parent
+  id         String @id @default(cuid())
+  contractId String // Contrat parent
 
-  salaireBrut             Float     // Salaire brut mensuel à cette version
-  salaireBrutAnnuel       Float?    // Salaire brut annuel (si applicable)
+  salaireBrut       Float // Salaire brut mensuel à cette version
+  salaireBrutAnnuel Float? // Salaire brut annuel (si applicable)
 
-  coefficient             String?   // Coefficient convention collective
-  echelon                 String?   // Échelon dans la grille salariale
-  conventionCollectiveId  String?   // Convention applicable à cette version (peut changer)
+  coefficient            String? // Coefficient convention collective
+  echelon                String? // Échelon dans la grille salariale
+  conventionCollectiveId String? // Convention applicable à cette version (peut changer)
 
-  heuresHebdomadaires     Float?    // Heures par semaine (pour temps partiel)
-  heuresMensuelles        Float?    // Heures par mois
+  heuresHebdomadaires Float? // Heures par semaine (pour temps partiel)
+  heuresMensuelles    Float? // Heures par mois
 
-  motifChangement         String    // "augmentation", "promotion", "changement_convention", "avenant", etc.
-  dateEffet               DateTime  // Date d'entrée en vigueur de cette version
+  motifChangement String // "augmentation", "promotion", "changement_convention", "avenant", etc.
+  dateEffet       DateTime // Date d'entrée en vigueur de cette version
 
-  note                    String?   // Note libre (commentaire RH)
+  note String? // Note libre (commentaire RH)
 
-  createdAt               DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   // Relations
-  contract                Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  convention_collective   ConventionCollective? @relation(fields: [conventionCollectiveId], references: [id], onDelete: SetNull)
+  contract              Contract              @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  convention_collective ConventionCollective? @relation(fields: [conventionCollectiveId], references: [id], onDelete: SetNull)
 
   @@index([contractId])
   @@index([dateEffet])
@@ -546,24 +569,24 @@ model ContractVersion {
 // ---------------------------------------------------------------------------
 
 model ConventionCollective {
-  id                String            @id @default(cuid())
-  workspaceId       String            // Workspace propriétaire
+  id          String @id @default(cuid())
+  workspaceId String // Workspace propriétaire
 
-  code              String            // Code officiel (ex: "CC-51", "CC-18")
-  nom               String            // Nom complet (ex: "Commerce et Distribution")
-  secteur           SecteurActivite   @default(NON_AGRICOLE)
+  code    String // Code officiel (ex: "CC-51", "CC-18")
+  nom     String // Nom complet (ex: "Commerce et Distribution")
+  secteur SecteurActivite @default(NON_AGRICOLE)
 
-  organisme         String?           // Organisme émetteur
-  datePublication   DateTime?         // Date de publication au JORT
+  organisme       String? // Organisme émetteur
+  datePublication DateTime? // Date de publication au JORT
 
-  isActive          Boolean           @default(true)
-  isSystem          Boolean           @default(false)  // true = convention système, protégée (non modifiable/supprimable)
+  isActive Boolean @default(true)
+  isSystem Boolean @default(false) // true = convention système, protégée (non modifiable/supprimable)
 
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  workspaces        workspaces        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaces        workspaces                  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   articles          ConventionArticle[]
   grille_salaires   ConventionGrilleSalariale[]
   adaptations       ConventionAdaptation[]
@@ -581,17 +604,17 @@ model ConventionCollective {
 // ---------------------------------------------------------------------------
 
 model ConventionArticle {
-  id                    String    @id @default(cuid())
+  id                     String @id @default(cuid())
   conventionCollectiveId String
 
-  numero                String    // Numéro d'article (ex: "1", "12.3")
-  titre                 String    // Titre court
-  contenu               String    // Contenu / description de l'article
+  numero  String // Numéro d'article (ex: "1", "12.3")
+  titre   String // Titre court
+  contenu String // Contenu / description de l'article
 
-  ordre                 Int       // Ordre d'affichage
+  ordre Int // Ordre d'affichage
 
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
   convention_collective ConventionCollective @relation(fields: [conventionCollectiveId], references: [id], onDelete: Cascade)
@@ -606,17 +629,17 @@ model ConventionArticle {
 // ---------------------------------------------------------------------------
 
 model ConventionGrilleSalariale {
-  id                    String    @id @default(cuid())
+  id                     String @id @default(cuid())
   conventionCollectiveId String
 
-  coefficient           String    // Coefficient hiérarchique (ex: "200", "250")
-  echelon               String    // Échelon (ex: "1", "2", "3")
-  salaireMinimum        Float     // Salaire minimum mensuel en DT
+  coefficient    String // Coefficient hiérarchique (ex: "200", "250")
+  echelon        String // Échelon (ex: "1", "2", "3")
+  salaireMinimum Float // Salaire minimum mensuel en DT
 
-  dateEffet             DateTime  // Date d'entrée en vigueur
-  dateFin               DateTime? // Date de fin (null = toujours en vigueur)
+  dateEffet DateTime // Date d'entrée en vigueur
+  dateFin   DateTime? // Date de fin (null = toujours en vigueur)
 
-  createdAt             DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   // Relations
   convention_collective ConventionCollective @relation(fields: [conventionCollectiveId], references: [id], onDelete: Cascade)
@@ -632,22 +655,22 @@ model ConventionGrilleSalariale {
 // ---------------------------------------------------------------------------
 
 model ConventionAdaptation {
-  id                    String    @id @default(cuid())
-  conventionCollectiveId String    // Convention source
-  clientCompanyId       String    // Client qui adapte
-  workspaceId           String    // Isolation workspace
+  id                     String @id @default(cuid())
+  conventionCollectiveId String // Convention source
+  clientCompanyId        String // Client qui adapte
+  workspaceId            String // Isolation workspace
 
-  articleNumero         String    // Numéro de l'article adapté
-  adaptationDescription String    // Description de l'adaptation
+  articleNumero         String // Numéro de l'article adapté
+  adaptationDescription String // Description de l'adaptation
 
-  valeurOriginale       String?   // Valeur d'origine (pour traçabilité)
-  valeurAdaptee         String?   // Nouvelle valeur adaptée
+  valeurOriginale String? // Valeur d'origine (pour traçabilité)
+  valeurAdaptee   String? // Nouvelle valeur adaptée
 
-  dateEffet             DateTime  // Date d'entrée en vigueur
-  dateFin               DateTime? // Date de fin (null = toujours en vigueur)
+  dateEffet DateTime // Date d'entrée en vigueur
+  dateFin   DateTime? // Date de fin (null = toujours en vigueur)
 
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
   convention_collective ConventionCollective @relation(fields: [conventionCollectiveId], references: [id], onDelete: Cascade)
@@ -665,23 +688,23 @@ model ConventionAdaptation {
 // ---------------------------------------------------------------------------
 
 model WorkCalendar {
-  id                    String    @id @default(cuid())
-  clientCompanyId       String    // Entreprise cliente
-  workspaceId           String    // Isolation workspace
+  id              String @id @default(cuid())
+  clientCompanyId String // Entreprise cliente
+  workspaceId     String // Isolation workspace
 
-  nom                   String    // "Standard 48h", "Administratif 40h", etc.
-  heuresHebdomadaires   Float     // Heures par semaine (ex: 48.0, 40.0)
-  joursMoisStandard     Int       // Jours ouvrés standard par mois (ex: 26)
-  heuresMoisStandard    Float     // Heures standard par mois (ex: 208.0)
+  nom                 String // "Standard 48h", "Administratif 40h", etc.
+  heuresHebdomadaires Float // Heures par semaine (ex: 48.0, 40.0)
+  joursMoisStandard   Int // Jours ouvrés standard par mois (ex: 26)
+  heuresMoisStandard  Float // Heures standard par mois (ex: 208.0)
 
-  isActive              Boolean   @default(true)
+  isActive Boolean @default(true)
 
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  client_company        ClientCompany @relation(fields: [clientCompanyId], references: [id], onDelete: Cascade)
-  jours                WorkCalendarDay[]
+  client_company ClientCompany     @relation(fields: [clientCompanyId], references: [id], onDelete: Cascade)
+  jours          WorkCalendarDay[]
 
   @@index([clientCompanyId])
   @@index([workspaceId])
@@ -693,15 +716,15 @@ model WorkCalendar {
 // ---------------------------------------------------------------------------
 
 model WorkCalendarDay {
-  id              String      @id @default(cuid())
-  workCalendarId  String
+  id             String @id @default(cuid())
+  workCalendarId String
 
-  jour            JourSemaine // Jour de la semaine
-  estOuvre        Boolean     // true = jour ouvré, false = jour de repos
-  heuresTravail   Float       // Heures de travail ce jour (0 si repos, 8 si complet, 4 si demi-journée)
+  jour          JourSemaine // Jour de la semaine
+  estOuvre      Boolean // true = jour ouvré, false = jour de repos
+  heuresTravail Float // Heures de travail ce jour (0 si repos, 8 si complet, 4 si demi-journée)
 
   // Relations
-  work_calendar   WorkCalendar @relation(fields: [workCalendarId], references: [id], onDelete: Cascade)
+  work_calendar WorkCalendar @relation(fields: [workCalendarId], references: [id], onDelete: Cascade)
 
   @@unique([workCalendarId, jour])
   @@map("work_calendar_days")
@@ -714,29 +737,29 @@ model WorkCalendarDay {
 // ---------------------------------------------------------------------------
 
 model RegleReglementaire {
-  id              String          @id @default(cuid())
-  workspaceId     String          // Workspace (isolation)
+  id          String @id @default(cuid())
+  workspaceId String // Workspace (isolation)
 
-  code            String          // Code unique (ex: "CNSS_SALARIAL_NA", "IRPP_TRANCHE_1_TAUX")
-  categorie       CategorieRegle  // Catégorie (CNSS, IRPP, CSS, etc.)
-  description     String          // Description lisible
+  code        String // Code unique (ex: "CNSS_SALARIAL_NA", "IRPP_TRANCHE_1_TAUX")
+  categorie   CategorieRegle // Catégorie (CNSS, IRPP, CSS, etc.)
+  description String // Description lisible
 
-  valeur          Float           // Valeur numérique (taux, montant, etc.)
-  unite           String          // Unité : "%", "DT", "jours", "mois", etc.
+  valeur Float // Valeur numérique (taux, montant, etc.)
+  unite  String // Unité : "%", "DT", "jours", "mois", etc.
 
-  dateDebut       DateTime        // Date de début de validité
-  dateFin         DateTime?       // Date de fin (null = règle toujours en vigueur)
+  dateDebut DateTime // Date de début de validité
+  dateFin   DateTime? // Date de fin (null = règle toujours en vigueur)
 
-  source          String?         // Source officielle (ex: "cnss.tn", "Loi finances 2026")
-  reference       String?         // Référence légale (ex: "Art. 23 LF 2026")
+  source    String? // Source officielle (ex: "cnss.tn", "Loi finances 2026")
+  reference String? // Référence légale (ex: "Art. 23 LF 2026")
 
-  isSystem        Boolean         @default(false)  // true = règle système protégée
+  isSystem Boolean @default(false) // true = règle système protégée
 
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  workspaces      workspaces      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaces workspaces @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, code, dateDebut])
   @@index([workspaceId])
@@ -753,16 +776,16 @@ model RegleReglementaire {
 // --- Phase 4 Enums ---
 
 enum StatutImport {
-  EN_COURS       // Import en cours de traitement
-  VALIDE         // Import validé (aucune anomalie bloquante)
-  ANOMALIES     // Import avec anomalies (partiel)
-  REJETE         // Import rejeté (anomalies bloquantes)
+  EN_COURS // Import en cours de traitement
+  VALIDE // Import validé (aucune anomalie bloquante)
+  ANOMALIES // Import avec anomalies (partiel)
+  REJETE // Import rejeté (anomalies bloquantes)
 }
 
 enum StatutVariablePaie {
-  PROPOSEE       // Calculée automatiquement — nécessite validation humaine
-  VALIDEe        // Validée par un gestionnaire/propriétaire
-  REFUSEe        // Refusée — à corriger
+  PROPOSEE // Calculée automatiquement — nécessite validation humaine
+  VALIDEe // Validée par un gestionnaire/propriétaire
+  REFUSEe // Refusée — à corriger
 }
 
 // ---------------------------------------------------------------------------
@@ -770,33 +793,33 @@ enum StatutVariablePaie {
 // ---------------------------------------------------------------------------
 
 model AttendanceImport {
-  id              String          @id @default(cuid())
-  workspaceId     String          // Isolation workspace
-  clientCompanyId String          // Entreprise cliente concernée
+  id              String @id @default(cuid())
+  workspaceId     String // Isolation workspace
+  clientCompanyId String // Entreprise cliente concernée
 
-  mois            Int             // Mois du pointage (1-12)
-  annee           Int             // Année du pointage
+  mois  Int // Mois du pointage (1-12)
+  annee Int // Année du pointage
 
-  nomFichier      String          // Nom du fichier importé
-  tailleFichier   Int?            // Taille en octets
+  nomFichier    String // Nom du fichier importé
+  tailleFichier Int? // Taille en octets
 
-  statut          StatutImport    @default(EN_COURS)
+  statut StatutImport @default(EN_COURS)
 
-  lignesTotal     Int             // Nombre total de lignes lues
-  lignesOk        Int             // Lignes sans anomalie
-  lignesAnomalie  Int             // Lignes avec anomalie
+  lignesTotal    Int // Nombre total de lignes lues
+  lignesOk       Int // Lignes sans anomalie
+  lignesAnomalie Int // Lignes avec anomalie
 
-  anomalies       Json?           // Tableau JSON des anomalies détectées
+  anomalies Json? // Tableau JSON des anomalies détectées
   // Format: [{ ligne: 2, matricule: "X", type: "MATRICULE_INCONNU", message: "..." }, ...]
 
-  importedBy      String?         // userId de l'importeur
+  importedBy String? // userId de l'importeur
 
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  workspaces      workspaces      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  client_company  ClientCompany   @relation(fields: [clientCompanyId], references: [id], onDelete: Cascade)
+  workspaces     workspaces          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client_company ClientCompany       @relation(fields: [clientCompanyId], references: [id], onDelete: Cascade)
   summaries      AttendanceSummary[]
 
   @@index([workspaceId])
@@ -810,34 +833,34 @@ model AttendanceImport {
 // ---------------------------------------------------------------------------
 
 model AttendanceSummary {
-  id                  String    @id @default(cuid())
-  importId            String    // Import parent
-  employeeId          String    // Employé pointé
-  workspaceId         String    // Isolation workspace
+  id          String @id @default(cuid())
+  importId    String // Import parent
+  employeeId  String // Employé pointé
+  workspaceId String // Isolation workspace
 
-  matricule           String    // Matricule CNSS (dénormalisé pour rapidité)
-  nomPrenom           String    // Nom & prénom (dénormalisé)
+  matricule String // Matricule CNSS (dénormalisé pour rapidité)
+  nomPrenom String // Nom & prénom (dénormalisé)
 
-  joursTravaillesReels   Float    // Jours travaillés réels
-  congesPayes            Float    // Jours de congés payés
-  absencesJustifiees    Float    // Absences justifiées (maladie, etc.)
-  absencesNonJustifiees Float    // Absences non justifiées
-  heuresSupplementaires  Float    // Heures supplémentaires
+  joursTravaillesReels  Float // Jours travaillés réels
+  congesPayes           Float // Jours de congés payés
+  absencesJustifiees    Float // Absences justifiées (maladie, etc.)
+  absencesNonJustifiees Float // Absences non justifiées
+  heuresSupplementaires Float // Heures supplémentaires
 
   // Champs calculés après import
-  joursOuvresTotal      Float?    // Jours ouvrés total = travaillés + congés + abs. justifiées
-  joursCalendairesMois  Int?      // Jours calendaires du mois (pour contrôle)
-  tauxPresence          Float?    // Taux de présence = joursTravaillesReels / joursOuvresTotal
+  joursOuvresTotal     Float? // Jours ouvrés total = travaillés + congés + abs. justifiées
+  joursCalendairesMois Int? // Jours calendaires du mois (pour contrôle)
+  tauxPresence         Float? // Taux de présence = joursTravaillesReels / joursOuvresTotal
 
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  attendance_import     AttendanceImport @relation(fields: [importId], references: [id], onDelete: Cascade)
-  employee              employees       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  variables             PayrollVariable[]
+  attendance_import AttendanceImport  @relation(fields: [importId], references: [id], onDelete: Cascade)
+  employee          employees         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  variables         PayrollVariable[]
 
-  @@unique([importId, employeeId])  // Un seul résumé par employé par import
+  @@unique([importId, employeeId]) // Un seul résumé par employé par import
   @@index([importId])
   @@index([employeeId])
   @@index([workspaceId])
@@ -849,44 +872,44 @@ model AttendanceSummary {
 // ---------------------------------------------------------------------------
 
 model PayrollVariable {
-  id                  String              @id @default(cuid())
-  summaryId           String              // Résumé de pointage parent
-  employeeId          String              // Employé concerné
-  workspaceId         String              // Isolation workspace
+  id          String @id @default(cuid())
+  summaryId   String // Résumé de pointage parent
+  employeeId  String // Employé concerné
+  workspaceId String // Isolation workspace
 
-  mois                Int                 // Mois
-  annee               Int                 // Année
+  mois  Int // Mois
+  annee Int // Année
 
   // Variables de paie calculées à partir du pointage
-  salaireBrutMensuel  Float               // Salaire brut mensuel (du contrat)
-  tauxPresence        Float               // Taux de présence (0-1)
-  salaireBrutEffectif Float               // Salaire brut effectif = brut × tauxPresence
-  heuresSupplementaires Float             // Heures supp.
-  montantHeuresSup    Float?              // Montant HS = heuresSupp × tauxHS
+  salaireBrutMensuel    Float // Salaire brut mensuel (du contrat)
+  tauxPresence          Float // Taux de présence (0-1)
+  salaireBrutEffectif   Float // Salaire brut effectif = brut × tauxPresence
+  heuresSupplementaires Float // Heures supp.
+  montantHeuresSup      Float? // Montant HS = heuresSupp × tauxHS
 
-  joursTravailles     Float               // Jours travaillés
-  joursAbsence        Float               // Total absences (justifiées + non justifiées)
-  montantAbsence      Float?              // Déduction pour absence
+  joursTravailles Float // Jours travaillés
+  joursAbsence    Float // Total absences (justifiées + non justifiées)
+  montantAbsence  Float? // Déduction pour absence
 
   // Retenues calculées (seront remplies par le moteur de paie Phase 5)
-  retenueCnss         Float?              // Retenue CNSS salariale
-  retenueIrpp         Float?              // Retenue IRPP
-  retenueCss          Float?              // Retenue CSS
+  retenueCnss Float? // Retenue CNSS salariale
+  retenueIrpp Float? // Retenue IRPP
+  retenueCss  Float? // Retenue CSS
 
   // Résultat
-  salaireNet          Float?              // Salaire net (calculé)
+  salaireNet Float? // Salaire net (calculé)
 
   // Validation humaine
-  statut              StatutVariablePaie  @default(PROPOSEE)
-  validatedBy         String?             // userId du valideur
-  validatedAt         DateTime?           // Date de validation
-  noteValidation      String?             // Note du valideur
+  statut         StatutVariablePaie @default(PROPOSEE)
+  validatedBy    String? // userId du valideur
+  validatedAt    DateTime? // Date de validation
+  noteValidation String? // Note du valideur
 
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  attendance_summary  AttendanceSummary @relation(fields: [summaryId], references: [id], onDelete: Cascade)
+  attendance_summary AttendanceSummary @relation(fields: [summaryId], references: [id], onDelete: Cascade)
 
   @@index([summaryId])
   @@index([employeeId])
@@ -903,17 +926,17 @@ model PayrollVariable {
 // --- Phase 5 Enums ---
 
 enum StatutPeriodePaie {
-  OPEN          // Période ouverte — saisie/pointage en cours
-  CALCULATED    // Paie calculée — en attente de revue
-  TO_REVIEW     // Marquée pour revue — nécessite vérification
-  VALIDATED     // Validée par un gestionnaire/propriétaire
-  CLOSED        // Clôturée — impossible de modifier
+  OPEN // Période ouverte — saisie/pointage en cours
+  CALCULATED // Paie calculée — en attente de revue
+  TO_REVIEW // Marquée pour revue — nécessite vérification
+  VALIDATED // Validée par un gestionnaire/propriétaire
+  CLOSED // Clôturée — impossible de modifier
 }
 
 enum NiveauAnomalie {
-  BLOQUANTE       // Empêche la validation de la période
-  AVERTISSEMENT   // Validation possible avec justification
-  INFORMATION     // Simple information, pas de blocage
+  BLOQUANTE // Empêche la validation de la période
+  AVERTISSEMENT // Validation possible avec justification
+  INFORMATION // Simple information, pas de blocage
 }
 
 // ---------------------------------------------------------------------------
@@ -921,48 +944,48 @@ enum NiveauAnomalie {
 // ---------------------------------------------------------------------------
 
 model PayrollPeriod {
-  id                String              @id @default(cuid())
-  workspaceId       String              // Isolation workspace
-  clientCompanyId   String              // Entreprise cliente
+  id              String @id @default(cuid())
+  workspaceId     String // Isolation workspace
+  clientCompanyId String // Entreprise cliente
 
-  mois              Int                 // Mois (1-12)
-  annee             Int                 // Année
+  mois  Int // Mois (1-12)
+  annee Int // Année
 
-  statut            StatutPeriodePaie   @default(OPEN)
+  statut StatutPeriodePaie @default(OPEN)
 
   // Dates de cycle
-  dateOuverture     DateTime            @default(now())  // Ouverture automatique
-  dateCalcul       DateTime?            // Date du calcul en masse
-  dateValidation   DateTime?            // Date de validation
-  dateCloture      DateTime?            // Date de clôture
+  dateOuverture  DateTime  @default(now()) // Ouverture automatique
+  dateCalcul     DateTime? // Date du calcul en masse
+  dateValidation DateTime? // Date de validation
+  dateCloture    DateTime? // Date de clôture
 
   // Compteurs
-  nombreSalaries   Int                 @default(0)  // Salariés actifs calculés
-  nombreBulletins  Int                 @default(0)  // Bulletins générés
-  nombreAnomalies  Int                 @default(0)  // Anomalies (bloquantes + avertissements)
+  nombreSalaries  Int @default(0) // Salariés actifs calculés
+  nombreBulletins Int @default(0) // Bulletins générés
+  nombreAnomalies Int @default(0) // Anomalies (bloquantes + avertissements)
 
   // Utilisateurs du cycle
-  openedBy         String?             // userId ouverture
-  calculatedBy     String?             // userId calcul
-  validatedBy      String?             // userId validation
-  closedBy         String?             // userId clôture
+  openedBy     String? // userId ouverture
+  calculatedBy String? // userId calcul
+  validatedBy  String? // userId validation
+  closedBy     String? // userId clôture
 
-  note             String?             // Note libre
+  note String? // Note libre
 
   // Phase 8 — Paie complémentaire
-  isComplementary  Boolean             @default(false)  // True si paie complémentaire (régularisation)
-  parentPeriodId   String?             // Période parente si complémentaire
-  motifComplement  String?             // Motif de la régularisation
+  isComplementary Boolean @default(false) // True si paie complémentaire (régularisation)
+  parentPeriodId  String? // Période parente si complémentaire
+  motifComplement String? // Motif de la régularisation
 
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  client_company   ClientCompany       @relation(fields: [clientCompanyId], references: [id], onDelete: Cascade)
-  payslips         Payslip[]
-  anomalies        Anomaly[]
+  client_company ClientCompany @relation(fields: [clientCompanyId], references: [id], onDelete: Cascade)
+  payslips       Payslip[]
+  anomalies      Anomaly[]
 
-  @@unique([workspaceId, clientCompanyId, annee, mois])  // Une seule période par client/mois/année
+  @@unique([workspaceId, clientCompanyId, annee, mois]) // Une seule période par client/mois/année
   @@index([workspaceId])
   @@index([clientCompanyId])
   @@index([statut])
@@ -975,66 +998,66 @@ model PayrollPeriod {
 // ---------------------------------------------------------------------------
 
 model Payslip {
-  id                String              @id @default(cuid())
-  periodId          String              // Période de paie parent
-  employeeId        String              // Employé
-  workspaceId       String              // Isolation workspace
-  clientCompanyId   String              // Entreprise cliente
+  id              String @id @default(cuid())
+  periodId        String // Période de paie parent
+  employeeId      String // Employé
+  workspaceId     String // Isolation workspace
+  clientCompanyId String // Entreprise cliente
 
-  mois              Int                 // Mois
-  annee             Int                 // Année
+  mois  Int // Mois
+  annee Int // Année
 
-  matricule         String              // Matricule CNSS (dénormalisé)
-  nomPrenom         String              // Nom & prénom (dénormalisé)
+  matricule String // Matricule CNSS (dénormalisé)
+  nomPrenom String // Nom & prénom (dénormalisé)
 
   // --- Données d'entrée ---
-  contratId         String?             // Contrat actif
-  salaireBrutContractuel  Float         // Salaire brut du contrat
-  tauxPresence      Float               // Taux de présence (0-1)
-  joursTravailles   Float               // Jours travaillés réels
-  joursAbsence      Float               // Total absences
-  heuresSupplementaires Float           // Heures supp.
+  contratId              String? // Contrat actif
+  salaireBrutContractuel Float // Salaire brut du contrat
+  tauxPresence           Float // Taux de présence (0-1)
+  joursTravailles        Float // Jours travaillés réels
+  joursAbsence           Float // Total absences
+  heuresSupplementaires  Float // Heures supp.
 
   // --- Calculs intermédiaires ---
-  salaireBrutEffectif   Float           // Brut effectif = brut contractuel × tauxPresence
-  montantHeuresSup      Float           // Montant heures supp.
-  montantAbsence        Float           // Déduction absence
-  baseImposable         Float           // Base imposable avant déductions
+  salaireBrutEffectif Float // Brut effectif = brut contractuel × tauxPresence
+  montantHeuresSup    Float // Montant heures supp.
+  montantAbsence      Float // Déduction absence
+  baseImposable       Float // Base imposable avant déductions
 
   // --- Cotisations sociales (salariales) ---
-  retenueCnssSalarial   Float           // Retenue CNSS salariale
-  retenueCss            Float           // Retenue CSS
-  totalRetenuesSalariales Float         // Total retenues salariales
+  retenueCnssSalarial     Float // Retenue CNSS salariale
+  retenueCss              Float // Retenue CSS
+  totalRetenuesSalariales Float // Total retenues salariales
 
   // --- Cotisations patronales ---
-  retenueCnssPatronal   Float           // Retenue CNSS patronale
+  retenueCnssPatronal Float // Retenue CNSS patronale
 
   // --- Fiscal ---
-  fraisProfessionnels   Float           // Frais professionnels
-  netImposableAvantDeductions Float     // Net imposable avant déductions familiales
-  deductionChefFamille  Float           // Déduction chef de famille
-  deductionEnfants     Float           // Déduction enfants
-  deductionParents     Float           // Déduction parents en charge
-  totalDeductionsFamiliales Float       // Total déductions familiales
-  baseIrpp              Float           // Base IRPP après déductions
-  retenueIrpp           Float           // Retenue IRPP calculée
+  fraisProfessionnels         Float // Frais professionnels
+  netImposableAvantDeductions Float // Net imposable avant déductions familiales
+  deductionChefFamille        Float // Déduction chef de famille
+  deductionEnfants            Float // Déduction enfants
+  deductionParents            Float // Déduction parents en charge
+  totalDeductionsFamiliales   Float // Total déductions familiales
+  baseIrpp                    Float // Base IRPP après déductions
+  retenueIrpp                 Float // Retenue IRPP calculée
 
   // --- Résultat ---
-  salaireNet            Float           // Salaire net à payer
-  tauxHoraire           Float?          // Taux horaire effectif
+  salaireNet  Float // Salaire net à payer
+  tauxHoraire Float? // Taux horaire effectif
 
   // --- Métadonnées ---
-  statut                StatutVariablePaie  @default(PROPOSEE)  // PROPOSEE → VALIDEE après validation période
-  calculatedAt          DateTime            @default(now())
-  validatedAt           DateTime?
+  statut       StatutVariablePaie @default(PROPOSEE) // PROPOSEE → VALIDEE après validation période
+  calculatedAt DateTime           @default(now())
+  validatedAt  DateTime?
 
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  payroll_period        PayrollPeriod   @relation(fields: [periodId], references: [id], onDelete: Cascade)
-  anomalies             Anomaly[]
-  documents             DocumentStorage[]
+  payroll_period PayrollPeriod     @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  anomalies      Anomaly[]
+  documents      DocumentStorage[]
 
   @@index([periodId])
   @@index([employeeId])
@@ -1050,28 +1073,28 @@ model Payslip {
 // ---------------------------------------------------------------------------
 
 model Anomaly {
-  id                String              @id @default(cuid())
-  periodId          String              // Période de paie
-  payslipId         String?             // Bulletin concerné (null = anomalie globale période)
-  employeeId        String?             // Employé concerné
-  workspaceId       String              // Isolation workspace
+  id          String  @id @default(cuid())
+  periodId    String // Période de paie
+  payslipId   String? // Bulletin concerné (null = anomalie globale période)
+  employeeId  String? // Employé concerné
+  workspaceId String // Isolation workspace
 
-  code              String              // Code anomalie (ex: "ABSENCE_EXCESSIVE", "SALAIRE_NEGATIF")
-  niveau            NiveauAnomalie      // BLOQUANTE, AVERTISSEMENT, INFORMATION
-  message           String              // Message descriptif
+  code    String // Code anomalie (ex: "ABSENCE_EXCESSIVE", "SALAIRE_NEGATIF")
+  niveau  NiveauAnomalie // BLOQUANTE, AVERTISSEMENT, INFORMATION
+  message String // Message descriptif
 
   // Résolution
-  estResolue        Boolean             @default(false)
-  resoluPar         String?             // userId résolution
-  resoluAt          DateTime?           // Date résolution
-  noteResolution    String?             // Justification de résolution
+  estResolue     Boolean   @default(false)
+  resoluPar      String? // userId résolution
+  resoluAt       DateTime? // Date résolution
+  noteResolution String? // Justification de résolution
 
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  payroll_period    PayrollPeriod       @relation(fields: [periodId], references: [id], onDelete: Cascade)
-  payslip           Payslip?            @relation(fields: [payslipId], references: [id], onDelete: SetNull)
+  payroll_period PayrollPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  payslip        Payslip?      @relation(fields: [payslipId], references: [id], onDelete: SetNull)
 
   @@index([periodId])
   @@index([payslipId])
@@ -1087,19 +1110,19 @@ model Anomaly {
 // =============================================================================
 
 enum TypeDocument {
-  BULLETIN_PDF    // Bulletin de paie PDF
-  EXPORT_EXCEL    // Export Excel des données de paie
-  EXPORT_CSV      // Export CSV des données de paie
-  EXPORT_CNSS     // Export fichier CNSS
-  RAPPORT_GROUPE  // Rapport groupé (tous bulletins d'une période)
-  ATTESTATION     // Attestation divers
+  BULLETIN_PDF // Bulletin de paie PDF
+  EXPORT_EXCEL // Export Excel des données de paie
+  EXPORT_CSV // Export CSV des données de paie
+  EXPORT_CNSS // Export fichier CNSS
+  RAPPORT_GROUPE // Rapport groupé (tous bulletins d'une période)
+  ATTESTATION // Attestation divers
 }
 
 enum StatutCNSS {
-  BROUILLON      // Déclaration en cours de constitution
-  CONTROLEE      // Vérifiée par le gestionnaire
-  GENEREE        // Fichier export généré
-  ARCHIVEE       // Archivée après soumission
+  BROUILLON // Déclaration en cours de constitution
+  CONTROLEE // Vérifiée par le gestionnaire
+  GENEREE // Fichier export généré
+  ARCHIVEE // Archivée après soumission
 }
 
 // ---------------------------------------------------------------------------
@@ -1108,32 +1131,32 @@ enum StatutCNSS {
 // ---------------------------------------------------------------------------
 
 model DocumentStorage {
-  id                String          @id @default(cuid())
-  workspaceId       String          // Isolation workspace
-  clientCompanyId   String?         // Client concerné (optionnel pour exports globaux)
-  payslipId         String?         // Bulletin lié (si bulletin PDF)
-  cnssDeclarationId String?         // Déclaration CNSS liée (si export CNSS)
+  id                String  @id @default(cuid())
+  workspaceId       String // Isolation workspace
+  clientCompanyId   String? // Client concerné (optionnel pour exports globaux)
+  payslipId         String? // Bulletin lié (si bulletin PDF)
+  cnssDeclarationId String? // Déclaration CNSS liée (si export CNSS)
 
-  type              TypeDocument    // Type de document
-  nomFichier        String          // Nom du fichier (ex: "bulletin_2026-06_ahmed.pdf")
-  cheminStockage    String          // Chemin/URL de stockage (local ou OSS)
-  tailleOctets     Int?            // Taille en octets
-  mimeType          String          // "application/pdf", "application/vnd.ms-excel", etc.
+  type           TypeDocument // Type de document
+  nomFichier     String // Nom du fichier (ex: "bulletin_2026-06_ahmed.pdf")
+  cheminStockage String // Chemin/URL de stockage (local ou OSS)
+  tailleOctets   Int? // Taille en octets
+  mimeType       String // "application/pdf", "application/vnd.ms-excel", etc.
 
   // Métadonnées
-  mois              Int?            // Mois concerné
-  annee             Int?            // Année concernée
-  periodePaieId     String?         // Référence période de paie
+  mois          Int? // Mois concerné
+  annee         Int? // Année concernée
+  periodePaieId String? // Référence période de paie
 
-  generePar         String?         // userId auteur
-  genereAt          DateTime        @default(now())
+  generePar String? // userId auteur
+  genereAt  DateTime @default(now())
 
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  payslip           Payslip?        @relation(fields: [payslipId], references: [id], onDelete: SetNull)
-  cnss_declaration  CNSSDeclaration? @relation(fields: [cnssDeclarationId], references: [id], onDelete: SetNull)
+  payslip          Payslip?         @relation(fields: [payslipId], references: [id], onDelete: SetNull)
+  cnss_declaration CNSSDeclaration? @relation(fields: [cnssDeclarationId], references: [id], onDelete: SetNull)
 
   @@index([workspaceId])
   @@index([clientCompanyId])
@@ -1148,49 +1171,49 @@ model DocumentStorage {
 // =============================================================================
 
 model CNSSDeclaration {
-  id                    String          @id @default(cuid())
-  workspaceId           String          // Isolation workspace
-  clientCompanyId       String          // Entreprise cliente
+  id              String @id @default(cuid())
+  workspaceId     String // Isolation workspace
+  clientCompanyId String // Entreprise cliente
 
-  trimestre             String          // Ex: "2026-Q3"
-  annee                 Int             // Année
-  numeroTrimestre       Int             // 1, 2, 3 ou 4
+  trimestre       String // Ex: "2026-Q3"
+  annee           Int // Année
+  numeroTrimestre Int // 1, 2, 3 ou 4
 
   // Totaux agrégés
-  nombreSalaries                Int             @default(0)
-  totalSalaires                 Float           @default(0)
-  totalCotisationsSalariales    Float           @default(0)
-  totalCotisationsPatronales    Float           @default(0)
+  nombreSalaries             Int   @default(0)
+  totalSalaires              Float @default(0)
+  totalCotisationsSalariales Float @default(0)
+  totalCotisationsPatronales Float @default(0)
 
   // Vérification CNSS
-  matriculesManquants   Int             @default(0)  // Nb salariés sans matricule CNSS
+  matriculesManquants Int @default(0) // Nb salariés sans matricule CNSS
 
   // Statut
-  statut                StatutCNSS      @default(BROUILLON)
+  statut StatutCNSS @default(BROUILLON)
 
   // Périodes de paie source (3 mois du trimestre)
-  periodeMois1Id        String?         // ID période mois 1 du trimestre
-  periodeMois2Id        String?         // ID période mois 2 du trimestre
-  periodeMois3Id        String?         // ID période mois 3 du trimestre
+  periodeMois1Id String? // ID période mois 1 du trimestre
+  periodeMois2Id String? // ID période mois 2 du trimestre
+  periodeMois3Id String? // ID période mois 3 du trimestre
 
   // Utilisateurs du cycle
-  createdBy             String?
-  controlledBy          String?
-  generatedBy           String?
-  archivedBy            String?
+  createdBy    String?
+  controlledBy String?
+  generatedBy  String?
+  archivedBy   String?
 
-  dateControle          DateTime?
-  dateGeneration        DateTime?
-  dateArchivage         DateTime?
+  dateControle   DateTime?
+  dateGeneration DateTime?
+  dateArchivage  DateTime?
 
-  note                  String?
+  note String?
 
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  client_company        ClientCompany   @relation(fields: [clientCompanyId], references: [id], onDelete: Cascade)
-  cnss_documents        DocumentStorage[]
+  client_company ClientCompany     @relation(fields: [clientCompanyId], references: [id], onDelete: Cascade)
+  cnss_documents DocumentStorage[]
 
   @@unique([workspaceId, clientCompanyId, annee, numeroTrimestre])
   @@index([workspaceId])
@@ -1205,16 +1228,16 @@ model CNSSDeclaration {
 // =============================================================================
 
 model AuditLog {
-  id              String    @id @default(cuid())
-  workspaceId     String    // Workspace concerné
-  userId          String?   // Utilisateur ayant effectué l'action
-  action          String    // Code action (ex: PERIOD_CLOSE, CNSS_GENERATE, COMPLEMENTARY_CREATE)
-  entity          String    // Entité concernée (ex: PayrollPeriod, CNSSDeclaration)
-  entityId        String?   // ID de l'entité
-  details         String?   // Détails JSON ou texte
-  ipAddress       String?   // Adresse IP
+  id          String  @id @default(cuid())
+  workspaceId String? // Workspace concerné (null = événement d'authentification)
+  userId      String? // Utilisateur ayant effectué l'action
+  action      String // Code action (ex: PERIOD_CLOSE, CNSS_GENERATE, COMPLEMENTARY_CREATE)
+  entity      String // Entité concernée (ex: PayrollPeriod, CNSSDeclaration)
+  entityId    String? // ID de l'entité
+  details     String? // Détails JSON ou texte
+  ipAddress   String? // Adresse IP
 
-  createdAt       DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   @@index([workspaceId])
   @@index([userId])
