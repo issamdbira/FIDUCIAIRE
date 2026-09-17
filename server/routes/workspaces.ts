@@ -181,19 +181,22 @@ router.post("/:ws/transfer", requireAuth, requireWorkspaceOwner(), async (req: R
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      await tx.workspace_members.update({
-        where: { userId_workspaceId: { userId: newOwnerId, workspaceId: ws } },
-        data: { role: "PROPRIETAIRE" },
-      });
+      // Lot 1 — ordre imposé par l'index unique workspace_members_proprietaire_unique :
+      // RÉTROGRADER l'ancien propriétaire AVANT de promouvoir le nouveau,
+      // sinon la transaction est rejetée par la contrainte (doublon temporaire).
       await tx.workspace_members.update({
         where: { userId_workspaceId: { userId: req.user!.userId, workspaceId: ws } },
         data: { role: "GESTIONNAIRE" },
       });
+      await tx.workspace_members.update({
+        where: { userId_workspaceId: { userId: newOwnerId, workspaceId: ws } },
+        data: { role: "PROPRIETAIRE" },
+      });
       // Le rôle global de l'utilisateur suit pour la cohérence des vues simples
-      await tx.users.update({ where: { id: newOwnerId }, data: { role: "PROPRIETAIRE" } });
       await tx.users.update({ where: { id: req.user!.userId }, data: { role: "GESTIONNAIRE" } });
+      await tx.users.update({ where: { id: newOwnerId }, data: { role: "PROPRIETAIRE" } });
       return true;
-    });
+    }, { timeout: 15_000 });
 
     await auditLog({
       workspaceId: ws,
