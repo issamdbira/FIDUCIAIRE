@@ -407,4 +407,67 @@ describe("Parcours métier E2E — Entreprise (réel, sans mock)", () => {
       expect(e.entityId).toBeTruthy(); // l'ancien undefined → NULL crashait le dashboard
     }
   });
+
+  // ── RÉGRESSION 6-F : les conventions ne sont PLUS orphelines — la grille
+  //    salariale est contrôlée au calcul (AVERTISSEMENT, non bloquant) ──────
+  test("18. [6-F] Convention collective → contrôle de grille au calcul", async () => {
+    // 1) Convention + grille (minimum 5000 DT pour coefficient 100, échelon 1)
+    const conv = await authed("post", "/api/conventions").send({
+      workspaceId,
+      code: "E2E-CONV",
+      nom: "Convention E2E Test",
+      secteur: "NON_AGRICOLE",
+    });
+    expect(conv.status).toBe(201);
+    const conventionId = conv.body.id as string;
+
+    const grille = await authed("post", `/api/conventions/${workspaceId}/${conventionId}/grille`).send({
+      coefficient: "100",
+      echelon: "1",
+      salaireMinimum: 5000,
+      dateEffet: "2026-01-01",
+    });
+    expect(grille.status).toBe(201);
+
+    // 2) Nouvelle version de contrat SOUS le minimum, rattachée à la
+    //    convention — dateEffet ≤ date du calcul (le moteur retient la
+    //    dernière version en vigueur À LA DATE DE CALCUL, pas celle du mois)
+    const version = await authed("post", `/api/contracts/${workspaceId}/${contractId}/versions`).send({
+      salaireBrut: 1500, // < 5000
+      coefficient: "100",
+      echelon: "1",
+      conventionCollectiveId: conventionId,
+      motifChangement: "test_convention",
+      dateEffet: "2026-09-10",
+    });
+    expect(version.status).toBe(201);
+
+    // 3) Période d'octobre + calcul
+    const periode = await authed("post", "/api/payroll/periods").send({
+      workspaceId,
+      clientCompanyId: company!.id,
+      mois: 10,
+      annee: 2026,
+    });
+    expect(periode.status).toBe(201);
+    const octobreId = periode.body.id as string;
+
+    const calc = await authed("patch", `/api/payroll/${workspaceId}/periods/${octobreId}/calculate`);
+    expect(calc.status).toBe(200);
+    expect(calc.body.period.statut).toBe("CALCULATED"); // AVERTISSEMENT ≠ bloquant
+
+    // 4) L'anomalie SALAIRE_SOUS_GRILLE existe, avec un message exploitable
+    const anomalles = await authed("get", `/api/payroll/${workspaceId}/anomalies?periodId=${octobreId}`);
+    expect(anomalles.status).toBe(200);
+    const list = anomalles.body as Array<{ code: string; niveau: string; message: string }>;
+    const sousGrille = list.find((a) => a.code === "SALAIRE_SOUS_GRILLE");
+    expect(sousGrille).toBeDefined();
+    expect(sousGrille!.niveau).toBe("AVERTISSEMENT");
+    expect(sousGrille!.message).toContain("5000.000 DT");
+    expect(sousGrille!.message).toContain("E2E-CONV");
+
+    // 5) La validation reste possible (l'avertissement ne bloque pas)
+    const validate = await authed("patch", `/api/payroll/${workspaceId}/periods/${octobreId}/validate`);
+    expect(validate.status).toBe(200);
+  });
 });

@@ -443,6 +443,11 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
     }
   }
 
+  // 6-F (réévaluation) : cache conventions (code/nom) pour les messages
+  // d'anomalie de grille — évite un N+1 quand plusieurs salariés partagent
+  // la même convention collective.
+  const conventionCache = new Map<string, { code: string; nom: string } | null>();
+
   // 7. Pour chaque salarié, calculer le bulletin
   for (const employee of employees) {
     try {
@@ -479,6 +484,52 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
       }
 
       const contractVersion = contract.versions[0];
+
+      // ── 6-F (réévaluation) : liaison conventions collectives → moteur ──
+      // Le contrat ou sa version peuvent référencer une convention. Si la
+      // grille salariale de cette convention définit un minimum pour le
+      // couple (coefficient, échelon) en vigueur à la date de calcul, un
+      // salaire inférieur est signalé en AVERTISSEMENT — NON bloquant :
+      // le moteur n'impose pas de montant, il informe (la régularisation
+      // appartient à l'employeur/négociation). Jusqu'ici les conventions
+      // étaient une fonction orpheline : aucune référence dans la paie.
+      const conventionId = contractVersion.conventionCollectiveId ?? contract.conventionCollectiveId;
+      if (conventionId && contractVersion.coefficient && contractVersion.echelon) {
+        const dateFinMoisPaie = new Date(Date.UTC(input.annee, input.mois, 0)); // dernier jour du mois de paie
+        const grille = await prisma.conventionGrilleSalariale.findFirst({
+          where: {
+            conventionCollectiveId: conventionId,
+            coefficient: contractVersion.coefficient,
+            echelon: contractVersion.echelon,
+            dateEffet: { lte: dateCalcul },
+            OR: [{ dateFin: null }, { dateFin: { gte: dateFinMoisPaie } }],
+          },
+          orderBy: { dateEffet: "desc" },
+        });
+        if (grille && contractVersion.salaireBrut < grille.salaireMinimum) {
+          if (!conventionCache.has(conventionId)) {
+            conventionCache.set(
+              conventionId,
+              await prisma.conventionCollective.findUnique({
+                where: { id: conventionId },
+                select: { code: true, nom: true },
+              }),
+            );
+          }
+          const conv = conventionCache.get(conventionId);
+          await prisma.anomaly.create({
+            data: {
+              periodId: input.periodId,
+              employeeId: employee.id,
+              workspaceId: input.workspaceId,
+              code: "SALAIRE_SOUS_GRILLE",
+              niveau: "AVERTISSEMENT",
+              message: `Salaire brut (${contractVersion.salaireBrut.toFixed(3)} DT) inférieur au minimum conventionnel (${grille.salaireMinimum.toFixed(3)} DT) — ${conv ? `convention ${conv.code} ${conv.nom}, ` : ""}coefficient ${contractVersion.coefficient}, échelon ${contractVersion.echelon}`,
+            },
+          });
+          result.anomaliesCreated++;
+        }
+      }
 
       // Pointage
       const attendance = attendanceByEmployee.get(employee.id);
