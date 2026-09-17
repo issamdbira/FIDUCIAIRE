@@ -408,13 +408,13 @@ export default function GestionClients() {
         >
           {estEntreprise ? "Ma société" : "Gestion des Clients"}
         </h1>
-        {peutEcrire && !estEntreprise && (
+        {peutEcrire && (!estEntreprise || nbActifs === 0) && (
           <Button
             onClick={openCreateForm}
             className="gap-2 bg-[#1e3a5f] hover:bg-[#1e3a5f]/90 text-white"
           >
             <Plus className="size-4" />
-            Ajouter (dans cet espace)
+            {estEntreprise ? "Créer ma société" : "Ajouter (dans cet espace)"}
           </Button>
         )}
       </div>
@@ -494,6 +494,8 @@ export default function GestionClients() {
                     : "Aucun client archivé"
                   : filter === "ACTIVE" && nbArchives > 0
                   ? `Aucun client actif — ${nbArchives} client${nbArchives > 1 ? "s" : ""} archivé${nbArchives > 1 ? "s" : ""} (onglet « Archivés »)`
+                  : estEntreprise
+                  ? "La fiche de votre société n'existe pas encore — sans elle, impossible d'y rattacher salariés et paie. Créez-la ci-dessus."
                   : "Aucun client. Créez votre premier client."}
               </p>
             </div>
@@ -618,12 +620,20 @@ export default function GestionClients() {
               className="text-primary"
               style={{ fontFamily: "Montserrat, sans-serif" }}
             >
-              {editingClient ? "Modifier le client" : "Nouveau client"}
+              {estEntreprise
+                ? editingClient
+                  ? "Modifier ma société"
+                  : "Créer ma société"
+                : editingClient
+                  ? "Modifier le client"
+                  : "Nouveau client"}
             </DialogTitle>
             <DialogDescription>
-              {editingClient
-                ? "Modifiez les informations de l'entreprise cliente."
-                : "Renseignez les informations de la nouvelle entreprise cliente."}
+              {estEntreprise
+                ? "Renseignez les informations de votre société — elles figureront sur les bulletins et déclarations."
+                : editingClient
+                  ? "Modifiez les informations de l'entreprise cliente."
+                  : "Renseignez les informations de la nouvelle entreprise cliente."}
             </DialogDescription>
           </DialogHeader>
 
