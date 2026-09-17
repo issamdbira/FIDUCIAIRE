@@ -167,7 +167,7 @@ router.patch("/:ws/periods/:id/validate", requireAuth, requireWorkspaceWriter(),
     if (bloquantes > 0) return res.status(400).json({ error: `${bloquantes} anomalie(s) bloquante(s) non résolue(s)` });
 
     // Valider tous les bulletins de la période
-    await prisma.payslip.updateMany({ where: { periodId: id }, data: { statut: "VALIDEe", validatedAt: new Date() } });
+    await prisma.payslip.updateMany({ where: { periodId: id }, data: { statut: "VALIDEE", validatedAt: new Date() } });
 
     const updated = await prisma.payrollPeriod.update({
       where: { id },

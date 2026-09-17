@@ -198,9 +198,9 @@ function getVariableStatutBadge(statut: string) {
   switch (statut) {
     case "PROPOSEE":
       return <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100">En attente</Badge>;
-    case "VALIDEe":
+    case "VALIDEE":
       return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100">Validée</Badge>;
-    case "REFUSEe":
+    case "REFUSEE":
       return <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100">Refusée</Badge>;
     default:
       return <Badge variant="secondary">{statut}</Badge>;
@@ -860,8 +860,8 @@ export default function GestionPointage() {
                     <SelectContent>
                       <SelectItem value="TOUTES">Toutes</SelectItem>
                       <SelectItem value="PROPOSEE">En attente</SelectItem>
-                      <SelectItem value="VALIDEe">Validée</SelectItem>
-                      <SelectItem value="REFUSEe">Refusée</SelectItem>
+                      <SelectItem value="VALIDEE">Validée</SelectItem>
+                      <SelectItem value="REFUSEE">Refusée</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

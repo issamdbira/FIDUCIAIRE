@@ -461,7 +461,7 @@ router.patch("/:workspaceId/variables/:id/validate", requireAuth, requireWorkspa
     const updated = await prisma.payrollVariable.update({
       where: { id },
       data: {
-        statut: "VALIDEe",
+        statut: "VALIDEE",
         validatedBy: req.user!.userId,
         validatedAt: new Date(),
         noteValidation: noteValidation || null,
@@ -474,7 +474,7 @@ router.patch("/:workspaceId/variables/:id/validate", requireAuth, requireWorkspa
       action: "ATTENDANCE_VARIABLE_VALIDATE",
       entity: "PayrollVariable",
       entityId: id,
-      details: JSON.stringify({ avant: existing.statut, apres: "VALIDEe", note: noteValidation || null }),
+      details: JSON.stringify({ avant: existing.statut, apres: "VALIDEE", note: noteValidation || null }),
       ipAddress: req.ip,
     });
 
@@ -505,7 +505,7 @@ router.patch("/:workspaceId/variables/:id/refuse", requireAuth, requireWorkspace
     const updated = await prisma.payrollVariable.update({
       where: { id },
       data: {
-        statut: "REFUSEe",
+        statut: "REFUSEE",
         validatedBy: req.user!.userId,
         validatedAt: new Date(),
         noteValidation: noteValidation || null,
@@ -518,7 +518,7 @@ router.patch("/:workspaceId/variables/:id/refuse", requireAuth, requireWorkspace
       action: "ATTENDANCE_VARIABLE_REFUSE",
       entity: "PayrollVariable",
       entityId: id,
-      details: JSON.stringify({ avant: existing.statut, apres: "REFUSEe", note: noteValidation || null }),
+      details: JSON.stringify({ avant: existing.statut, apres: "REFUSEE", note: noteValidation || null }),
       ipAddress: req.ip,
     });
 

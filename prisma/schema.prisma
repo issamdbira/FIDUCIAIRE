@@ -833,8 +833,8 @@ enum StatutImport {
 
 enum StatutVariablePaie {
   PROPOSEE // Calculée automatiquement — nécessite validation humaine
-  VALIDEe // Validée par un gestionnaire/propriétaire
-  REFUSEe // Refusée — à corriger
+  VALIDEE // Validée par un gestionnaire/propriétaire
+  REFUSEE // Refusée — à corriger
 }
 
 // ---------------------------------------------------------------------------

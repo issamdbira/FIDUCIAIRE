@@ -428,7 +428,7 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
         include: {
           employee: true,
           variables: {
-            where: { statut: "VALIDEe" },
+            where: { statut: "VALIDEE" },
           },
         },
       },
