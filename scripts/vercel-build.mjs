@@ -188,11 +188,44 @@ console.log("⚙️ Step 6: Writing config.json...");
 // The function is at functions/api/[[...path]].func/
 // So dest must be "/api/[[...path]]" for Vercel to route to it.
 // The SPA fallback must EXCLUDE /api/* to avoid capturing API requests.
+//
+// Lot 2 — en-têtes de sécurité sur TOUTES les réponses (statique + SPA) :
+//   - 1re route : dest "/$1" (chemin inchangé) + en-têtes → s'applique aux
+//     assets servis par le handle filesystem ET traverse vers /api ;
+//   - la même CSP que server/lib/security-headers.ts (source commune :
+//     VITE_ANALYTICS_ENDPOINT, lue au build comme au runtime).
+const analyticsUrl = (process.env.VITE_ANALYTICS_ENDPOINT || "")
+  .trim()
+  .replace(/\/+$/, "");
+const analytics = /^https:\/\/[\w.-]+$/.test(analyticsUrl) ? analyticsUrl : null;
+const scriptSrc = `'self'${analytics ? ` ${analytics}` : ""}`;
+const connectSrc = `'self'${analytics ? ` ${analytics}` : ""}`;
+const CSP = [
+  "default-src 'self'",
+  `script-src ${scriptSrc}`,
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com data:",
+  "img-src 'self' data: blob:",
+  `connect-src ${connectSrc}`,
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join("; ");
+const EN_TETES = {
+  "Content-Security-Policy": CSP,
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+};
 fs.writeFileSync(
   path.resolve(OUTPUT, "config.json"),
   JSON.stringify({
     version: 3,
     routes: [
+      { src: "/(.*)", dest: "/$1", headers: EN_TETES },
       { handle: "filesystem" },
       { src: "/api/(.*)", dest: "/api/[[...path]]" },
       { handle: "filesystem" },

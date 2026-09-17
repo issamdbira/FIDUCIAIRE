@@ -31,6 +31,7 @@ import dashboardRoutes from "./routes/dashboard.js";
 import employeeRoutes from "./routes/employees.js";
 import workspaceRoutes from "./routes/workspaces.js";
 import prisma, { initLog, initMode, initError } from "./lib/prisma.js";
+import { enTetesSecurite } from "./lib/security-headers.js";
 
 // ---------------------------------------------------------------------------
 // Create Express app (réutilisable en local ET en serverless Vercel)
@@ -38,6 +39,9 @@ import prisma, { initLog, initMode, initError } from "./lib/prisma.js";
 
 export function createApp() {
   const app = express();
+
+  // Lot 2 — en-têtes de sécurité sur TOUTES les réponses (API et préflights)
+  app.use(enTetesSecurite);
 
   // Middleware
   app.use(cors({

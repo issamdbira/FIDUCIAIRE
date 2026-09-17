@@ -203,10 +203,19 @@ function vitePluginStorageProxy(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy()];
-
-export default defineConfig({
-  plugins,
+// Lot 2 — CSP stricte : le runtime de debug inline (vite-plugin-manus-runtime)
+// n'est injecté qu'en serveur de dev (command === "serve"). En build production
+// il est absent :
+//   - aucune balise <script> inline → script-src 'self' suffit (sans unsafe-inline) ;
+//   - ~KBs de télémétrie debug en moins sur chaque page.
+// Le collecteur et le proxy de stockage restent actifs en dev (middlewares).
+export default defineConfig(({ command }) => ({
+  plugins: [
+    react(),
+    tailwindcss(),
+    jsxLocPlugin(),
+    ...(command === "serve" ? [vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy()] : []),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
@@ -238,4 +247,4 @@ export default defineConfig({
       deny: ["**/.*"],
     },
   },
-});
+}));
