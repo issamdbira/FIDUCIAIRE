@@ -342,11 +342,9 @@ export default function GestionCNSS() {
   const handleDownload = async (decl: CnssDeclaration) => {
     if (!workspaceId) return;
     try {
-      const token = localStorage.getItem("fiduciaire_token");
+      // Lot 1 : session par cookie HttpOnly — plus de jeton localStorage
       const res = await fetch(`/api/cnss/declarations/${decl.id}/download?workspaceId=${workspaceId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include",
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

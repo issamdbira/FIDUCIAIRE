@@ -132,7 +132,12 @@ describe("Flux B — POST /api/auth/create-space (auto-inscription entreprise)",
       .send({ email: "a@b.tn", password: "MotDePasse123", fullName: "A B", companyName: "Société X" });
 
     expect(res.status).toBe(201);
-    expect(res.body.token).toBeTruthy();
+    // Lot 1 — session en cookie HttpOnly : le jeton n'est PLUS dans le corps
+    expect(res.body.token).toBeUndefined();
+    const setCookie = res.headers["set-cookie"]?.join("; ") ?? "";
+    expect(setCookie).toContain("fiduciaire_session=");
+    expect(setCookie).toContain("HttpOnly");
+    expect(setCookie).toContain("SameSite=Lax");
     // L'espace créé est de type ENTREPRISE
     expect(db.workspaces.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ type: "ENTREPRISE", name: "Société X" }) })

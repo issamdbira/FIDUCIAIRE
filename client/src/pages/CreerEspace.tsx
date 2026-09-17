@@ -13,7 +13,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
-import { api, setToken, type ApiError, type LoginResponse } from "@/lib/api";
+import { api, type ApiError, type LoginResponse } from "@/lib/api";
 import { syncActiveWorkspaceId } from "@/lib/workspace";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -79,13 +79,13 @@ export default function CreerEspace() {
         ville: form.ville || undefined,
       });
 
-      // Session immédiate (même mécanique que le login)
-      setToken(result.token);
+      // Session immédiate — Lot 1 : le serveur a posé le cookie HttpOnly,
+      // on ne stocke que le cache profil, aucune donnée de session en localStorage
       localStorage.setItem("fiduciaire_user", JSON.stringify(result.user));
       syncActiveWorkspaceId(result.user);
 
       toast.success("Votre espace entreprise est créé — bienvenue !");
-      // Rechargement complet : AuthContext relit le token au démarrage
+      // Rechargement complet : AuthContext valide le cookie via /auth/me
       window.location.href = "/";
     } catch (err) {
       const apiErr = err as ApiError;

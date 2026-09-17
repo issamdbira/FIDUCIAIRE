@@ -109,17 +109,17 @@ export default function DashboardCabinet() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("fiduciaire_token");
     // Phase 10 : dashboard scopé au CABINET ACTIF (anti-fuite inter-espaces)
+    // Lot 1 : session par cookie HttpOnly — plus de jeton localStorage
     const wsId = getWorkspaceId(user);
-    if (!token || !wsId) {
+    if (!wsId) {
       setError("unauthorized");
       setLoading(false);
       return;
     }
 
     fetch(`/api/dashboard/cabinet/${wsId}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: "include",
     })
       .then((res) => {
         if (res.status === 401 || res.status === 403) {

@@ -135,13 +135,7 @@ export default function AuditLog() {
       return;
     }
 
-    const token = localStorage.getItem("fiduciaire_token");
-    if (!token) {
-      setError("unauthorized");
-      setLoading(false);
-      return;
-    }
-
+    // Lot 1 : session par cookie HttpOnly — plus de jeton localStorage
     setLoading(true);
     setError(null);
 
@@ -154,7 +148,7 @@ export default function AuditLog() {
     if (toDate) params.set("to", toDate);
 
     fetch(`/api/payroll/${workspaceId}/audit?${params.toString()}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: "include",
     })
       .then((res) => {
         if (res.status === 401 || res.status === 403) {

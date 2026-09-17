@@ -297,10 +297,10 @@ export default function GestionPointage() {
       formData.append("mois", selectedMois);
       formData.append("annee", selectedAnnee);
 
-      const token = localStorage.getItem("fiduciaire_token");
+      // Lot 1 : session par cookie HttpOnly — plus de jeton localStorage
       const res = await fetch("/api/attendance/import", {
         method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
         body: formData,
       });
 
@@ -331,10 +331,10 @@ export default function GestionPointage() {
   // ── Download template ──
   const handleDownloadTemplate = async () => {
     try {
-      const token = localStorage.getItem("fiduciaire_token");
+      // Lot 1 : session par cookie HttpOnly
       const res = await fetch("/api/attendance/template", {
         method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
       });
 
       if (!res.ok) {

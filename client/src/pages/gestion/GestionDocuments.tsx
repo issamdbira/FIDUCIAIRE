@@ -322,13 +322,11 @@ export default function GestionDocuments() {
   const handleDownload = (doc: DocumentStorage) => {
     // Pour les bulletins PDF, utiliser la route de téléchargement dédiée
     if (doc.payslipId && doc.type === "BULLETIN_PDF") {
-      const token =
-        typeof window !== "undefined" && localStorage.getItem("fiduciaire_token");
       const url = `/api/documents/payslips/${doc.payslipId}/download?workspaceId=${workspaceId}`;
-      // Ouvrir dans un nouvel onglet avec le token dans le header n'est pas possible via window.open.
-      // On fait un fetch avec blob.
+      // Lot 1 : session par cookie HttpOnly — le cookie accompagne le fetch,
+      // on récupère le blob puis on déclenche le téléchargement.
       fetch(url, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
       })
         .then((res) => {
           if (!res.ok) throw new Error("Erreur de téléchargement");

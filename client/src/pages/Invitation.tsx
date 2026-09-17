@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calculator, CheckCircle2, KeyRound, Loader2, Mail } from "lucide-react";
 import { useLocation } from "wouter";
-import { api, setToken } from "@/lib/api";
+import { api } from "@/lib/api";
 import { syncActiveWorkspaceId } from "@/lib/workspace";
 import { toast } from "sonner";
 
@@ -79,7 +79,7 @@ export default function Invitation() {
 
     setSoumission(true);
     try {
-      const result = await api.post<{ token: string; user: { id: string; email: string; fullName: string; role: string; statut: string; workspaces: { id: string; name: string; role: string }[] } }>(
+      const result = await api.post<{ user: { id: string; email: string; fullName: string; role: string; statut: string; workspaces: { id: string; name: string; role: string }[] } }>(
         `/auth/invitation/${token}/accept`,
         {
           fullName: fullName.trim() || undefined,
@@ -87,7 +87,7 @@ export default function Invitation() {
           currentPassword: currentPassword || undefined,
         }
       );
-      setToken(result.token);
+      // Lot 1 : le serveur a posé le cookie HttpOnly — on ne stocke que le profil
       localStorage.setItem("fiduciaire_user", JSON.stringify(result.user));
       syncActiveWorkspaceId(result.user);
       toast.success(`Bienvenue — vous avez rejoint ${info?.workspaceName}`);

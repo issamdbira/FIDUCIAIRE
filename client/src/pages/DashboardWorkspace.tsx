@@ -125,20 +125,14 @@ export default function DashboardWorkspace() {
       return;
     }
 
-    const token = localStorage.getItem("fiduciaire_token");
-    if (!token) {
-      setError("unauthorized");
-      setLoading(false);
-      return;
-    }
-
+    // Lot 1 : session par cookie HttpOnly — plus de jeton localStorage
     setLoading(true);
     setError(null);
 
-    const headers = { Authorization: `Bearer ${token}` };
+    const fetchOpts = { credentials: "include" as RequestCredentials };
 
     Promise.all([
-      fetch(`/api/dashboard/workspace/${workspaceId}`, { headers }).then(
+      fetch(`/api/dashboard/workspace/${workspaceId}`, fetchOpts).then(
         (res) => {
           if (res.status === 401 || res.status === 403)
             throw new Error("unauthorized");
@@ -146,7 +140,7 @@ export default function DashboardWorkspace() {
           return res.json();
         },
       ),
-      fetch(`/api/dashboard/workspace/${workspaceId}/alerts`, { headers }).then(
+      fetch(`/api/dashboard/workspace/${workspaceId}/alerts`, fetchOpts).then(
         (res) => {
           if (res.status === 401 || res.status === 403)
             throw new Error("unauthorized");
