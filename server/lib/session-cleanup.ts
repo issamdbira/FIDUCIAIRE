@@ -3,6 +3,8 @@
 // =============================================================================
 // Problème : la table `sessions` (et `password_resets`) accumule des lignes
 // expirées à chaque connexion oubliée / lien de réinitialisation non utilisé.
+// Lot 3 : la table `login_attempts` (verrous de connexion persistés) suit le
+// même régime — ses lignes n'ont plus d'usage au-delà de 2 h.
 //
 // Solution SANS cron ni service externe :
 //   - purge « time-gated » : AU PLUS une exécution par fenêtre d'1 heure et
@@ -19,19 +21,27 @@ import prisma from "./prisma.js";
 
 const INTERVALLE_MS = 60 * 60 * 1000; // 1 heure entre deux purges par instance
 
+// Lot 3 — rétention des tentatives de connexion : la fenêtre max utile est
+// 1 h (niveau 2) + 30 min de verrou → 2 h couvrent avec marge. Au-delà, les
+// lignes ne servent plus à rien (ni sécurité, ni audit — les échecs sont
+// déjà tracés dans audit_logs).
+const RETENTION_TENTATIVES_MS = 2 * 60 * 60 * 1000;
+
 let dernierPassageMs = 0;
 
 export interface ResultatPurge {
   sessions: number;
   resets: number;
+  tentatives: number;
 }
 
-/** Purge les sessions et tokens de réinitialisation expirés.
- *  `force = true` outrepasse la porte temporelle (tests, scripts d'exploitation). */
+/** Purge les sessions, tokens de réinitialisation et tentatives de connexion
+ *  expirés. `force = true` outrepasse la porte temporelle (tests, scripts
+ *  d'exploitation). */
 export async function purgeExpirations(force = false): Promise<ResultatPurge> {
   const maintenant = Date.now();
   if (!force && maintenant - dernierPassageMs < INTERVALLE_MS) {
-    return { sessions: 0, resets: 0 };
+    return { sessions: 0, resets: 0, tentatives: 0 };
   }
   // Positionner la porte AVANT le travail asynchrone : les appels concurrents
   // (autres requêtes simultanées) voient la porte fermée et rendent la main
@@ -39,11 +49,13 @@ export async function purgeExpirations(force = false): Promise<ResultatPurge> {
   dernierPassageMs = maintenant;
 
   const borne = new Date();
-  const [sessions, resets] = await Promise.all([
+  const borneTentatives = new Date(maintenant - RETENTION_TENTATIVES_MS);
+  const [sessions, resets, tentatives] = await Promise.all([
     prisma.session.deleteMany({ where: { expiresAt: { lt: borne } } }),
     prisma.password_resets.deleteMany({ where: { expiresAt: { lt: borne } } }),
+    prisma.login_attempts.deleteMany({ where: { createdAt: { lt: borneTentatives } } }),
   ]);
-  return { sessions: sessions.count, resets: resets.count };
+  return { sessions: sessions.count, resets: resets.count, tentatives: tentatives.count };
 }
 
 /** Variante tolérante aux pannes pour les middlewares : jamais d'échec propagé. */
@@ -52,7 +64,7 @@ export async function purgeExpirationsSilencieuse(): Promise<ResultatPurge> {
     return await purgeExpirations();
   } catch (e) {
     console.warn("[cleanup] purge des expirations ignorée :", (e as Error).message);
-    return { sessions: 0, resets: 0 };
+    return { sessions: 0, resets: 0, tentatives: 0 };
   }
 }
 

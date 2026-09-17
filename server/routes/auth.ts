@@ -157,14 +157,14 @@ router.post("/login", async (req: Request, res: Response) => {
     }
 
     // Lot 2 — verrou PAR COMPTE (toutes IP) en priorité : force brute répartie
-    if (estBloqueCompte(String(email))) {
+    if (await estBloqueCompte(String(email))) {
       return res.status(429).json({
         error: "Compte temporairement verrouillé après de trop nombreux échecs de connexion. Réessayez dans environ 30 minutes.",
       });
     }
 
     // Lot 1 — limitation des tentatives : refus AVANT toute vérification
-    if (estBloque(String(email), req.ip)) {
+    if (await estBloque(String(email), req.ip)) {
       return res.status(429).json({
         error: "Trop de tentatives — compte temporairement verrouillé. Réessayez dans quelques minutes.",
       });
@@ -180,7 +180,7 @@ router.post("/login", async (req: Request, res: Response) => {
     });
     if (!user) {
       // Lot 1 — journaliser l'échec puis répondre 401
-      const etat = enregistrerEchec(email, req.ip);
+      const etat = await enregistrerEchec(email, req.ip);
       await auditLog({
         workspaceId: null,
         action: "LOGIN_FAILED",
@@ -200,7 +200,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
-      const etat = enregistrerEchec(email, req.ip);
+      const etat = await enregistrerEchec(email, req.ip);
       await auditLog({
         workspaceId: null,
         userId: user.id,
@@ -218,8 +218,8 @@ router.post("/login", async (req: Request, res: Response) => {
       return res.status(401).json({ error: "Identifiants invalides" });
     }
 
-    // Réussite — Lot 1 : purge du compteur de tentatives
-    reussite(user.email);
+    // Réussite — Lot 1 : purge du compteur de tentatives (Lot 3 : en base)
+    await reussite(user.email);
 
     // Refuser si EN_ATTENTE ou SUSPENDU
     if (user.statut === "EN_ATTENTE") {

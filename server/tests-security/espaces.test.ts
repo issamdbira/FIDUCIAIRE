@@ -11,7 +11,8 @@ process.env.JWT_SECRET = "secret-de-test-fiduciaire";
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("../lib/prisma.js", () => {
+vi.mock("../lib/prisma.js", async () => {
+  const { creerFakeLoginAttempts } = await import("./helpers/fake-login-attempts.js");
   const mock = {
     session: { findUnique: vi.fn(), deleteMany: vi.fn(), create: vi.fn() },
     users: { findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
@@ -39,6 +40,7 @@ vi.mock("../lib/prisma.js", () => {
     conventionAdaptation: { findMany: vi.fn(), updateMany: vi.fn(), update: vi.fn() },
     workCalendar: { updateMany: vi.fn() },
     contacts: { updateMany: vi.fn() },
+    login_attempts: creerFakeLoginAttempts(), // Lot 3 — limiteur persisté en base
     // $transaction : exécuter le callback avec le mock lui-même comme tx
     $transaction: vi.fn(),
   };
@@ -87,6 +89,7 @@ function membreDirect(role: string) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  (prisma.login_attempts as import("./helpers/fake-login-attempts.js").FakeLoginAttempts).__reset();
   db.delegated_access.findMany.mockResolvedValue([]);
   db.workspace_members.findMany.mockResolvedValue([]);
   db.payslip.aggregate.mockResolvedValue({ _sum: { salaireBrutEffectif: 0 } });

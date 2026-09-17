@@ -15,11 +15,13 @@ process.env.JWT_SECRET = "secret-de-test-fiduciaire";
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("../lib/prisma.js", () => {
+vi.mock("../lib/prisma.js", async () => {
+  const { creerFakeLoginAttempts } = await import("./helpers/fake-login-attempts.js");
   const mock = {
     session: { findUnique: vi.fn(), deleteMany: vi.fn(), create: vi.fn() },
     users: { findUnique: vi.fn(), findFirst: vi.fn() },
     auditLog: { create: vi.fn() },
+    login_attempts: creerFakeLoginAttempts(), // Lot 3 — limiteur persisté en base
   };
   return {
     default: mock,
@@ -45,7 +47,9 @@ describe("Lot 2 — en-têtes de sécurité sur les réponses API", () => {
     expect(r.headers["x-frame-options"]).toBe("DENY");
     expect(r.headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
     expect(r.headers["permissions-policy"]).toBe("camera=(), microphone=(), geolocation=()");
-    expect(r.headers["strict-transport-security"]).toBe("max-age=31536000; includeSubDomains");
+    expect(r.headers["strict-transport-security"]).toBe(
+      "max-age=31536000; includeSubDomains; preload" // Lot 3 — directive preload
+    );
 
     const csp = r.headers["content-security-policy"];
     expect(csp).toBeTruthy();

@@ -8,7 +8,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
-vi.mock("../lib/prisma.js", () => {
+vi.mock("../lib/prisma.js", async () => {
+  const { creerFakeLoginAttempts } = await import("./helpers/fake-login-attempts.js");
   const mock = {
     session: { findUnique: vi.fn(), deleteMany: vi.fn(), create: vi.fn() },
     users: { findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
@@ -17,6 +18,7 @@ vi.mock("../lib/prisma.js", () => {
     invitations: { findUnique: vi.fn() },
     password_resets: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
     auditLog: { create: vi.fn() },
+    login_attempts: creerFakeLoginAttempts(), // Lot 3 — limiteur persisté en base
   };
   return {
     default: mock,
@@ -31,6 +33,7 @@ import prisma from "../lib/prisma.js";
 import { createApp } from "../index.js";
 import { signToken } from "../lib/jwt.js";
 import request from "supertest";
+import type { FakeLoginAttempts } from "./helpers/fake-login-attempts.js";
 
 const db = prisma as unknown as {
   session: { findUnique: ReturnType<typeof vi.fn>; deleteMany: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn> };
@@ -39,6 +42,7 @@ const db = prisma as unknown as {
   delegated_access: { findMany: ReturnType<typeof vi.fn> };
   password_resets: { findUnique: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
   auditLog: { create: ReturnType<typeof vi.fn> };
+  login_attempts: FakeLoginAttempts;
 };
 
 const app = createApp();
@@ -52,6 +56,7 @@ function utilisateurValide(email: string) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  db.login_attempts.__reset(); // Lot 3 — isolation des tentatives entre cas
   db.workspace_members.findMany.mockResolvedValue([]);
   db.delegated_access.findMany.mockResolvedValue([]);
   db.auditLog.create.mockResolvedValue({});

@@ -16,7 +16,8 @@ process.env.JWT_SECRET = "secret-de-test-fiduciaire";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import bcrypt from "bcryptjs";
 
-vi.mock("../lib/prisma.js", () => {
+vi.mock("../lib/prisma.js", async () => {
+  const { creerFakeLoginAttempts } = await import("./helpers/fake-login-attempts.js");
   const mock = {
     session: { findUnique: vi.fn(), deleteMany: vi.fn(), create: vi.fn(), delete: vi.fn() },
     users: { findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
@@ -24,6 +25,7 @@ vi.mock("../lib/prisma.js", () => {
     delegated_access: { findMany: vi.fn() },
     password_resets: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), deleteMany: vi.fn() },
     auditLog: { create: vi.fn() },
+    login_attempts: creerFakeLoginAttempts(), // Lot 3 — purge des tentatives
   };
   return {
     default: mock,
@@ -50,6 +52,7 @@ const db = prisma as unknown as {
   delegated_access: { findMany: ReturnType<typeof vi.fn> };
   password_resets: { deleteMany: ReturnType<typeof vi.fn> };
   auditLog: { create: ReturnType<typeof vi.fn> };
+  login_attempts: import("./helpers/fake-login-attempts.js").FakeLoginAttempts;
 };
 
 const app = createApp();
@@ -58,6 +61,7 @@ const HASH = bcrypt.hashSync("MotDePasse123", 4);
 beforeEach(() => {
   vi.clearAllMocks();
   __reinitialiserPourTests();
+  db.login_attempts.__reset();
   db.workspace_members.findMany.mockResolvedValue([]);
   db.delegated_access.findMany.mockResolvedValue([]);
   db.auditLog.create.mockResolvedValue({});
@@ -70,13 +74,13 @@ beforeEach(() => {
 // Purge — sémantique
 // ---------------------------------------------------------------------------
 describe("Lot 2 — purgeExpirations", () => {
-  it("supprime les sessions et tokens STRICTEMENT expirés (where < now)", async () => {
+  it("supprime les sessions, tokens et tentatives STRICTEMENT expirés (where < borne)", async () => {
     db.session.deleteMany.mockResolvedValue({ count: 3 });
     db.password_resets.deleteMany.mockResolvedValue({ count: 2 });
 
     const r = await purgeExpirations(true);
 
-    expect(r).toEqual({ sessions: 3, resets: 2 });
+    expect(r).toEqual({ sessions: 3, resets: 2, tentatives: 0 });
     const borne = db.session.deleteMany.mock.calls[0][0].where.expiresAt.lt;
     expect(borne).toBeInstanceOf(Date);
     expect(borne.getTime()).toBeLessThanOrEqual(Date.now());
@@ -84,12 +88,28 @@ describe("Lot 2 — purgeExpirations", () => {
       .toBeLessThanOrEqual(Date.now());
   });
 
+  it("Lot 3 — purge les tentatives de connexion de plus de 2 h", async () => {
+    // 2 échecs anciens (3 h) + 1 échec récent — seuls les anciens partent
+    for (let i = 0; i < 2; i++) {
+      await db.login_attempts.create({ data: { email: "vieux@test.tn", ip: `ip-v-${i}` } });
+    }
+    await db.login_attempts.create({ data: { email: "recent@test.tn", ip: "ip-r" } });
+    for (const l of db.login_attempts.__lignes()) {
+      if (l.email === "vieux@test.tn") l.createdAt = new Date(Date.now() - 3 * 60 * 60 * 1000);
+    }
+
+    const r = await purgeExpirations(true);
+
+    expect(r.tentatives).toBe(2);
+    expect(db.login_attempts.__lignes().map((l) => l.email)).toEqual(["recent@test.tn"]);
+  });
+
   it("porte temporelle : la seconde purge dans l'heure est un no-op", async () => {
     await purgeExpirations(true); // ouvre la porte
     expect(db.session.deleteMany).toHaveBeenCalledTimes(1);
 
     const r = await purgeExpirations();
-    expect(r).toEqual({ sessions: 0, resets: 0 });
+    expect(r).toEqual({ sessions: 0, resets: 0, tentatives: 0 });
     expect(db.session.deleteMany).toHaveBeenCalledTimes(1); // PAS de 2e appel
   });
 
@@ -101,7 +121,7 @@ describe("Lot 2 — purgeExpirations", () => {
 
   it("purgeExpirationsSilencieuse avale les erreurs (jamais bloquante)", async () => {
     db.session.deleteMany.mockRejectedValue(new Error("boom DB"));
-    const r = await expect(purgeExpirationsSilencieuse()).resolves.toEqual({ sessions: 0, resets: 0 });
+    const r = await expect(purgeExpirationsSilencieuse()).resolves.toEqual({ sessions: 0, resets: 0, tentatives: 0 });
     expect(r).toBeTruthy();
   });
 });

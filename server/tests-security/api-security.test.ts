@@ -12,7 +12,8 @@ process.env.JWT_SECRET = "secret-de-test-fiduciaire";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ── Mock complet du client Prisma ──────────────────────────────────────────
-vi.mock("../lib/prisma.js", () => {
+vi.mock("../lib/prisma.js", async () => {
+  const { creerFakeLoginAttempts } = await import("./helpers/fake-login-attempts.js");
   const mock = {
     session: {
       findUnique: vi.fn(),
@@ -72,6 +73,7 @@ vi.mock("../lib/prisma.js", () => {
     payslip: {
       updateMany: vi.fn(),
     },
+    login_attempts: creerFakeLoginAttempts(), // Lot 3 — limiteur persisté en base
   };
   return {
     default: mock,
@@ -124,6 +126,7 @@ const WS_B = "ws-beta";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  (prisma.login_attempts as import("./helpers/fake-login-attempts.js").FakeLoginAttempts).__reset();
   // Phase 10 : par défaut, aucune délégation d'accès (tests directs inchangés)
   db.delegated_access.findMany.mockResolvedValue([]);
 });

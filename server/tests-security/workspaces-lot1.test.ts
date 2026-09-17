@@ -10,7 +10,8 @@ process.env.JWT_SECRET = "secret-de-test-fiduciaire";
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("../lib/prisma.js", () => {
+vi.mock("../lib/prisma.js", async () => {
+  const { creerFakeLoginAttempts } = await import("./helpers/fake-login-attempts.js");
   const mock = {
     session: { findUnique: vi.fn(), deleteMany: vi.fn(), create: vi.fn() },
     users: { findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
@@ -19,6 +20,7 @@ vi.mock("../lib/prisma.js", () => {
     invitations: { findUnique: vi.fn(), create: vi.fn(), findMany: vi.fn(), delete: vi.fn(), update: vi.fn() },
     auditLog: { create: vi.fn() },
     workspaces: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
+    login_attempts: creerFakeLoginAttempts(), // Lot 3 — limiteur persisté en base
     $transaction: vi.fn(),
   };
   return {
@@ -52,6 +54,7 @@ const NOUVEAU_ID = "u-nouveau";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  (prisma.login_attempts as import("./helpers/fake-login-attempts.js").FakeLoginAttempts).__reset();
   // Phase 10 : aucune délégation par défaut (accès direct)
   db.delegated_access.findMany.mockResolvedValue([]);
 });

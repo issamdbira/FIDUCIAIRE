@@ -11,7 +11,10 @@
 //     (feuilles de style + fichiers). L'origine d'analytics (si configurée
 //     via VITE_ANALYTICS_ENDPOINT) est ajoutée à script-src et connect-src.
 //   - Strict-Transport-Security : HTTPS obligatoire 1 an (HSTS, ignoré sur
-//     HTTP local — comportement inchangé en dev).
+//     HTTP local — comportement inchangé en dev). Lot 3 : directive `preload`
+//     ajoutée — sans effet tant que le domaine n'est pas soumis sur
+//     hstspreload.org (une sous-domaine *.vercel.app n'y est d'ailleurs pas
+//     éligible) ; elle documente l'intention pour le futur domaine propre.
 //   - X-Content-Type-Options / X-Frame-Options / Referrer-Policy /
 //     Permissions-Policy : durcissement standard.
 // =============================================================================
@@ -49,7 +52,7 @@ export function construireCsp(): string {
 
 export const EN_TETES_SECURITE: Record<string, string> = {
   "Content-Security-Policy": construireCsp(),
-  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
   "Referrer-Policy": "strict-origin-when-cross-origin",

@@ -241,6 +241,30 @@ model password_resets {
 }
 
 // ---------------------------------------------------------------------------
+// Lot 3 — Persistance des verrous de connexion (serverless multi-instances)
+// ---------------------------------------------------------------------------
+// Les compteurs des Lot 1/2 vivaient en mémoire process : sur Vercel, chaque
+// instance chaude multipliait les seuils effectifs (5 et 20 par instance).
+// Chaque échec de connexion est désormais une ligne ; fenêtres glissantes et
+// verrous sont calculés depuis la base — identiques sur TOUTES les instances.
+//   - niveau 1 : 5 échecs / 15 min par (email, IP) → blocage 15 min ;
+//   - niveau 2 : 20 échecs / 1 h toutes IP → verrou du compte 30 min ;
+//   - la réussite supprime toutes les lignes de l'email ;
+//   - purge opportuniste des lignes > 2 h (server/lib/session-cleanup.ts) —
+//     fenêtre max utile 1 h + verrou 30 min, 2 h couvre avec marge.
+// Aucune relation vers users : les échecs portent souvent sur des emails
+// inexistants (de toute façon une FK interdirait de les compter).
+model login_attempts {
+  id        String   @id @default(cuid())
+  email     String // minuscules — échecs pour ce compte (toutes IP)
+  ip        String? // origine de l'échec (niveau 1 : email + IP)
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@map("login_attempts")
+}
+
+// ---------------------------------------------------------------------------
 // Phase 10 — Espaces CABINET / ENTREPRISE + accès délégué
 // ---------------------------------------------------------------------------
 // Modèle métier (document d'orientation, fait autorité) :

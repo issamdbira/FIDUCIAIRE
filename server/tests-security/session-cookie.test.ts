@@ -15,7 +15,8 @@ process.env.JWT_SECRET = "secret-de-test-fiduciaire";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import bcrypt from "bcryptjs";
 
-vi.mock("../lib/prisma.js", () => {
+vi.mock("../lib/prisma.js", async () => {
+  const { creerFakeLoginAttempts } = await import("./helpers/fake-login-attempts.js");
   const mock = {
     session: {
       findUnique: vi.fn(),
@@ -41,6 +42,7 @@ vi.mock("../lib/prisma.js", () => {
     auditLog: {
       create: vi.fn(),
     },
+    login_attempts: creerFakeLoginAttempts(), // Lot 3 — limiteur persisté en base
   };
   return {
     default: mock,
@@ -61,6 +63,7 @@ const db = prisma as unknown as {
   workspace_members: { findMany: ReturnType<typeof vi.fn> };
   delegated_access: { findMany: ReturnType<typeof vi.fn> };
   auditLog: { create: ReturnType<typeof vi.fn> };
+  login_attempts: import("./helpers/fake-login-attempts.js").FakeLoginAttempts;
 };
 
 const app = createApp();
@@ -87,6 +90,7 @@ function extraireCookie(res: request.Response): string {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  db.login_attempts.__reset(); // Lot 3 — isolation des tentatives entre cas
   db.workspace_members.findMany.mockResolvedValue([]);
   db.delegated_access.findMany.mockResolvedValue([]);
   db.auditLog.create.mockResolvedValue({});
