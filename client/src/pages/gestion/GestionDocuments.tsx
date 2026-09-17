@@ -1000,14 +1000,16 @@ export default function GestionDocuments() {
                 {detailDoc.clientCompanyId && (
                   <div>
                     <span className="text-muted-foreground">Client :</span>
-                    <p className="font-mono text-xs mt-0.5 break-all">
-                      {detailDoc.clientCompanyId}
+                    {/* 6-E (réévaluation) : nom lisible, plus jamais l'ID brut */}
+                    <p className="mt-0.5">
+                      {clients.find((c) => c.id === detailDoc.clientCompanyId)?.raisonSociale
+                        ?? "Société supprimée ou inconnue"}
                     </p>
                   </div>
                 )}
                 {detailDoc.payslipId && (
                   <div>
-                    <span className="text-muted-foreground">Bulletin :</span>
+                    <span className="text-muted-foreground">Réf. bulletin :</span>
                     <p className="font-mono text-xs mt-0.5 break-all">
                       {detailDoc.payslipId}
                     </p>
@@ -1016,7 +1018,7 @@ export default function GestionDocuments() {
                 {detailDoc.cnssDeclarationId && (
                   <div>
                     <span className="text-muted-foreground">
-                      Déclaration CNSS :
+                      Réf. déclaration CNSS :
                     </span>
                     <p className="font-mono text-xs mt-0.5 break-all">
                       {detailDoc.cnssDeclarationId}
