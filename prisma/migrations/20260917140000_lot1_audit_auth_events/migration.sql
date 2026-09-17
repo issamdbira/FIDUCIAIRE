@@ -3,6 +3,6 @@
 -- Assouplissement permissif (rétrocompatible) : la colonne devient nullable,
 -- aucune ligne existante n'est modifiée.
 
-ALTER TABLE "AuditLog" ALTER COLUMN "workspaceId" DROP NOT NULL;
+ALTER TABLE "audit_logs" ALTER COLUMN "workspaceId" DROP NOT NULL;
 
-CREATE INDEX "AuditLog_action_createdAt_idx" ON "AuditLog"("action", "createdAt");
+CREATE INDEX "audit_logs_action_createdAt_idx" ON "audit_logs"("action", "createdAt");

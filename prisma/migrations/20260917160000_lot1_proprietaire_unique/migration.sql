@@ -20,13 +20,13 @@ WITH retrogrades AS (
       FROM "workspace_members" w2
       WHERE w2."workspaceId" = wm."workspaceId"
         AND w2."role" = 'PROPRIETAIRE'
-      ORDER BY (SELECT MAX(s."createdAt") FROM "Session" s WHERE s."userId" = w2."userId") DESC NULLS LAST,
+      ORDER BY (SELECT MAX(s."createdAt") FROM "sessions" s WHERE s."userId" = w2."userId") DESC NULLS LAST,
                w2."joinedAt" ASC
       LIMIT 1
     )
   RETURNING wm."workspaceId" AS ws_id, wm."userId" AS user_id
 )
-INSERT INTO "AuditLog" ("id", "workspaceId", "userId", "action", "entity", "entityId", "details")
+INSERT INTO "audit_logs" ("id", "workspaceId", "userId", "action", "entity", "entityId", "details")
 SELECT 'sys-uniq-owner-' || ws_id,
        ws_id,
        'system-migration',
