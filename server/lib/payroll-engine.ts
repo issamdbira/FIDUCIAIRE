@@ -359,6 +359,9 @@ export interface MassPayrollResult {
   skippedNoContract: number;
   skippedNoAttendance: number;
   errors: string[];
+  // Lot 7-C : règles réglementaires actives appliquées à ce calcul
+  // (transparence — le résultat ne ment plus sur la config utilisée)
+  rulesApplied: { code: string; valeur: number; description?: string }[];
 }
 
 export async function calculateMassPayroll(input: MassPayrollInput): Promise<MassPayrollResult> {
@@ -368,6 +371,7 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
     skippedNoContract: 0,
     skippedNoAttendance: 0,
     errors: [],
+    rulesApplied: [],
   };
 
   const dateCalcul = new Date();
@@ -397,6 +401,51 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
     return result;
   }
 
+  // 2b. Lot 7-C — surcharge par les règles réglementaires ACTIVES (fin du
+  // faux commentaire « peuvent les surcharger si présentes » : la lecture
+  // est désormais réelle). Une règle active à la date de calcul (dateDebut
+  // ≤ dateCalcul, dateFin absente ou ≥ dateCalcul) remplace la valeur du
+  // PayrollConfig pour les codes documentés ci-dessous. En cas de règles
+  // concurrentes du même code, la dateDebut la plus récente l'emporte.
+  // Aucune règle → comportement inchangé (rétrocompatible).
+  const RULE_CODE_TO_CONFIG: Record<string, string> = {
+    CNSS_TAUX_SALARIAL_NON_AGRICOLE: "cnssSalarialNonAgricole",
+    CNSS_TAUX_PATRONAL_NON_AGRICOLE: "cnssPatronalNonAgricole",
+    CNSS_TAUX_SALARIAL_AGRICOLE: "cnssSalarialAgricole",
+    CNSS_TAUX_PATRONAL_AGRICOLE: "cnssPatronalAgricole",
+    CSS_TAUX: "cssTaux",
+    CSS_SEUIL_EXONERATION_ANNUEL: "cssSeuilExonerationAnnuel",
+    FRAIS_PRO_TAUX_ACTIFS: "fraisProTauxActifs",
+    FRAIS_PRO_PLAFOND_ACTIFS_ANNUEL: "fraisProPlafondActifsAnnuel",
+    FRAIS_PRO_TAUX_RETRAITES: "fraisProTauxRetraites",
+    DEDUCTION_CHEF_FAMILLE: "deductionChefFamille",
+    DEDUCTION_ENFANT: "deductionEnfant",
+    DEDUCTION_ETUDIANT: "deductionEtudiant",
+    PLAFOND_NOMBRE_ENFANTS_ETUDIANTS: "plafondNombreEnfantsEtudiants",
+    DEDUCTION_INFIRME: "deductionInfirme",
+    PARENTS_EN_CHARGE_TAUX: "parentsEnChargeTaux",
+    PARENTS_EN_CHARGE_PLAFOND_ANNUEL: "parentsEnChargePlafondParAnnuel",
+  };
+  const activeRules = await prisma.regleReglementaire.findMany({
+    where: {
+      workspaceId: input.workspaceId,
+      dateDebut: { lte: dateCalcul },
+      OR: [{ dateFin: null }, { dateFin: { gte: dateCalcul } }],
+    },
+    orderBy: [{ dateDebut: "desc" }, { createdAt: "desc" }],
+  });
+  if (activeRules.length > 0) {
+    const configMutable = payrollConfig as unknown as Record<string, number>;
+    const alreadyOverridden = new Set<string>();
+    for (const rule of activeRules) {
+      const field = RULE_CODE_TO_CONFIG[rule.code];
+      if (!field || alreadyOverridden.has(field)) continue;
+      configMutable[field] = rule.valeur;
+      alreadyOverridden.add(field);
+      result.rulesApplied.push({ code: rule.code, valeur: rule.valeur, description: rule.description });
+    }
+  }
+
   // 3. Récupérer le client pour son secteur
   const client = await prisma.clientCompany.findUnique({
     where: { id: input.clientCompanyId },
@@ -417,9 +466,10 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
   const realMois = input.mois > 100 ? input.mois - 100 : input.mois;
   const joursOuvresMois = getJoursOuvresMois(realMois, input.annee);
 
-  // 5. Récupérer les règles réglementaires actives à la date de calcul
-  // (On utilise les valeurs du PayrollConfig par défaut, mais les règles
-  //  RegleReglementaire peuvent les surcharger si présentes)
+  // 5. Règles réglementaires : traitées à l'étape 2b ci-dessus — les règles
+  // RegleReglementaire ACTIVES à la date de calcul surchargent réellement
+  // les valeurs du PayrollConfig (codes documentés dans RULE_CODE_TO_CONFIG)
+  // et sont tracées dans result.rulesApplied.
 
   // 6. Récupérer le pointage validé pour ce mois/année (mois réel — Lot 7-B)
   const validatedImports = await prisma.attendanceImport.findMany({

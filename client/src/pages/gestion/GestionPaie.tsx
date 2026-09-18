@@ -116,6 +116,8 @@ interface CalculateResult {
   skippedNoContract: number;
   skippedNoAttendance: number;
   errors: string[];
+  // Lot 7-C : règles réglementaires actives appliquées (transparence)
+  rulesApplied?: { code: string; valeur: number; description?: string }[];
 }
 
 interface Payslip {
@@ -325,6 +327,7 @@ export default function GestionPaie() {
         if (r?.anomaliesCreated) details.push(`${r.anomaliesCreated} anomalie(s)`);
         if (r?.skippedNoContract) details.push(`${r.skippedNoContract} sans contrat`);
         if (r?.skippedNoAttendance) details.push(`${r.skippedNoAttendance} sans pointage`);
+        if (r?.rulesApplied?.length) details.push(`${r.rulesApplied.length} règle(s) réglementaire(s)`);
         toast.success(`Paie calculée — ${details.join(", ")} (${label})`, { duration: 7000 });
       }
 

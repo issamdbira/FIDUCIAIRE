@@ -548,4 +548,68 @@ describe("Parcours métier E2E — Entreprise (réel, sans mock)", () => {
     expect(dl.text).toContain("Complémentaire");
     expect(dl.text).not.toContain("undefined");
   });
+
+  test("21. [7-C] Règle réglementaire active → surcharge RÉELLE du moteur (fin du faux commentaire)", async () => {
+    // Le moteur prétendait (commentaire) que RegleReglementaire pouvait
+    // surcharger le PayrollConfig — AUCUN code ne lisait jamais la table.
+    // 1) Saisie manuelle du pointage de Novembre (le calcul requiert du pointage)
+    const manual = await authed("post", `/api/attendance/${workspaceId}/manual`).send({
+      clientCompanyId: company!.id,
+      mois: 11,
+      annee: 2026,
+      lignes: [
+        {
+          matricule: MATRICULE,
+          nomPrenom: "Ali BenE2E",
+          joursTravaillesReels: 22,
+          congesPayes: 0,
+          absencesJustifiees: 0,
+          absencesNonJustifiees: 0,
+          heuresSupplementaires: 0,
+        },
+      ],
+    });
+    expect(manual.status).toBe(201);
+
+    // 2) Règle active : taux CNSS salarial non agricole porté à 15 %
+    //    (le module /api/regles existait depuis la Phase 3, orphelin côté UI,
+    //    et sa promesse de surcharge moteur n'était pas implémentée)
+    const regle = await authed("post", "/api/regles").send({
+      workspaceId,
+      code: "CNSS_TAUX_SALARIAL_NON_AGRICOLE",
+      categorie: "CNSS",
+      description: "Taux CNSS salarial non agricole — barème E2E",
+      valeur: 0.15,
+      unite: "%",
+      dateDebut: "2026-01-01",
+    });
+    expect(regle.status).toBe(201);
+
+    // 3) Période de Novembre + calcul
+    const periodeNov = await authed("post", "/api/payroll/periods").send({
+      workspaceId,
+      clientCompanyId: company!.id,
+      mois: 11,
+      annee: 2026,
+    });
+    expect(periodeNov.status).toBe(201);
+    const novId = periodeNov.body.id as string;
+
+    const calc = await authed("patch", `/api/payroll/${workspaceId}/periods/${novId}/calculate`);
+    expect(calc.status).toBe(200);
+    expect(calc.body.result.errors).toEqual([]);
+    expect(calc.body.result.bulletinsCreated).toBe(1);
+
+    // 4) Transparence : la règle appliquée est tracée dans le résultat
+    const applied = calc.body.result.rulesApplied as Array<{ code: string; valeur: number }>;
+    expect(applied.some(r => r.code === "CNSS_TAUX_SALARIAL_NON_AGRICOLE" && r.valeur === 0.15)).toBe(true);
+
+    // 5) La surcharge est RÉELLE : retenue = base CNSS × 15 %
+    const slips = await authed("get", `/api/payroll/${workspaceId}/payslips?periodId=${novId}`);
+    expect(slips.status).toBe(200);
+    const slip = (slips.body as Array<{ baseImposable: number; retenueCnssSalarial: number }>)[0];
+    expect(slip).toBeDefined();
+    const baseCnss = Math.min(slip.baseImposable, 6000);
+    expect(Math.abs(slip.retenueCnssSalarial - baseCnss * 0.15)).toBeLessThan(0.01);
+  });
 });
