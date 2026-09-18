@@ -123,8 +123,11 @@ const MOIS_COURTS = [
   "Juil.", "Août", "Sept.", "Oct.", "Nov.", "Déc.",
 ];
 
-const periodeLabel = (p: { mois: number; annee: number; statut?: string }) =>
-  `${MOIS_COURTS[p.mois - 1] ?? p.mois} ${p.annee}${p.statut ? ` — ${p.statut}` : ""}`;
+const periodeLabel = (p: { mois: number; annee: number; statut?: string; isComplementary?: boolean }) => {
+  // Lot 7-B : une période complémentaire porte un mois VIRTUEL (mois + 100)
+  const real = p.mois > 100 ? p.mois - 100 : p.mois;
+  return `${MOIS_COURTS[real - 1] ?? real} ${p.annee}${p.isComplementary ? " (compl.)" : ""}${p.statut ? ` — ${p.statut}` : ""}`;
+};
 
 // ── Constants ──────────────────────────────────────────────────────────────
 

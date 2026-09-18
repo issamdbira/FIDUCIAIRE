@@ -66,13 +66,15 @@ router.post("/declarations", requireAuth, requireWorkspaceWriter(), async (req: 
     if (existing) return res.status(409).json({ error: "Déclaration CNSS déjà existante pour ce trimestre", declaration: existing });
 
     // Trouver les 3 périodes de paie validées du trimestre
+    // Lot 7-B : inclure aussi les périodes COMPLÉMENTAIRES (mois virtuel
+    // m+100) — les régularisations du trimestre comptent dans la déclaration
     const moisTrimestre = getMoisTrimestre(t);
     const periods = await prisma.payrollPeriod.findMany({
       where: {
         workspaceId,
         clientCompanyId,
         annee: a,
-        mois: { in: moisTrimestre },
+        mois: { in: [...moisTrimestre, ...moisTrimestre.map(m => m + 100)] },
         statut: { in: ["VALIDATED", "CLOSED"] },
       },
       include: { payslips: { include: { anomalies: false } } },
@@ -230,8 +232,16 @@ router.patch("/:ws/declarations/:id/generer", requireAuth, requireWorkspaceWrite
     const moisTrimestre = getMoisTrimestre(decl.numeroTrimestre);
     const periodIds = [decl.periodeMois1Id, decl.periodeMois2Id, decl.periodeMois3Id].filter(Boolean) as string[];
 
+    // Lot 7-B : inclure les bulletins des périodes complémentaires rattachées
+    // (parentPeriodId pointe vers la période d'origine)
+    const compPeriods = await prisma.payrollPeriod.findMany({
+      where: { workspaceId: ws, parentPeriodId: { in: periodIds } },
+      select: { id: true },
+    });
+    const allPeriodIds = [...periodIds, ...compPeriods.map(c => c.id)];
+
     const payslips = await prisma.payslip.findMany({
-      where: { periodId: { in: periodIds }, workspaceId: ws },
+      where: { periodId: { in: allPeriodIds }, workspaceId: ws },
       orderBy: { nomPrenom: "asc" },
     });
 
@@ -255,8 +265,9 @@ router.patch("/:ws/declarations/:id/generer", requireAuth, requireWorkspaceWrite
         });
       }
       const emp = employeeMap.get(ps.employeeId)!;
-      // Déterminer l'index du mois dans le trimestre
-      const moisIndex = moisTrimestre.indexOf(ps.mois);
+      // Déterminer l'index du mois dans le trimestre (mois réel — un bulletin
+      // complémentaire porte le mois virtuel m+100)
+      const moisIndex = moisTrimestre.indexOf(ps.mois > 100 ? ps.mois - 100 : ps.mois);
       if (moisIndex >= 0) {
         emp.salaireBrut[moisIndex] += ps.salaireBrutEffectif;
         emp.jours[moisIndex] += ps.joursTravailles;
@@ -379,8 +390,15 @@ router.post("/declarations/:id/export", requireAuth, requireWorkspaceWriter(), a
     const moisTrimestre = getMoisTrimestre(decl.numeroTrimestre);
     const periodIds = [decl.periodeMois1Id, decl.periodeMois2Id, decl.periodeMois3Id].filter(Boolean) as string[];
 
+    // Lot 7-B : inclure les bulletins des périodes complémentaires rattachées
+    const compPeriods = await prisma.payrollPeriod.findMany({
+      where: { workspaceId, parentPeriodId: { in: periodIds } },
+      select: { id: true },
+    });
+    const allPeriodIds = [...periodIds, ...compPeriods.map(c => c.id)];
+
     const payslips = await prisma.payslip.findMany({
-      where: { periodId: { in: periodIds }, workspaceId },
+      where: { periodId: { in: allPeriodIds }, workspaceId },
       orderBy: { nomPrenom: "asc" },
     });
 
@@ -398,7 +416,8 @@ router.post("/declarations/:id/export", requireAuth, requireWorkspaceWriter(), a
         });
       }
       const emp = employeeMap.get(ps.employeeId)!;
-      const moisIndex = moisTrimestre.indexOf(ps.mois);
+      // Lot 7-B : mois réel (bulletin complémentaire = mois virtuel m+100)
+      const moisIndex = moisTrimestre.indexOf(ps.mois > 100 ? ps.mois - 100 : ps.mois);
       if (moisIndex >= 0) {
         emp.salaireBrut[moisIndex] += ps.salaireBrutEffectif;
         emp.jours[moisIndex] += ps.joursTravailles;

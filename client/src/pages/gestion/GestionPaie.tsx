@@ -73,6 +73,7 @@ import {
   RefreshCw,
   FileText,
   Loader2,
+  CopyPlus,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -96,6 +97,9 @@ interface PayrollPeriod {
   annee: number;
   statut: PeriodStatut;
   note?: string | null;
+  isComplementary?: boolean;
+  motifComplement?: string | null;
+  parentPeriodId?: string | null;
   openedBy?: string;
   calculatedBy?: string;
   validatedBy?: string;
@@ -147,6 +151,11 @@ const MOIS_LABELS = [
   "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
 ];
+
+// Lot 7-B : une période complémentaire porte un mois VIRTUEL (mois + 100).
+// L'affichage raisonne sur le mois réel.
+const realMois = (mois: number) => (mois > 100 ? mois - 100 : mois);
+const moisLabel = (mois: number) => MOIS_LABELS[realMois(mois) - 1] ?? String(mois);
 
 const STATUT_LABELS: Record<PeriodStatut, string> = {
   OPEN: "Ouverte",
@@ -201,6 +210,13 @@ export default function GestionPaie() {
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [resolveDialogAnomaly, setResolveDialogAnomaly] = useState<Anomaly | null>(null);
   const [resolutionNote, setResolutionNote] = useState("");
+
+  // Lot 7-B : période complémentaire (la route serveur existait depuis la
+  // Phase 8 mais AUCUNE interface ne permettait de l'utiliser)
+  const [complementPeriod, setComplementPeriod] = useState<PayrollPeriod | null>(null);
+  const [motifComplement, setMotifComplement] = useState("");
+  const [noteComplement, setNoteComplement] = useState("");
+  const [complementSubmitting, setComplementSubmitting] = useState(false);
 
   // New period form
   const [newClientId, setNewClientId] = useState("");
@@ -292,7 +308,7 @@ export default function GestionPaie() {
         `/payroll/${workspaceId}/periods/${period.id}/calculate`
       );
       const r = data?.result;
-      const label = `${period.client_company.raisonSociale} — ${MOIS_LABELS[period.mois - 1]} ${period.annee}`;
+      const label = `${period.client_company.raisonSociale} — ${moisLabel(period.mois)} ${period.annee}${period.isComplementary ? " (complémentaire)" : ""}`;
 
       if (r && r.errors.length > 0) {
         toast.error(`Calcul échoué (${label}) : ${r.errors.slice(0, 2).join(" ; ")}${r.errors.length > 2 ? "…" : ""}`);
@@ -358,6 +374,37 @@ export default function GestionPaie() {
     } catch (err) {
       const e = err as ApiError;
       toast.error(e.message || "Erreur lors de la clôture");
+    }
+  };
+
+  // Lot 7-B : création d'une période complémentaire depuis une période
+  // clôturée (régularisation : primes, rappels, corrections après clôture).
+  const handleCreateComplementary = async () => {
+    if (!workspaceId || !complementPeriod) return;
+    if (!motifComplement.trim()) {
+      toast.error("Le motif de la régularisation est requis");
+      return;
+    }
+    setComplementSubmitting(true);
+    try {
+      const data = await api.post<{ complementaryPeriod: PayrollPeriod; parentPeriodId: string }>(
+        `/payroll/${workspaceId}/periods/${complementPeriod.id}/complementary`,
+        { workspaceId, motifComplement: motifComplement.trim(), note: noteComplement.trim() || undefined }
+      );
+      toast.success(
+        `Période complémentaire ouverte — ${moisLabel(complementPeriod.mois)} ${complementPeriod.annee} (${motifComplement.trim()})`,
+        { description: "Calculez-la comme une période normale : pointage et jours ouvrés du mois réel sont repris." }
+      );
+      setComplementPeriod(null);
+      setMotifComplement("");
+      setNoteComplement("");
+      fetchPeriods();
+      void data;
+    } catch (err) {
+      const e = err as ApiError;
+      toast.error(e.message || "Erreur lors de la création de la période complémentaire");
+    } finally {
+      setComplementSubmitting(false);
     }
   };
 
@@ -461,7 +508,12 @@ export default function GestionPaie() {
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Banknote className="size-5 text-gold" />
-                    {detailPeriod.client_company.raisonSociale} — {MOIS_LABELS[detailPeriod.mois - 1]} {detailPeriod.annee}
+                    {detailPeriod.client_company.raisonSociale} — {moisLabel(detailPeriod.mois)} {detailPeriod.annee}
+                    {detailPeriod.isComplementary && (
+                      <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800">
+                        Complémentaire
+                      </Badge>
+                    )}
                   </CardTitle>
                   <Badge className={STATUT_CLASSES[detailPeriod.statut]}>
                     {STATUT_LABELS[detailPeriod.statut]}
@@ -815,7 +867,14 @@ export default function GestionPaie() {
                   {periods.map((p) => (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">{p.client_company.raisonSociale}</TableCell>
-                      <TableCell>{MOIS_LABELS[p.mois - 1]} {p.annee}</TableCell>
+                      <TableCell>
+                        {moisLabel(p.mois)} {p.annee}
+                        {p.isComplementary && (
+                          <Badge variant="outline" className="ml-1.5 bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800">
+                            Compl.
+                          </Badge>
+                        )}
+                      </TableCell>
                       <TableCell className="text-center">{p._count.payslips}</TableCell>
                       <TableCell className="text-center">
                         {p._count.anomalies > 0 ? (
@@ -873,6 +932,15 @@ export default function GestionPaie() {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => handleClose(p)} className="gap-2">
                                   <Lock className="size-4" /> Clôturer
+                                </DropdownMenuItem>
+                              </>
+                            )}
+
+                            {p.statut === "CLOSED" && !p.isComplementary && peutEcrire && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => setComplementPeriod(p)} className="gap-2">
+                                  <CopyPlus className="size-4" /> Période complémentaire
                                 </DropdownMenuItem>
                               </>
                             )}
@@ -966,6 +1034,65 @@ export default function GestionPaie() {
             >
               {creating ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
               {creating ? "Création…" : "Ouvrir la période"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lot 7-B — Dialog: Période complémentaire (régularisation après clôture) */}
+      <Dialog open={!!complementPeriod} onOpenChange={(open) => { if (!open) { setComplementPeriod(null); setMotifComplement(""); setNoteComplement(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CopyPlus className="size-5 text-amber-600" />
+              Période complémentaire
+            </DialogTitle>
+            <DialogDescription>
+              Ouvrir une régularisation pour {complementPeriod ? `${complementPeriod.client_company.raisonSociale} — ${moisLabel(complementPeriod.mois)} ${complementPeriod.annee} (clôturée)` : ""}.
+              La nouvelle période reprend le mois réel (pointage et jours ouvrés) pour corriger ou compléter la paie.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="complement-motif">Motif de la régularisation *</Label>
+              <Input
+                id="complement-motif"
+                value={motifComplement}
+                onChange={(e) => setMotifComplement(e.target.value)}
+                placeholder="Ex. : rappel de prime, correction d'heures, indemnité omise"
+                maxLength={200}
+              />
+              <p className="text-xs text-muted-foreground">
+                Exemples : prime non versée, régularisation d&apos;heures supplémentaires, rappel de salaire.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="complement-note">Note interne (optionnel)</Label>
+              <Textarea
+                id="complement-note"
+                value={noteComplement}
+                onChange={(e) => setNoteComplement(e.target.value)}
+                placeholder="Contexte, référence du dossier…"
+                rows={3}
+                maxLength={500}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => { setComplementPeriod(null); setMotifComplement(""); setNoteComplement(""); }}
+              disabled={complementSubmitting}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleCreateComplementary}
+              disabled={complementSubmitting || !motifComplement.trim()}
+              className="bg-navy hover:bg-navy/90 text-white gap-1.5"
+            >
+              {complementSubmitting && <Loader2 className="size-3.5 animate-spin" />}
+              Créer la période
             </Button>
           </DialogFooter>
         </DialogContent>

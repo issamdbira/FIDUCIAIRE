@@ -68,7 +68,11 @@ interface PayslipFull {
 
 export function generateBulletinHtml(payslip: PayslipFull, clientInfo: { raisonSociale: string; matriculeFiscal?: string | null; matriculeCnss?: string | null }): string {
   const moisNoms = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
-  const periode = `${moisNoms[payslip.mois - 1]} ${payslip.annee}`;
+  // Lot 7-B : un bulletin d'une période complémentaire porte le mois VIRTUEL
+  // (mois + 100) — on affiche le mois réel et la nature complémentaire.
+  const isComplementaire = payslip.mois > 100;
+  const realMois = isComplementaire ? payslip.mois - 100 : payslip.mois;
+  const periode = `${moisNoms[realMois - 1]} ${payslip.annee}${isComplementaire ? " — Complémentaire" : ""}`;
 
   const fmt = (n: number) => n.toFixed(3);
 

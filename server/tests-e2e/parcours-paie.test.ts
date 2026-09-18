@@ -503,4 +503,49 @@ describe("Parcours métier E2E — Entreprise (réel, sans mock)", () => {
     expect(html).toContain("Octobre 2026");
     expect(html).toContain("Nombre de bulletins");
   });
+
+  test("20. [7-B] Période complémentaire — création, calcul réel, bulletin lisible", async () => {
+    // La route existait depuis la Phase 8 mais AUCUNE interface ne la
+    // proposait, et le moteur ne savait pas calculer un mois virtuel (109) :
+    // jours ouvrés, pointage et dates lisaient le mois brut.
+    // 1) Création depuis la période Septembre clôturée (test 10)
+    const comp = await authed("post", `/api/payroll/periods/${periodId}/complementary`)
+      .send({ workspaceId, motifComplement: "Rappel de prime", note: "E2E" });
+    expect(comp.status).toBe(201);
+    expect(comp.body.complementaryPeriod.isComplementary).toBe(true);
+    expect(comp.body.complementaryPeriod.mois).toBe(109); // mois virtuel = 9 + 100
+    expect(comp.body.complementaryPeriod.statut).toBe("OPEN");
+    expect(comp.body.complementaryPeriod.motifComplement).toBe("Rappel de prime");
+    const compId = comp.body.complementaryPeriod.id as string;
+
+    // 2) Doublon refusé (409)
+    const comp2 = await authed("post", `/api/payroll/periods/${periodId}/complementary`)
+      .send({ workspaceId, motifComplement: "Autre" });
+    expect(comp2.status).toBe(409);
+
+    // 3) Calcul : le moteur raisonne sur le mois RÉEL — pointage de
+    //    Septembre et jours ouvrés retrouvés (l'ancien code cherchait le
+    //    mois 109 et ne trouvait rien → 0 bulletin)
+    const calc = await authed("patch", `/api/payroll/${workspaceId}/periods/${compId}/calculate`);
+    expect(calc.status).toBe(200);
+    expect(calc.body.result.errors).toEqual([]);
+    expect(calc.body.result.bulletinsCreated).toBe(1);
+
+    // 4) Bulletin complémentaire : mois virtuel conservé pour traçabilité
+    const slips = await authed("get", `/api/payroll/${workspaceId}/payslips?periodId=${compId}`);
+    expect(slips.status).toBe(200);
+    const compSlips = slips.body as Array<{ id: string; mois: number; annee: number }>;
+    expect(compSlips.length).toBe(1);
+    expect(compSlips[0].mois).toBe(109);
+
+    // 5) Le bulletin généré affiche le mois RÉEL + la nature complémentaire
+    //    (fin des « undefined 2026 » de l'ancien affichage)
+    const gen = await authed("post", `/api/documents/payslips/${compSlips[0].id}/pdf`).send({ workspaceId });
+    expect(gen.status).toBe(201);
+    const dl = await authed("get", `/api/documents/payslips/${compSlips[0].id}/download?workspaceId=${workspaceId}`);
+    expect(dl.status).toBe(200);
+    expect(dl.text).toContain("Septembre 2026");
+    expect(dl.text).toContain("Complémentaire");
+    expect(dl.text).not.toContain("undefined");
+  });
 });

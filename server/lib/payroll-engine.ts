@@ -408,18 +408,25 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
   }
 
   // 4. Jours ouvrés du mois
-  const joursOuvresMois = getJoursOuvresMois(input.mois, input.annee);
+  // Lot 7-B : une période complémentaire porte un mois VIRTUEL (mois + 100,
+  // ex. 113 = complémentaire de Septembre) pour contourner la contrainte
+  // unique (ws, client, annee, mois). Tous les usages MÉTIER du mois
+  // (jours ouvrés, pointage, dates) raisonnent sur le mois RÉEL ; le mois
+  // virtuel est conservé uniquement dans les enregistrements (période,
+  // bulletins) pour la traçabilité — les affichages le normalisent.
+  const realMois = input.mois > 100 ? input.mois - 100 : input.mois;
+  const joursOuvresMois = getJoursOuvresMois(realMois, input.annee);
 
   // 5. Récupérer les règles réglementaires actives à la date de calcul
   // (On utilise les valeurs du PayrollConfig par défaut, mais les règles
   //  RegleReglementaire peuvent les surcharger si présentes)
 
-  // 6. Récupérer le pointage validé pour ce mois/année
+  // 6. Récupérer le pointage validé pour ce mois/année (mois réel — Lot 7-B)
   const validatedImports = await prisma.attendanceImport.findMany({
     where: {
       clientCompanyId: input.clientCompanyId,
       workspaceId: input.workspaceId,
-      mois: input.mois,
+      mois: realMois,
       annee: input.annee,
       statut: { in: ["VALIDE", "ANOMALIES"] },
     },
@@ -495,7 +502,7 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
       // étaient une fonction orpheline : aucune référence dans la paie.
       const conventionId = contractVersion.conventionCollectiveId ?? contract.conventionCollectiveId;
       if (conventionId && contractVersion.coefficient && contractVersion.echelon) {
-        const dateFinMoisPaie = new Date(Date.UTC(input.annee, input.mois, 0)); // dernier jour du mois de paie
+        const dateFinMoisPaie = new Date(Date.UTC(input.annee, realMois, 0)); // dernier jour du mois de paie (réel)
         const grille = await prisma.conventionGrilleSalariale.findFirst({
           where: {
             conventionCollectiveId: conventionId,
