@@ -53,6 +53,7 @@ import {
   FileText,
   FileSpreadsheet,
   FileDown,
+  Files,
   Download,
   Eye,
   RefreshCw,
@@ -224,6 +225,7 @@ export default function GestionDocuments() {
   const [showPdfDialog, setShowPdfDialog] = useState(false);
   const [showExcelDialog, setShowExcelDialog] = useState(false);
   const [showCsvDialog, setShowCsvDialog] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
 
   // P2-1 : sélecteurs (période → bulletin) — remplacement des inputs d'ID
   const [periods, setPeriods] = useState<PeriodePaie[]>([]);
@@ -295,13 +297,13 @@ export default function GestionDocuments() {
   }, [workspaceId]);
 
   useEffect(() => {
-    if (showPdfDialog || showExcelDialog || showCsvDialog) {
+    if (showPdfDialog || showExcelDialog || showCsvDialog || showReportDialog) {
       setSelectedPeriodId("");
       setSelectedPayslipId("");
       setPayslips([]);
       fetchPeriods();
     }
-  }, [showPdfDialog, showExcelDialog, showCsvDialog, fetchPeriods]);
+  }, [showPdfDialog, showExcelDialog, showCsvDialog, showReportDialog, fetchPeriods]);
 
   // P2-1 : charger les bulletins de la période choisie (dialog PDF)
   useEffect(() => {
@@ -397,6 +399,36 @@ export default function GestionDocuments() {
     }
   };
 
+  // ── Rapport groupé (Lot 7-A : fin de l'orphelin — Phase 8 existed côté
+  // serveur mais AUCUNE interface ne permettait de l'utiliser) ──────────
+  const handleGenerateReport = async () => {
+    if (!selectedPeriodId) {
+      toast.error("Sélectionnez la période du rapport");
+      return;
+    }
+    setIsGenerating(true);
+    try {
+      const result = await api.post<{
+        message: string;
+        document: DocumentStorage;
+        nombreBulletins?: number;
+      }>(`/reports/periods/${selectedPeriodId}/grouped-pdf`, { workspaceId });
+      toast.success(
+        result.message || "Rapport groupé généré",
+        result.nombreBulletins
+          ? { description: `${result.nombreBulletins} bulletin(s) regroupés` }
+          : undefined
+      );
+      setShowReportDialog(false);
+      fetchDocuments();
+    } catch (err) {
+      const apiErr = err as ApiError;
+      toast.error(apiErr.message || "Erreur lors de la génération du rapport");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // ── Download document ────────────────────────────────────────────────
   const handleDownload = (doc: DocumentStorage) => {
     // Pour les bulletins PDF, utiliser la route de téléchargement dédiée
@@ -426,9 +458,35 @@ export default function GestionDocuments() {
       return;
     }
 
+    // Lot 7-A : rapports groupés — téléchargement via la route dédiée
+    // (contenu durable en base — P0-3/P1-7 pattern)
+    if (doc.type === "RAPPORT_GROUPE") {
+      const url = `/api/reports/${workspaceId}/${doc.id}/download`;
+      fetch(url, {
+        credentials: "include",
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("Erreur de téléchargement");
+          return res.blob();
+        })
+        .then((blob) => {
+          const objectUrl = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = objectUrl;
+          a.download = doc.nomFichier;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(objectUrl);
+          toast.success("Téléchargement lancé");
+        })
+        .catch(() => toast.error("Erreur lors du téléchargement"));
+      return;
+    }
+
     // Pour les autres types, on peut tenter de télécharger via le chemin de stockage
     // (le serveur n'a pas de route de download générique, donc on informe l'utilisateur)
-    toast.info("Téléchargement disponible pour les bulletins PDF uniquement via cette interface");
+    toast.info("Téléchargement disponible pour les bulletins et rapports via cette interface");
   };
 
   // ── Voir détail ──────────────────────────────────────────────────────
@@ -559,6 +617,31 @@ export default function GestionDocuments() {
               >
               <FileDown className="size-3.5" />
               Exporter CSV
+            </Button>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-navy/20 dark:border-navy/40">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Files className="size-4 text-amber-600" />
+              Rapport groupé
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground mb-3">
+              Regrouper tous les bulletins d&apos;une période en un document
+              unique (HTML prêt à imprimer).
+            </p>
+            {peutEcrire && (
+              <Button
+                size="sm"
+                className="w-full bg-navy hover:bg-navy/90 text-white gap-1.5"
+                onClick={() => setShowReportDialog(true)}
+              >
+              <Files className="size-3.5" />
+              Générer le rapport
             </Button>
             )}
           </CardContent>
@@ -927,6 +1010,62 @@ export default function GestionDocuments() {
             >
               {isGenerating && <Loader2 className="size-3.5 animate-spin" />}
               Exporter
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Dialog: Rapport groupé (Lot 7-A — sélecteur de période) ─── */}
+      <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Files className="size-5 text-amber-600" />
+              Rapport groupé
+            </DialogTitle>
+            <DialogDescription>
+              Regrouper tous les bulletins d&apos;une période en un document
+              unique — HTML prêt à imprimer (Imprimer → Enregistrer en PDF).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-sm">Période de paie</Label>
+              <Select value={selectedPeriodId} onValueChange={setSelectedPeriodId}>
+                <SelectTrigger className="w-full" disabled={periodsLoading}>
+                  <SelectValue placeholder={periodsLoading ? "Chargement…" : "Choisir la période"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {periods.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {periodeLabel(p)}
+                      {p._count ? ` (${p._count.payslips} bulletin(s))` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {periods.length === 0 && !periodsLoading && (
+                <p className="text-xs text-muted-foreground">
+                  Aucune période — ouvrez d&apos;abord une période dans « Paie du mois ».
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowReportDialog(false)}
+              disabled={isGenerating}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleGenerateReport}
+              disabled={isGenerating || !selectedPeriodId}
+              className="bg-navy hover:bg-navy/90 text-white gap-1.5"
+            >
+              {isGenerating && <Loader2 className="size-3.5 animate-spin" />}
+              Générer
             </Button>
           </DialogFooter>
         </DialogContent>

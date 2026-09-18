@@ -9,7 +9,7 @@ import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireWorkspaceMember, requireWorkspaceWriter, hasWorkspaceAccess } from "../middleware/rbac.js";
-import { generateBulletinHtml, storeFile, fileExists } from "../lib/document-generator.js";
+import { generateBulletinHtml, storeFile, fileExists, toBase64, readDocumentContent } from "../lib/document-generator.js";
 import { auditLog, AUDIT_ACTIONS } from "../lib/audit-log.js";
 
 const router = Router();
@@ -42,11 +42,11 @@ router.post("/periods/:id/grouped-pdf", requireAuth, requireWorkspaceWriter(), a
     });
     if (!payslips.length) return res.status(400).json({ error: "Aucun bulletin dans cette période" });
 
-    // Vérifier si rapport déjà généré
+    // Vérifier si rapport déjà généré (durabilité : contenu en base OU disque local)
     const existing = await prisma.documentStorage.findFirst({
       where: { periodePaieId: id, type: "RAPPORT_GROUPE", workspaceId },
     });
-    if (existing && fileExists(existing.cheminStockage)) {
+    if (existing && (existing.contenuBase64 || fileExists(existing.cheminStockage))) {
       return res.json({ document: existing, message: "Rapport groupé déjà généré" });
     }
 
@@ -111,6 +111,8 @@ router.post("/periods/:id/grouped-pdf", requireAuth, requireWorkspaceWriter(), a
         type: "RAPPORT_GROUPE",
         nomFichier: filename,
         cheminStockage: chemin,
+        // P0-3/P1-7 : durabilité serverless — contenu en colonne, disque en repli
+        contenuBase64: toBase64(groupedHtml),
         tailleOctets: taille,
         mimeType: "text/html",
         mois: realMois,
@@ -154,6 +156,29 @@ router.get("/:ws/:id", requireAuth, requireWorkspaceMember(), async (req: Reques
     if (!doc) return res.status(404).json({ error: "Rapport introuvable" });
     return res.json(doc);
   } catch (err) { console.error("[reports] detail:", err); return res.status(500).json({ error: "Erreur interne" }); }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/reports/:ws/:id/download — Télécharger rapport groupé
+// (Lot 7-A : fin de l'orphelin — lecture durable base d'abord, disque en repli)
+// ---------------------------------------------------------------------------
+router.get("/:ws/:id/download", requireAuth, requireWorkspaceMember(), async (req: Request, res: Response) => {
+  try {
+    const { ws, id } = req.params;
+    if (!(await checkWs(req.user!.userId, req.user!.role, ws))) return res.status(403).json({ error: "Accès refusé" });
+
+    const doc = await prisma.documentStorage.findFirst({ where: { id, workspaceId: ws, type: "RAPPORT_GROUPE" } });
+    if (!doc) return res.status(404).json({ error: "Rapport non généré" });
+
+    const content = readDocumentContent(doc);
+    if (!content) {
+      return res.status(404).json({ error: "Fichier introuvable — régénérez le rapport" });
+    }
+
+    res.setHeader("Content-Type", doc.mimeType);
+    res.setHeader("Content-Disposition", `attachment; filename="${doc.nomFichier}"`);
+    return res.send(content);
+  } catch (err) { console.error("[reports] download:", err); return res.status(500).json({ error: "Erreur interne" }); }
 });
 
 export default router;

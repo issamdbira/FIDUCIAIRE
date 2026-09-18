@@ -48,6 +48,7 @@ let contractId = "";
 let importId = "";
 let periodId = "";
 let payslipId = "";
+let octobreId = "";
 
 // NB : PAS async — on renvoie le Test supertest (thenable) pour pouvoir
 // enchaîner .send()/.field()/.attach() avant l'await.
@@ -450,7 +451,7 @@ describe("Parcours métier E2E — Entreprise (réel, sans mock)", () => {
       annee: 2026,
     });
     expect(periode.status).toBe(201);
-    const octobreId = periode.body.id as string;
+    octobreId = periode.body.id as string;
 
     const calc = await authed("patch", `/api/payroll/${workspaceId}/periods/${octobreId}/calculate`);
     expect(calc.status).toBe(200);
@@ -469,5 +470,37 @@ describe("Parcours métier E2E — Entreprise (réel, sans mock)", () => {
     // 5) La validation reste possible (l'avertissement ne bloque pas)
     const validate = await authed("patch", `/api/payroll/${workspaceId}/periods/${octobreId}/validate`);
     expect(validate.status).toBe(200);
+  });
+
+  test("19. [7-A] Rapport groupé — génération, durabilité base, téléchargement", async () => {
+    // La route existait depuis la Phase 8 mais AUCUNE interface ne l'appelait
+    // (orpheline), le contenu n'était pas persisté en base (cassée en
+    // serverless) et il n'existait aucune route de téléchargement.
+    const gen = await authed("post", `/api/reports/periods/${octobreId}/grouped-pdf`).send({ workspaceId });
+    expect(gen.status).toBe(201);
+    expect(gen.body.document.type).toBe("RAPPORT_GROUPE");
+    expect(gen.body.document.contenuBase64).toBeTruthy(); // durabilité serverless
+    expect(gen.body.nombreBulletins).toBeGreaterThanOrEqual(1);
+    const reportId = gen.body.document.id as string;
+
+    // Idempotence : un second appel renvoie le document existant (pas de doublon)
+    const gen2 = await authed("post", `/api/reports/periods/${octobreId}/grouped-pdf`).send({ workspaceId });
+    expect(gen2.status).toBe(200);
+    expect(gen2.body.document.id).toBe(reportId);
+
+    // Le rapport apparaît dans la liste documents (type RAPPORT_GROUPE)
+    const docs = await authed("get", `/api/documents/${workspaceId}?type=RAPPORT_GROUPE`);
+    expect(docs.status).toBe(200);
+    const rapports = docs.body as Array<{ id: string; type: string }>;
+    expect(rapports.some((d) => d.id === reportId)).toBe(true);
+
+    // Téléchargement : contenu servi depuis la base (peu importe le disque)
+    const dl = await authed("get", `/api/reports/${workspaceId}/${reportId}/download`);
+    expect(dl.status).toBe(200);
+    expect(dl.headers["content-type"]).toContain("text/html");
+    const html = dl.text;
+    expect(html).toContain("RAPPORT GROUPÉ");
+    expect(html).toContain("Octobre 2026");
+    expect(html).toContain("Nombre de bulletins");
   });
 });
