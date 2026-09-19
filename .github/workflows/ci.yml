@@ -53,6 +53,12 @@ jobs:
     if: github.event_name != 'workflow_dispatch' || inputs.lane == 'unit' || inputs.lane == 'full'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      # Lot 8 fix — VERCEL=1 empêche server/index.ts de listen() au chargement
+      # (les tests de sécurité importent createApp() qui sinon démarre un listener
+      # sur le port 3001 → EADDRINUSE quand plusieurs fichiers de test tournent)
+      VERCEL: '1'
+      JWT_SECRET: 'ci-test-secret-32-chars-minimum-ok'
 
     steps:
       - name: Checkout
@@ -81,7 +87,9 @@ jobs:
         run: pnpm exec tsc --noEmit
 
       - name: Unit + security tests
-        run: pnpm exec vitest run --config vitest.config.ts --reporter=dot --reporter=junit --outputFile=test-results/unit.junit.xml
+        run: |
+          mkdir -p test-results
+          pnpm exec vitest run --config vitest.config.ts --reporter=dot --reporter=junit --outputFile=test-results/unit.junit.xml
 
       - name: Publish test report
         if: always()
