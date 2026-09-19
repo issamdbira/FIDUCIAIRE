@@ -48,3 +48,23 @@
 **Décision proposée** : Stratégie A (rupture millimes) — recommandée pour conformité réglementaire + cohérence avec mode CONVENTIONNEL (Lot 8-A). Nécessite de remplacer 22 call sites `round2Exact` par `round3Exact`.
 **Statut** : En attente de décision humaine (LOT 8-2 STOP 2).
 **Référence** : `docs/DECISION_ROUNDING_LOT8.md`.
+
+## 2026-09-19 (clôture Lot 8) — Décisions utilisateur
+
+### D-5 : Phase 1 (prod verification) DEFERRED par utilisateur
+**Décision** : L'utilisateur a explicitement zappé les 5 actions humaines bloquantes (JWT_SECRET Vercel, mot de passe Neon, token GitHub, décision arrondi, git filter-repo).
+**Motif** : l'utilisateur accepte l'état partiel et demande la clôture du Lot sans attendre.
+**Conséquence** : la matrice de vérité 16 lignes reste `NOT VERIFIED`. Une future itération post-Lot-8 pourra rejouer ces vérifications une fois les actions humaines exécutées.
+**Référence** : `docs/VERIFICATION_PROD_LOT8.md` §4.
+
+### D-6 : Arrondi (centimes vs millimes) — Stratégie A NON appliquée
+**Décision** : La Stratégie A (rupture millimes) recommandée dans `docs/DECISION_ROUNDING_LOT8.md` n'est **pas appliquée** — l'utilisateur a zappé le Stop 2.
+**Motif** : la règle Lot 8 *"Do not change payroll rates, formulas, rounding"* reste en vigueur. Le code reste en centimes (`round2Exact` 22 call sites, `round3Exact` code mort).
+**Statut** : DEFERRED — l'analyse read-only reste disponible, l'application éventuelle est repoussée à un lot ultérieur.
+**Référence** : `docs/DECISION_ROUNDING_LOT8.md`.
+
+### D-7 : git filter-repo NON exécuté
+**Décision** : La procédure `git filter-repo` documentée dans `docs/GIT_FILTER_REPO_LOT8.md` n'est **pas exécutée** — l'utilisateur a zappé l'action optionnelle.
+**Motif** : opération destructive, l'utilisateur préfère ne pas risquer la perte d'historique. La rotation du mot de passe Neon (action humaine séparée) suffit à restaurer la sécurité réelle.
+**Conséquence** : le vieux mot de passe reste dans l'historique git — gitleaks continuera à l'alerter.
+**Référence** : `docs/GIT_FILTER_REPO_LOT8.md`.

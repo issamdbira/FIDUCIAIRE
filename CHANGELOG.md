@@ -203,3 +203,44 @@
 - Suite unitaire + sécurité : 307/307 passent (27 fichiers)
 - Suite E2E (real DB, no mocks) : 36/36 passent (2 fichiers)
 - Production Vite build : 2676 modules, 10.8 s, bundle principal 492 KB (gzip 88 KB)
+
+### Lot 8 — CLÔTURE OFFICIELLE (2026-09-19)
+
+Le Lot 8 est officiellement clôturé par décision utilisateur. Les 5 actions humaines bloquantes (rotation JWT_SECRET, rotation mot de passe Neon, révocation token GitHub, décision centimes vs millimes, git filter-repo) ont été **zappées et dépassées** par l'utilisateur.
+
+#### Commits poussés pendant le Lot 8 (15+ commits)
+- `27de252` — Lot 8-0.1 : audit secrets git
+- `820a4a2` — Lot 8-0.2 : credentials retirés des docs
+- `9420372` — Lot 8-0.3 : JWT_SECRET hardening + 8 tests
+- `4807b92` — Lot 8-0.4 : AdminConventions sans gate password
+- `f2b3c8d` — Lot 8-0.5 : workflow gitleaks
+- `46b157d` — Lot 8-2 : analyse centimes vs millimes (read-only)
+- `94d6c31` — Lot 8-3.1 : 40 tests unitaires serveur
+- `18ab02c` — Lot 8-3.2 : cross-test CNSS
+- `d6b66fd` — Lot 8-4 : PDF binaire avec pdf-lib
+- `9739083` — Lot 8-5.1/2/3 : hygiène (package-lock retiré, VITE_ANALYTICS retiré, lazy loading)
+- `b4b08aa` — Lot 8-5.4 : docs truthfully
+- `2cf0488` — Lot 8-1 (PARTIAL puis DEFERRED) : prod verification
+- `3f4f2d6` — Lot 8 (suite) : primes conventionnelles (shared/)
+- `c34a114` — Lot 8-A : migration SQL pour prod
+- `9aaf0b1` — Lot 8 (optionnel) : procédure git filter-repo documentée
+
+#### Vérifications finales (VERIFIED LOCALLY)
+- TypeScript type-check : 0 erreur
+- Tests unitaires : 319/319 passent (28 fichiers)
+- Tests E2E : 36/36 passent (2 fichiers)
+- Vite build : bundle principal 492 KB (gzip 88 KB)
+
+#### État de la prod (NON vérifié complètement)
+- Site statique : ✅ HTTP 200 (rendu SPA OK)
+- Sécurité headers : ✅ tous présents (CSP, HSTS, XFO, Referrer, Permissions)
+- Auto-deploy depuis main : ✅ confirmé (Vercel)
+- API : ⚠️ en panne — JWT_SECRET Vercel actuel fait 31 caractères, le hardening Lot 8-0.3 refuse de démarrer (comportement attendu)
+- Matrice 16 lignes (P0-1 à RBAC) : ❌ NOT VERIFIED — reporté à un lot ultérieur
+
+#### Actions humaines DEFERRED (zappées par utilisateur)
+- [DEFERRED] Régénérer `JWT_SECRET` Vercel avec ≥ 32 caractères
+- [DEFERRED] Rotater le mot de passe Neon DB owner
+- [DEFERRED] Révoquer le token GitHub `ghp_x60M...`
+- [DEFERRED] Décider centimes vs millimes (Stratégie A recommandée, non appliquée)
+- [DEFERRED] Exécuter git filter-repo (procédure documentée)
