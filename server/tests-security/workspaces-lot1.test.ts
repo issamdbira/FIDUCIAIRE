@@ -14,6 +14,7 @@ vi.mock("../lib/prisma.js", async () => {
   const { creerFakeLoginAttempts } = await import("./helpers/fake-login-attempts.js");
   const mock = {
     session: { findUnique: vi.fn(), deleteMany: vi.fn(), create: vi.fn() },
+    password_resets: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), deleteMany: vi.fn() },
     users: { findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
     workspace_members: { findUnique: vi.fn(), findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn() },
     delegated_access: { findMany: vi.fn() },

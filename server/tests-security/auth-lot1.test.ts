@@ -16,7 +16,7 @@ vi.mock("../lib/prisma.js", async () => {
     workspace_members: { findUnique: vi.fn(), findMany: vi.fn() },
     delegated_access: { findMany: vi.fn() },
     invitations: { findUnique: vi.fn() },
-    password_resets: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
+    password_resets: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), deleteMany: vi.fn() },
     auditLog: { create: vi.fn() },
     login_attempts: creerFakeLoginAttempts(), // Lot 3 — limiteur persisté en base
   };
@@ -40,7 +40,7 @@ const db = prisma as unknown as {
   users: { findUnique: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
   workspace_members: { findMany: ReturnType<typeof vi.fn> };
   delegated_access: { findMany: ReturnType<typeof vi.fn> };
-  password_resets: { findUnique: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
+  password_resets: { findUnique: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn>; deleteMany: ReturnType<typeof vi.fn> };
   auditLog: { create: ReturnType<typeof vi.fn> };
   login_attempts: FakeLoginAttempts;
 };

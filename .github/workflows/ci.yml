@@ -1,0 +1,181 @@
+# =============================================================================
+# Le Fiduciaire — Continuous Integration
+# =============================================================================
+# Triggers:
+#   - push on main / pull_request → fast lane (type-check + unit tests)
+#   - tag v*                      → full lane (above + E2E on a real DB)
+#   - workflow_dispatch            → manual run of either lane
+#
+# Stack: pnpm 10 / Node 22 / Vitest 2.1 / Prisma 6.19 / PostgreSQL 16 (CI only)
+#
+# Secrets required for the full lane:
+#   - DATABASE_URL  A real PostgreSQL connection string (Neon branch, supabase
+#                   project, or GitHub Action service container). Used by
+#                   `vitest.e2e.config.ts` only. NEVER committed to the repo.
+#
+# The unit lane does not require any secret and runs on every push.
+# =============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*']
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: 'Lane (unit | full)'
+        required: true
+        default: 'unit'
+        type: choice
+        options: ['unit', 'full']
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Concurrency: cancel a previous run on the same ref when a new commit lands
+# ─────────────────────────────────────────────────────────────────────────────
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write   # required for the vitest report publisher
+
+jobs:
+  # ───────────────────────────────────────────────────────────────────────────
+  # Fast lane — runs on every push/PR. No DB, no secrets.
+  # ───────────────────────────────────────────────────────────────────────────
+  unit:
+    name: Type-check + unit tests
+    if: github.event_name != 'workflow_dispatch' || inputs.lane == 'unit' || inputs.lane == 'full'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm exec prisma generate
+
+      - name: TypeScript type-check
+        run: pnpm exec tsc --noEmit
+
+      - name: Unit + security tests
+        run: pnpm exec vitest run --config vitest.config.ts --reporter=dot --reporter=junit --outputFile=test-results/unit.junit.xml
+
+      - name: Publish test report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Unit tests
+          path: test-results/*.xml
+          reporter: java-junit
+
+      - name: Production build (smoke)
+        run: pnpm exec vite build
+
+      - name: Upload build artifact
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.sha }}
+          path: dist/
+          retention-days: 7
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Full lane — runs on tag v* OR manual dispatch with lane=full.
+  # Boots a real PostgreSQL service container, runs the E2E suite (no mocks).
+  # ───────────────────────────────────────────────────────────────────────────
+  e2e:
+    name: E2E (real PostgreSQL, no mocks)
+    if: |
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && inputs.lane == 'full')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fiduciaire_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd="pg_isready -U postgres -d fiduciaire_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/fiduciaire_test?schema=public
+      JWT_SECRET: ci-secret-fiduciaire-not-for-prod
+      PORT: '0'
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm exec prisma generate
+
+      - name: Apply migrations (migrate deploy)
+        run: pnpm exec prisma migrate deploy
+
+      - name: TypeScript type-check
+        run: pnpm exec tsc --noEmit
+
+      - name: E2E suite (real DB, no mocks)
+        run: pnpm exec vitest run --config vitest.e2e.config.ts --reporter=dot --reporter=junit --outputFile=test-results/e2e.junit.xml
+
+      - name: Unit + security tests
+        run: pnpm exec vitest run --config vitest.config.ts --reporter=dot
+
+      - name: Publish E2E report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: E2E tests
+          path: test-results/e2e.junit.xml
+          reporter: java-junit
+
+      - name: Production build
+        run: pnpm exec vite build

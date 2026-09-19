@@ -23,6 +23,12 @@ vi.mock("../lib/prisma.js", async () => {
       deleteMany: vi.fn(),
       create: vi.fn(),
     },
+    password_resets: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      deleteMany: vi.fn(),
+    },
     users: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
