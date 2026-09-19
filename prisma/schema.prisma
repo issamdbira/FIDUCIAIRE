@@ -982,6 +982,11 @@ enum StatutPeriodePaie {
   CLOSED // Clôturée — impossible de modifier
 }
 
+enum ModePaie {
+  SIMPLE // Moteur générique : brut contractuel × tauxPresence → CNSS → IRPP → net
+  CONVENTIONNEL // Moteur de convention : grille (échelle × échelon × année) + primes + indemnité supplémentaire
+}
+
 enum NiveauAnomalie {
   BLOQUANTE // Empêche la validation de la période
   AVERTISSEMENT // Validation possible avec justification
@@ -1001,6 +1006,7 @@ model PayrollPeriod {
   annee Int // Année
 
   statut StatutPeriodePaie @default(OPEN)
+  modePaie ModePaie @default(SIMPLE) // SIMPLE = moteur générique, CONVENTIONNEL = moteur de convention collective
 
   // Dates de cycle
   dateOuverture  DateTime  @default(now()) // Ouverture automatique
@@ -1068,7 +1074,9 @@ model Payslip {
   heuresSupplementaires  Float // Heures supp.
 
   // --- Calculs intermédiaires ---
-  salaireBrutEffectif Float // Brut effectif = brut contractuel × tauxPresence
+  salaireBrutEffectif Float // Brut effectif = brut contractuel × tauxPresence (mode SIMPLE) ou base grille + indemnité (mode CONVENTIONNEL)
+  salaireBaseGrille   Float? // En mode CONVENTIONNEL : montant de la grille (échelle × échelon × année)
+  indemniteSupplementaire Float? // En mode CONVENTIONNEL : excédent du brut au-dessus de la grille
   montantHeuresSup    Float // Montant heures supp.
   montantAbsence      Float // Déduction absence
   baseImposable       Float // Base imposable avant déductions

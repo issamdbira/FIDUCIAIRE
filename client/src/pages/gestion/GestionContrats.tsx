@@ -64,6 +64,10 @@ import {
   CalendarDays,
   Banknote,
   Briefcase,
+  // Lot 8-E : icônes pour les nouvelles actions contrat
+  PlayCircle,
+  CheckCircle2,
+  Copy,
 } from "lucide-react";
 
 // =============================================================================
@@ -505,6 +509,62 @@ export default function GestionContrats() {
     }
   };
 
+  // ── Lot 8-E : Réactiver un contrat suspendu ─────────────────────────────
+  const handleReactiver = async (contract: Contract) => {
+    if (!workspaceId) return;
+    if (!confirm(`Réactiver le contrat de ${contract.employee?.firstName} ${contract.employee?.lastName} ?`)) return;
+    try {
+      await api.patch(`/contracts/${workspaceId}/${contract.id}/reactiver`);
+      toast.success("Contrat réactivé avec succès");
+      fetchContracts();
+    } catch (err) {
+      const apiErr = err as ApiError;
+      toast.error(apiErr.message || "Erreur lors de la réactivation");
+    }
+  };
+
+  // ── Lot 8-E : Terminer un CDD/saisonnier/stage/interim à son échéance ────
+  const handleTerminer = async (contract: Contract) => {
+    if (!workspaceId) return;
+    const motifFin = prompt(
+      `Terminer le contrat de ${contract.employee?.firstName} ${contract.employee?.lastName} ?\n\n` +
+      `Indiquez le motif (laissez vide pour \"Fin normale du contrat\") :`
+    );
+    if (motifFin === null) return; // utilisateur a cliqué sur Annuler
+    try {
+      await api.patch(`/contracts/${workspaceId}/${contract.id}/terminer`, {
+        motifFin: motifFin || undefined,
+      });
+      toast.success("Contrat marqué comme TERMINÉ");
+      fetchContracts();
+    } catch (err) {
+      const apiErr = err as ApiError;
+      toast.error(apiErr.message || "Erreur lors de la terminaison du contrat");
+    }
+  };
+
+  // ── Lot 8-E : Dupliquer un contrat (renouvellement de CDD) ───────────────
+  const handleDupliquer = async (contract: Contract) => {
+    if (!workspaceId) return;
+    const dateDebut = prompt(
+      `Dupliquer le contrat de ${contract.employee?.firstName} ${contract.employee?.lastName} ?\n\n` +
+      `Date de début du nouveau contrat (YYYY-MM-DD) :`,
+      new Date().toISOString().slice(0, 10)
+    );
+    if (!dateDebut) return;
+    try {
+      const response = await api.post<{ contract: { id: string }; version: { id: string }; message: string }>(
+        `/contracts/${workspaceId}/${contract.id}/dupliquer`,
+        { dateDebut }
+      );
+      toast.success(response.message || "Contrat dupliqué avec succès");
+      fetchContracts();
+    } catch (err) {
+      const apiErr = err as ApiError;
+      toast.error(apiErr.message || "Erreur lors de la duplication du contrat");
+    }
+  };
+
   // ── Detail ───────────────────────────────────────────────────────────────
   const openDetail = async (contract: Contract) => {
     if (!workspaceId) return;
@@ -756,6 +816,16 @@ export default function GestionContrats() {
                                 Ajouter version
                               </DropdownMenuItem>
                             )}
+                            {/* Lot 8-E — Duplication (renouvellement de CDD ou nouveau contrat) */}
+                            {peutEcrire && (contract.statut === "TERMINE" || contract.statut === "RESILIE") && (
+                              <DropdownMenuItem
+                                onClick={() => handleDupliquer(contract)}
+                                className="text-emerald-600 focus:text-emerald-700"
+                              >
+                                <Copy className="size-4 mr-2" />
+                                Dupliquer (renouvellement)
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             {contract.statut === "ACTIF" && (
                               <>
@@ -766,6 +836,16 @@ export default function GestionContrats() {
                                   <Pause className="size-4 mr-2" />
                                   Suspendre
                                 </DropdownMenuItem>
+                                {/* Lot 8-E — Terminer un CDD/saisonnier/stage/interim à son échéance */}
+                                {(contract.type === "CDD" || contract.type === "SAISONNIER" || contract.type === "STAGE" || contract.type === "INTERIM") && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleTerminer(contract)}
+                                    className="text-blue-600 focus:text-blue-700"
+                                  >
+                                    <CheckCircle2 className="size-4 mr-2" />
+                                    Terminer (fin de contrat)
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem
                                   onClick={() => openResilierForm(contract)}
                                   className="text-red-600 focus:text-red-700"
@@ -775,14 +855,24 @@ export default function GestionContrats() {
                                 </DropdownMenuItem>
                               </>
                             )}
+                            {/* Lot 8-E — Réactiver un contrat suspendu */}
                             {contract.statut === "SUSPENDU" && (
-                              <DropdownMenuItem
-                                onClick={() => openResilierForm(contract)}
-                                className="text-red-600 focus:text-red-700"
-                              >
-                                <Ban className="size-4 mr-2" />
-                                Résilier
-                              </DropdownMenuItem>
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => handleReactiver(contract)}
+                                  className="text-emerald-600 focus:text-emerald-700"
+                                >
+                                  <PlayCircle className="size-4 mr-2" />
+                                  Réactiver
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => openResilierForm(contract)}
+                                  className="text-red-600 focus:text-red-700"
+                                >
+                                  <Ban className="size-4 mr-2" />
+                                  Résilier
+                                </DropdownMenuItem>
+                              </>
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -939,10 +1029,18 @@ export default function GestionContrats() {
             <p className="text-sm font-semibold text-primary flex items-center gap-1.5">
               <Banknote className="size-4" /> Rémunération
             </p>
+            {/* Lot 8-D : le salaire brut du contrat est INDICATIF (objectif de rémunération).
+                En mode CONVENTIONNEL de paie, il sera décomposé en :
+                - salaire de base (grille échelle × échelon × année, depuis la convention)
+                - indemnité complémentaire (excédent au-dessus de la grille)
+                Donc l'utilisateur saisit ici l'objectif, pas le brut figé. */}
+            <p className="text-xs text-muted-foreground italic">
+              Salaire indicatif (objectif de rémunération) — sera décomposé en base + indemnité complémentaire lors du calcul de paie si une convention est rattachée.
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="grid gap-1.5">
                 <Label htmlFor="salaireBrut" className="text-sm font-medium">
-                  Salaire brut mensuel (TND) <span className="text-destructive">*</span>
+                  Salaire brut mensuel indicatif (TND) <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="salaireBrut"

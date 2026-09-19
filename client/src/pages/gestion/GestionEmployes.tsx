@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, type ApiError } from "@/lib/api";
 import { getWorkspaceId } from "@/lib/workspace";
@@ -256,8 +257,24 @@ export default function GestionEmployes() {
         await api.put(`/employees/${workspaceId}/${editingId}`, body);
         toast.success("Salarié mis à jour");
       } else {
-        await api.post("/employees", body);
-        toast.success("Salarié créé");
+        // Lot 8-B : wizard 2-étapes — après création de l'employé, proposer
+        // de créer le contrat initial (au lieu de laisser l'utilisateur
+        // naviguer manuellement vers GestionContrats)
+        const created = await api.post<{ id: string; firstName: string; lastName: string }>("/employees", body);
+        toast.success(
+          <div>
+            <div className="font-semibold">Salarié créé : {created.firstName} {created.lastName}</div>
+            <div className="text-xs mt-1">
+              Pour finaliser son dossier, créez son contrat initial →{" "}
+              <Link href="/gestion/contrats">
+                <a className="underline font-medium text-primary inline-flex items-center">
+                  Gestion des contrats →
+                </a>
+              </Link>
+            </div>
+          </div>,
+          { duration: 8000 }
+        );
       }
       setDialogOpen(false);
       fetchEmployees();

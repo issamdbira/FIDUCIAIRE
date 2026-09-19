@@ -118,6 +118,16 @@ interface CalculateResult {
   errors: string[];
   // Lot 7-C : règles réglementaires actives appliquées (transparence)
   rulesApplied?: { code: string; valeur: number; description?: string }[];
+  // Lot 8-C : diagnostics détaillés — chaque étape manquante est listée nommément
+  diagnostics?: {
+    modePaie: "SIMPLE" | "CONVENTIONNEL";
+    salariesTrouves: number;
+    salariesSansContratActif: string[];
+    salariesSansPointage: string[];
+    salariesSansConvention: string[];
+    salariesSalaireSousGrille: string[];
+    periodeDejaCalculee: boolean;
+  };
 }
 
 interface Payslip {
@@ -225,6 +235,8 @@ export default function GestionPaie() {
   const [newMois, setNewMois] = useState<string>(String(new Date().getMonth() + 1));
   const [newAnnee, setNewAnnee] = useState<string>(String(new Date().getFullYear()));
   const [newNote, setNewNote] = useState("");
+  // Lot 8-A : mode de paie SIMPLE (moteur générique) ou CONVENTIONNEL (grille + indemnité supplémentaire)
+  const [newModePaie, setNewModePaie] = useState<"SIMPLE" | "CONVENTIONNEL">("SIMPLE");
   const [creating, setCreating] = useState(false);
 
   // ── Fetch periods ─────────────────────────────────────────────────────
@@ -282,13 +294,15 @@ export default function GestionPaie() {
         mois: parseInt(newMois, 10),
         annee: parseInt(newAnnee, 10),
         note: newNote || undefined,
+        modePaie: newModePaie,
       });
-      toast.success("Période de paie ouverte avec succès");
+      toast.success(`Période de paie ouverte (mode ${newModePaie === "SIMPLE" ? "Simple" : "Conventionnel"})`);
       setOpenDialog(false);
       setNewClientId("");
       setNewMois(String(new Date().getMonth() + 1));
       setNewAnnee(String(new Date().getFullYear()));
       setNewNote("");
+      setNewModePaie("SIMPLE");
       fetchPeriods();
     } catch (err) {
       const e = err as ApiError;
@@ -328,7 +342,25 @@ export default function GestionPaie() {
         if (r?.skippedNoContract) details.push(`${r.skippedNoContract} sans contrat`);
         if (r?.skippedNoAttendance) details.push(`${r.skippedNoAttendance} sans pointage`);
         if (r?.rulesApplied?.length) details.push(`${r.rulesApplied.length} règle(s) réglementaire(s)`);
-        toast.success(`Paie calculée — ${details.join(", ")} (${label})`, { duration: 7000 });
+
+        // Lot 8-C : diagnostics détaillés — informe l'utilisateur des actions manquantes
+        // directement dans le toast, au lieu de chercher dans les anomalies
+        const d = r?.diagnostics;
+        if (d) {
+          if (d.salariesSansContratActif.length > 0) {
+            details.push(`⚠ sans contrat : ${d.salariesSansContratActif.slice(0, 2).join(", ")}${d.salariesSansContratActif.length > 2 ? "…" : ""}`);
+          }
+          if (d.salariesSansPointage.length > 0) {
+            details.push(`⚠ sans pointage (100% présence) : ${d.salariesSansPointage.slice(0, 2).join(", ")}${d.salariesSansPointage.length > 2 ? "…" : ""}`);
+          }
+          if (d.modePaie === "CONVENTIONNEL" && d.salariesSansConvention.length > 0) {
+            details.push(`⚠ sans convention : ${d.salariesSansConvention.slice(0, 2).join(", ")}${d.salariesSansConvention.length > 2 ? "…" : ""}`);
+          }
+          if (d.salariesSalaireSousGrille.length > 0) {
+            details.push(`⚠ sous-grille : ${d.salariesSalaireSousGrille.slice(0, 2).join(", ")}${d.salariesSalaireSousGrille.length > 2 ? "…" : ""}`);
+          }
+        }
+        toast.success(`Paie calculée — ${details.join(", ")} (${label})`, { duration: 9000 });
       }
 
       fetchPeriods();
@@ -1024,6 +1056,29 @@ export default function GestionPaie() {
                 onChange={(e) => setNewNote(e.target.value)}
                 rows={2}
               />
+            </div>
+
+            {/* Lot 8-A — sélecteur de mode de paie */}
+            <div className="space-y-1.5">
+              <Label htmlFor="paie-mode">Mode de paie *</Label>
+              <Select value={newModePaie} onValueChange={(v) => setNewModePaie(v as "SIMPLE" | "CONVENTIONNEL")}>
+                <SelectTrigger id="paie-mode">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SIMPLE">
+                    Simple — brut contractuel × taux de présence → CNSS → IRPP → net
+                  </SelectItem>
+                  <SelectItem value="CONVENTIONNEL">
+                    Conventionnel — décompose le brut en salaire de base (grille échelle × échelon) + indemnité complémentaire
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {newModePaie === "CONVENTIONNEL"
+                  ? "Le contrat doit référencer une convention collective + coefficient + échelon. Sinon, bascule en mode Simple avec anomalie CONVENTION_MANQUANTE."
+                  : "Mode générique — recommandé si aucune convention collective n'est rattachée au contrat."}
+              </p>
             </div>
           </div>
           <DialogFooter>

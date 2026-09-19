@@ -29,12 +29,16 @@ const TRANSITIONS: Record<string, string[]> = {
 // ---------------------------------------------------------------------------
 router.post("/periods", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
   try {
-    const { workspaceId, clientCompanyId, mois, annee, note } = req.body;
+    const { workspaceId, clientCompanyId, mois, annee, note, modePaie } = req.body;
     if (!workspaceId || !clientCompanyId || !mois || !annee) {
       return res.status(400).json({ error: "workspaceId, clientCompanyId, mois et annee requis" });
     }
     const m = parseInt(mois, 10), a = parseInt(annee, 10);
     if (m < 1 || m > 12 || a < 2000 || a > 2100) return res.status(400).json({ error: "mois/annee invalides" });
+
+    // Lot 8-A : valider modePaie (SIMPLE par défaut)
+    const modePaieValide: "SIMPLE" | "CONVENTIONNEL" =
+      modePaie === "CONVENTIONNEL" ? "CONVENTIONNEL" : "SIMPLE";
 
     if (!(await checkWs(req.user!.userId, req.user!.role, workspaceId))) return res.status(403).json({ error: "Accès refusé" });
 
@@ -53,7 +57,7 @@ router.post("/periods", requireAuth, requireWorkspaceWriter(), async (req: Reque
     if (existing) return res.status(409).json({ error: "Période déjà existante", period: existing });
 
     const period = await prisma.payrollPeriod.create({
-      data: { workspaceId, clientCompanyId, mois: m, annee: a, note: note || null, openedBy: req.user!.userId },
+      data: { workspaceId, clientCompanyId, mois: m, annee: a, note: note || null, openedBy: req.user!.userId, modePaie: modePaieValide },
     });
     return res.status(201).json(period);
   } catch (err) { console.error("[payroll] POST periods:", err); return res.status(500).json({ error: "Erreur interne" }); }
@@ -122,9 +126,12 @@ router.patch("/:ws/periods/:id/calculate", requireAuth, requireWorkspaceWriter()
     const result = await calculateMassPayroll({
       periodId: id, workspaceId: ws, clientCompanyId: period.clientCompanyId,
       mois: period.mois, annee: period.annee, calculatedBy: req.user!.userId,
+      modePaie: period.modePaie, // Lot 8-A : mode SIMPLE ou CONVENTIONNEL lu sur la période
     });
 
     const updated = await prisma.payrollPeriod.findUnique({ where: { id } });
+    // Lot 8-C : retourner les diagnostics dans la réponse pour que l'UI
+    // affiche un message actionnable (« Employé X sans contrat », etc.).
     return res.json({ period: updated, result });
   } catch (err) { console.error("[payroll] calculate:", err); return res.status(500).json({ error: "Erreur interne" }); }
 });

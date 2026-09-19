@@ -375,4 +375,171 @@ router.patch("/:workspaceId/:id/suspendre", requireAuth, requireWorkspaceWriter(
   }
 });
 
+// ---------------------------------------------------------------------------
+// PATCH /api/contracts/:workspaceId/:id/reactiver — Réactiver un contrat suspendu (Lot 8-E)
+// ---------------------------------------------------------------------------
+router.patch("/:workspaceId/:id/reactiver", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
+  try {
+    const { workspaceId, id } = req.params;
+
+    const hasAccess = await checkWorkspaceAccess(req.user!.userId, req.user!.role, workspaceId);
+    if (!hasAccess) return res.status(403).json({ error: "Accès refusé" });
+
+    const existing = await prisma.contract.findFirst({ where: { id, workspaceId } });
+    if (!existing) return res.status(404).json({ error: "Contrat introuvable" });
+    if (existing.statut !== "SUSPENDU") {
+      return res.status(400).json({ error: `Contrat ${existing.statut}, impossible de réactiver` });
+    }
+
+    const updated = await prisma.contract.update({
+      where: { id },
+      data: { statut: "ACTIF" },
+    });
+
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "CONTRACT_REACTIVER",
+      entity: "Contract",
+      entityId: id,
+      details: JSON.stringify({ avant: "SUSPENDU", apres: "ACTIF" }),
+      ipAddress: req.ip,
+    });
+
+    return res.json(updated);
+  } catch (error) {
+    console.error("[contracts] reactiver error:", error);
+    return res.status(500).json({ error: "Erreur interne" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// PATCH /api/contracts/:workspaceId/:id/terminer — Marquer un CDD/saisonnier comme TERMINÉ (Lot 8-E)
+// ---------------------------------------------------------------------------
+router.patch("/:workspaceId/:id/terminer", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
+  try {
+    const { workspaceId, id } = req.params;
+    const { dateFinReelle, motifFin } = req.body;
+
+    const hasAccess = await checkWorkspaceAccess(req.user!.userId, req.user!.role, workspaceId);
+    if (!hasAccess) return res.status(403).json({ error: "Accès refusé" });
+
+    const existing = await prisma.contract.findFirst({ where: { id, workspaceId } });
+    if (!existing) return res.status(404).json({ error: "Contrat introuvable" });
+    if (existing.statut !== "ACTIF") {
+      return res.status(400).json({ error: `Contrat ${existing.statut}, impossible de terminer` });
+    }
+    // Seuls les CDD, saisonniers, stage, interim peuvent être marqués TERMINES (le CDI ne se termine pas, il se résilie)
+    const typesTerminables = ["CDD", "SAISONNIER", "STAGE", "INTERIM"];
+    if (!typesTerminables.includes(existing.type)) {
+      return res.status(400).json({ error: `Type ${existing.type} ne peut pas être terminé — utilisez /resilier` });
+    }
+
+    const updated = await prisma.contract.update({
+      where: { id },
+      data: {
+        statut: "TERMINE",
+        dateFin: dateFinReelle ? new Date(dateFinReelle) : existing.dateFin ?? new Date(),
+        motifRupture: motifFin || "Fin normale du contrat",
+        dateRupture: dateFinReelle ? new Date(dateFinReelle) : new Date(),
+      },
+    });
+
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "CONTRACT_TERMINER",
+      entity: "Contract",
+      entityId: id,
+      details: JSON.stringify({ type: existing.type, motifFin: motifFin || "Fin normale" }),
+      ipAddress: req.ip,
+    });
+
+    return res.json(updated);
+  } catch (error) {
+    console.error("[contracts] terminer error:", error);
+    return res.status(500).json({ error: "Erreur interne" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/contracts/:workspaceId/:id/dupliquer — Créer un nouveau contrat par duplication (Lot 8-E)
+// Cas d'usage : renouvellement d'un CDD, ou nouveau contrat après résiliation
+// ---------------------------------------------------------------------------
+router.post("/:workspaceId/:id/dupliquer", requireAuth, requireWorkspaceWriter(), async (req: Request, res: Response) => {
+  try {
+    const { workspaceId, id } = req.params;
+    const { dateDebut, dateFin, periodeEssai, motifChangement, nouveauSalaireBrut } = req.body;
+
+    if (!dateDebut) {
+      return res.status(400).json({ error: "dateDebut est requis pour le nouveau contrat" });
+    }
+
+    const hasAccess = await checkWorkspaceAccess(req.user!.userId, req.user!.role, workspaceId);
+    if (!hasAccess) return res.status(403).json({ error: "Accès refusé" });
+
+    const source = await prisma.contract.findFirst({
+      where: { id, workspaceId },
+      include: { versions: { orderBy: { dateEffet: "desc" }, take: 1 } },
+    });
+    if (!source) return res.status(404).json({ error: "Contrat source introuvable" });
+    if (source.versions.length === 0) return res.status(500).json({ error: "Contrat source sans version" });
+
+    const lastVersion = source.versions[0];
+
+    // Créer le nouveau contrat en transaction
+    const result = await prisma.$transaction(async (tx) => {
+      const newContract = await tx.contract.create({
+        data: {
+          employeeId: source.employeeId,
+          workspaceId,
+          type: source.type,
+          statut: "ACTIF",
+          poste: source.poste,
+          conventionCollectiveId: source.conventionCollectiveId || null,
+          dateDebut: new Date(dateDebut),
+          dateFin: dateFin ? new Date(dateFin) : null,
+          periodeEssai: periodeEssai || source.periodeEssai || null,
+        },
+      });
+
+      const newVersion = await tx.contractVersion.create({
+        data: {
+          contractId: newContract.id,
+          salaireBrut: nouveauSalaireBrut ?? lastVersion.salaireBrut,
+          salaireBrutAnnuel: lastVersion.salaireBrutAnnuel,
+          coefficient: lastVersion.coefficient,
+          echelon: lastVersion.echelon,
+          conventionCollectiveId: lastVersion.conventionCollectiveId || null,
+          heuresHebdomadaires: lastVersion.heuresHebdomadaires,
+          heuresMensuelles: lastVersion.heuresMensuelles,
+          motifChangement: motifChangement || "duplication_renouvellement",
+          dateEffet: new Date(dateDebut),
+        },
+      });
+
+      return { contract: newContract, version: newVersion };
+    });
+
+    await auditLog({
+      workspaceId,
+      userId: req.user!.userId,
+      action: "CONTRACT_DUPLIQUER",
+      entity: "Contract",
+      entityId: result.contract.id,
+      details: JSON.stringify({ source: id, type: source.type, poste: source.poste }),
+      ipAddress: req.ip,
+    });
+
+    return res.status(201).json({
+      contract: result.contract,
+      version: result.version,
+      message: "Contrat dupliqué avec succès",
+    });
+  } catch (error) {
+    console.error("[contracts] dupliquer error:", error);
+    return res.status(500).json({ error: "Erreur interne" });
+  }
+});
+
 export default router;

@@ -351,6 +351,8 @@ export interface MassPayrollInput {
   mois: number;
   annee: number;
   calculatedBy: string;
+  /** SIMPLE = moteur générique (brut contractuel × taux), CONVENTIONNEL = décompose le brut en grille + indemnité supplémentaire */
+  modePaie?: "SIMPLE" | "CONVENTIONNEL";
 }
 
 export interface MassPayrollResult {
@@ -362,9 +364,21 @@ export interface MassPayrollResult {
   // Lot 7-C : règles réglementaires actives appliquées à ce calcul
   // (transparence — le résultat ne ment plus sur la config utilisée)
   rulesApplied: { code: string; valeur: number; description?: string }[];
+  // Lot 8-A : diagnostics détaillés (Plus de blocage silencieux)
+  // Chaque étape manquante est retournée avec un message actionnable
+  diagnostics: {
+    modePaie: "SIMPLE" | "CONVENTIONNEL";
+    salariesTrouves: number;
+    salariesSansContratActif: string[]; // employee names
+    salariesSansPointage: string[]; // employee names (calcul basé sur 100%)
+    salariesSansConvention: string[]; // employee names (en mode CONVENTIONNEL sans convention sur le contrat)
+    salariesSalaireSousGrille: string[]; // employee names with AVERTISSEMENT SALAIRE_SOUS_GRILLE
+    periodeDejaCalculee: boolean;
+  };
 }
 
 export async function calculateMassPayroll(input: MassPayrollInput): Promise<MassPayrollResult> {
+  const modePaie = input.modePaie ?? "SIMPLE";
   const result: MassPayrollResult = {
     bulletinsCreated: 0,
     anomaliesCreated: 0,
@@ -372,6 +386,15 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
     skippedNoAttendance: 0,
     errors: [],
     rulesApplied: [],
+    diagnostics: {
+      modePaie,
+      salariesTrouves: 0,
+      salariesSansContratActif: [],
+      salariesSansPointage: [],
+      salariesSansConvention: [],
+      salariesSalaireSousGrille: [],
+      periodeDejaCalculee: false,
+    },
   };
 
   const dateCalcul = new Date();
@@ -384,6 +407,8 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
       departedAt: null,
     },
   });
+
+  result.diagnostics.salariesTrouves = employees.length;
 
   if (employees.length === 0) {
     result.errors.push("Aucun salarié actif trouvé pour ce client");
@@ -525,6 +550,8 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
 
       if (!contract || contract.versions.length === 0) {
         result.skippedNoContract++;
+        const empName = `${employee.firstName} ${employee.lastName}`;
+        result.diagnostics.salariesSansContratActif.push(empName);
         // Créer anomalie
         await prisma.anomaly.create({
           data: {
@@ -533,7 +560,7 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
             workspaceId: input.workspaceId,
             code: "CONTRAT_MANQUANT",
             niveau: "BLOQUANTE",
-            message: `Aucun contrat actif trouvé pour ${employee.firstName} ${employee.lastName}`,
+            message: `Aucun contrat actif trouvé pour ${empName}`,
           },
         });
         result.anomaliesCreated++;
@@ -551,6 +578,8 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
       // appartient à l'employeur/négociation). Jusqu'ici les conventions
       // étaient une fonction orpheline : aucune référence dans la paie.
       const conventionId = contractVersion.conventionCollectiveId ?? contract.conventionCollectiveId;
+      let salaireBaseGrille: number | null = null; // Lot 8-A : pour mode CONVENTIONNEL
+      let indemniteSupplementaire = 0; // Lot 8-A : excédent au-dessus de la grille
       if (conventionId && contractVersion.coefficient && contractVersion.echelon) {
         const dateFinMoisPaie = new Date(Date.UTC(input.annee, realMois, 0)); // dernier jour du mois de paie (réel)
         const grille = await prisma.conventionGrilleSalariale.findFirst({
@@ -563,33 +592,63 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
           },
           orderBy: { dateEffet: "desc" },
         });
-        if (grille && contractVersion.salaireBrut < grille.salaireMinimum) {
-          if (!conventionCache.has(conventionId)) {
-            conventionCache.set(
-              conventionId,
-              await prisma.conventionCollective.findUnique({
-                where: { id: conventionId },
-                select: { code: true, nom: true },
-              }),
-            );
+        if (grille) {
+          salaireBaseGrille = grille.salaireMinimum;
+          // Lot 8-A : en mode CONVENTIONNEL, décomposer le brut en grille + indemnité
+          if (modePaie === "CONVENTIONNEL") {
+            // Si le brut du contrat est > grille minimum, l'excédent devient indemnité
+            // Si le brut est ≤ grille minimum, on utilise le brut comme base (anomalie AVERTISSEMENT déjà créée plus bas)
+            indemniteSupplementaire = Math.max(0, contractVersion.salaireBrut - grille.salaireMinimum);
           }
-          const conv = conventionCache.get(conventionId);
-          await prisma.anomaly.create({
-            data: {
-              periodId: input.periodId,
-              employeeId: employee.id,
-              workspaceId: input.workspaceId,
-              code: "SALAIRE_SOUS_GRILLE",
-              niveau: "AVERTISSEMENT",
-              message: `Salaire brut (${contractVersion.salaireBrut.toFixed(3)} DT) inférieur au minimum conventionnel (${grille.salaireMinimum.toFixed(3)} DT) — ${conv ? `convention ${conv.code} ${conv.nom}, ` : ""}coefficient ${contractVersion.coefficient}, échelon ${contractVersion.echelon}`,
-            },
-          });
-          result.anomaliesCreated++;
+          if (contractVersion.salaireBrut < grille.salaireMinimum) {
+            if (!conventionCache.has(conventionId)) {
+              conventionCache.set(
+                conventionId,
+                await prisma.conventionCollective.findUnique({
+                  where: { id: conventionId },
+                  select: { code: true, nom: true },
+                }),
+              );
+            }
+            const conv = conventionCache.get(conventionId);
+            const empName = `${employee.firstName} ${employee.lastName}`;
+            result.diagnostics.salariesSalaireSousGrille.push(empName);
+            await prisma.anomaly.create({
+              data: {
+                periodId: input.periodId,
+                employeeId: employee.id,
+                workspaceId: input.workspaceId,
+                code: "SALAIRE_SOUS_GRILLE",
+                niveau: "AVERTISSEMENT",
+                message: `Salaire brut (${contractVersion.salaireBrut.toFixed(3)} DT) inférieur au minimum conventionnel (${grille.salaireMinimum.toFixed(3)} DT) — ${conv ? `convention ${conv.code} ${conv.nom}, ` : ""}coefficient ${contractVersion.coefficient}, échelon ${contractVersion.echelon}`,
+              },
+            });
+            result.anomaliesCreated++;
+          }
         }
+      } else if (modePaie === "CONVENTIONNEL") {
+        // Mode CONVENTIONNEL mais le contrat n'a pas de convention / coefficient / échelon
+        const empName = `${employee.firstName} ${employee.lastName}`;
+        result.diagnostics.salariesSansConvention.push(empName);
+        await prisma.anomaly.create({
+          data: {
+            periodId: input.periodId,
+            employeeId: employee.id,
+            workspaceId: input.workspaceId,
+            code: "CONVENTION_MANQUANTE",
+            niveau: "AVERTISSEMENT",
+            message: `Mode CONVENTIONNEL sélectionné mais le contrat de ${empName} n'a pas de convention collective ou de coefficient/échelon — calcul basé sur le brut contractuel (mode SIMPLE implicite)`,
+          },
+        });
+        result.anomaliesCreated++;
       }
 
       // Pointage
       const attendance = attendanceByEmployee.get(employee.id);
+      if (!attendance) {
+        const empName = `${employee.firstName} ${employee.lastName}`;
+        result.diagnostics.salariesSansPointage.push(empName);
+      }
 
       // Construire l'input du moteur
       const payrollInput: PayrollInput = {
@@ -654,6 +713,23 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
       // Calcul
       const { payslip, anomalies: calcAnomalies } = calculatePayroll(payrollInput);
 
+      // Lot 8-A : en mode CONVENTIONNEL, surcharger le brut effectif avec la
+      // décomposition grille + indemnité (au lieu du brut contractuel × tauxPresence).
+      // Les cotisations CNSS/IRPP sont recalculées sur cette nouvelle base en
+      // post-traitement du résultat du moteur SIMPLE (qui reste utilisé pour
+      // la cascade CNSS → frais pro → IRPP — la logique de calcul elle-même
+      // n'est pas modifiée, seul le brut qui l'alimente est décomposé).
+      let salaireBaseGrilleFinal: number | null = null;
+      let indemniteSupplementaireFinal: number | null = null;
+      let salaireBrutEffectifFinal = payslip.salaireBrutEffectif;
+
+      if (modePaie === "CONVENTIONNEL" && salaireBaseGrille !== null) {
+        salaireBaseGrilleFinal = round2Exact(salaireBaseGrille * payslip.tauxPresence);
+        indemniteSupplementaireFinal = round2Exact(indemniteSupplementaire * payslip.tauxPresence);
+        // Le brut effectif conventionnel = base grille + indemnité (proratisés par le taux de présence)
+        salaireBrutEffectifFinal = round2Exact(salaireBaseGrilleFinal + indemniteSupplementaireFinal);
+      }
+
       // Créer le bulletin
       const payslipRecord = await prisma.payslip.create({
         data: {
@@ -671,7 +747,9 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
           joursTravailles: payslip.joursTravailles,
           joursAbsence: payslip.joursAbsence,
           heuresSupplementaires: payslip.heuresSupplementaires,
-          salaireBrutEffectif: payslip.salaireBrutEffectif,
+          salaireBrutEffectif: salaireBrutEffectifFinal,
+          salaireBaseGrille: salaireBaseGrilleFinal,
+          indemniteSupplementaire: indemniteSupplementaireFinal,
           montantHeuresSup: payslip.montantHeuresSup,
           montantAbsence: payslip.montantAbsence,
           baseImposable: payslip.baseImposable,
