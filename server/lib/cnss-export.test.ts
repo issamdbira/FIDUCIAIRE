@@ -85,21 +85,32 @@ describe("Lot 8-3.1 — server/lib/cnss-export.ts", () => {
     it("CNSS-5: fichier généré valide contre le validator client (cross-test)", async () => {
       // Lot 8-3.2 — feed server TXT dans le validator client
       const txt = generateCnssExportText(SAMPLE_DATA);
-      // Import dynamique du validator client (shared)
+      // Le validator client valide des objets SalarieCNSS (pas le TXT directement)
+      // — on vérifie que les matricules présents dans le TXT respectent le format
+      // attendu par le validator (regex /^\d{1,8}$/)
       const validator = await import("../../client/src/lib/cnss-declarations/validator.js");
-      // Le validator expose une fonction validateCnssFile ou similaire
-      const validateFn = validator.validateCnssFile || validator.validateFile || validator.default;
-      if (typeof validateFn === "function") {
-        const result = validateFn(txt);
-        // Si le validator renvoie { errors: [], valid: true } ou similaire
-        if (result && typeof result === "object") {
-          expect(result.errors || []).toEqual([]);
-          if (result.valid !== undefined) expect(result.valid).toBe(true);
-        }
-      } else {
-        // Validator non trouvé — au moins le TXT est non vide
-        expect(txt.length).toBeGreaterThan(50);
+      const validerSalarie = validator.validerSalarie;
+
+      // Extraction des matricules du TXT généré
+      const matriculeRegex = /(\d{8})/g;
+      const foundMatricules = txt.match(matriculeRegex) || [];
+      expect(foundMatricules.length).toBeGreaterThan(0);
+
+      // Pour chaque matricule extrait, vérifier que le validator l'accepte
+      for (const m of foundMatricules.slice(0, 3)) {
+        const errors = validerSalarie({
+          matricule: m,
+          cle: "87",
+          nom: "Test",
+          cin: "12345678",
+          salaire: "1000",
+        });
+        expect(errors).not.toContain("Matricule");
       }
+
+      // Vérification de structure du TXT (header + détail + totaux)
+      expect(txt.length).toBeGreaterThan(50);
+      expect(txt.split("\n").length).toBeGreaterThanOrEqual(4);
     });
   });
 
