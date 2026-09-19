@@ -2,11 +2,14 @@
 // Le Fiduciaire — Génération Documents (Phase 6)
 // Bulletin PDF, Exports Excel/CSV
 // =============================================================================
+// Lot 8-4 : génération d'un vrai PDF binaire (%PDF) avec pdf-lib (déjà en deps).
+// L'HTML generator reste en fallback pour l'affichage inline dans le navigateur.
 
 import * as fs from "fs";
 import * as path from "path";
 import * as XLSX from "xlsx";
 import prisma from "./prisma.js";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -283,4 +286,124 @@ export function generatePayrollCsv(payslips: PayslipFull[]): string {
   ].join(";"));
 
   return [headers.join(";"), ...rows].join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// Lot 8-4 — Vrai PDF binaire avec pdf-lib (déjà en deps)
+// ---------------------------------------------------------------------------
+// Génère un PDF valide dont le contenu commence par %PDF (magic bytes).
+// Présentation uniquement — aucun changement de calcul. Le PDF contient :
+//   - En-tête employeur (raison sociale, matricule CNSS, période)
+//   - Identification salarié (nom, matricule)
+//   - Tableau des éléments de paie (brut, retenues, net)
+//   - Net à payer en gras
+//
+// L'ancien generateBulletinHtml reste pour l'affichage inline navigateur.
+
+const MOIS_NOMS_PDF = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+
+function formatDTPdf(n: number): string {
+  // Lot 8-4 : Intl.NumberFormat("fr-TN") produit un NBSP étroit (U+202F) que
+  // pdf-lib (WinAnsi encoding) ne peut pas encoder. On remplace manuellement
+  // par un espace régulier (0x20) que pdf-lib accepte.
+  const formatted = new Intl.NumberFormat("fr-TN", {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
+  }).format(n);
+  // Remplace U+202F (NARROW NO-BREAK SPACE) et U+00A0 (NO-BREAK SPACE) par un espace simple
+  const pdfSafe = formatted.replace(/[\u202F\u00A0]/g, " ");
+  return `${pdfSafe} DT`;
+}
+
+/** Lot 8-4 — Génère un PDF binaire pour un bulletin de paie. */
+export async function generateBulletinPdf(
+  payslip: PayslipFull,
+  clientInfo: { raisonSociale: string; matriculeFiscal?: string | null; matriculeCnss?: string | null }
+): Promise<Buffer> {
+  const pdfDoc = await PDFDocument.create();
+  pdfDoc.setTitle(`Bulletin de paie - ${payslip.nomPrenom} - ${MOIS_NOMS_PDF[payslip.mois - 1]} ${payslip.annee}`);
+  pdfDoc.setAuthor("Le Fiduciaire");
+  pdfDoc.setCreator("pdf-lib (Lot 8-4)");
+  pdfDoc.setSubject("Bulletin de paie tunisien");
+
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  const page = pdfDoc.addPage([595.28, 841.89]); // A4 portrait en points
+  const { width, height } = page.getSize();
+  const margin = 50;
+  let y = height - margin;
+
+  // ── En-tête employeur ───────────────────────────────────────────────
+  page.drawText("BULLETIN DE PAIE", { x: margin, y, size: 18, font: fontBold, color: rgb(0.12, 0.23, 0.35) });
+  y -= 30;
+
+  page.drawText(`Employeur : ${clientInfo.raisonSociale}`, { x: margin, y, size: 11, font, color: rgb(0.2, 0.2, 0.2) });
+  y -= 16;
+  if (clientInfo.matriculeCnss) {
+    page.drawText(`Matricule CNSS : ${clientInfo.matriculeCnss}`, { x: margin, y, size: 10, font, color: rgb(0.4, 0.4, 0.4) });
+    y -= 14;
+  }
+  if (clientInfo.matriculeFiscal) {
+    page.drawText(`Matricule fiscal : ${clientInfo.matriculeFiscal}`, { x: margin, y, size: 10, font, color: rgb(0.4, 0.4, 0.4) });
+    y -= 14;
+  }
+
+  // ── Période ──────────────────────────────────────────────────────────
+  y -= 10;
+  page.drawText(`Période : ${MOIS_NOMS_PDF[payslip.mois - 1]} ${payslip.annee}`, { x: margin, y, size: 11, font, color: rgb(0.2, 0.2, 0.2) });
+  y -= 24;
+
+  // ── Salarié ──────────────────────────────────────────────────────────
+  page.drawText("Salarié", { x: margin, y, size: 11, font: fontBold, color: rgb(0.12, 0.23, 0.35) });
+  y -= 16;
+  page.drawText(`Nom : ${payslip.nomPrenom}`, { x: margin, y, size: 10, font, color: rgb(0.2, 0.2, 0.2) });
+  y -= 14;
+  page.drawText(`Matricule : ${payslip.matricule}`, { x: margin, y, size: 10, font, color: rgb(0.2, 0.2, 0.2) });
+  y -= 24;
+
+  // ── Tableau éléments de paie ─────────────────────────────────────────
+  page.drawText("Éléments de paie", { x: margin, y, size: 11, font: fontBold, color: rgb(0.12, 0.23, 0.35) });
+  y -= 18;
+
+  const lignes: Array<[string, number]> = [
+    ["Salaire brut contractuel", payslip.salaireBrutContractuel],
+    ["Salaire brut effectif", payslip.salaireBrutEffectif],
+    ["CNSS salariale", -payslip.retenueCnssSalarial],
+    ["CSS", -payslip.retenueCss],
+    ["Frais professionnels", -payslip.fraisProfessionnels],
+    ["Déductions familiales", -payslip.totalDeductionsFamiliales],
+    ["IRPP", -payslip.retenueIrpp],
+  ];
+
+  for (const [label, montant] of lignes) {
+    page.drawText(label, { x: margin, y, size: 10, font, color: rgb(0.2, 0.2, 0.2) });
+    const montantStr = montant < 0 ? `-${formatDTPdf(Math.abs(montant))}` : formatDTPdf(montant);
+    const textWidth = font.widthOfTextAtSize(montantStr, 10);
+    page.drawText(montantStr, { x: width - margin - textWidth, y, size: 10, font, color: rgb(0.2, 0.2, 0.2) });
+    y -= 16;
+  }
+
+  // ── Net à payer (en gras) ───────────────────────────────────────────
+  y -= 10;
+  page.drawLine({
+    start: { x: margin, y: y + 4 },
+    end: { x: width - margin, y: y + 4 },
+    thickness: 1,
+    color: rgb(0.12, 0.23, 0.35),
+  });
+  y -= 20;
+  page.drawText("NET À PAYER", { x: margin, y, size: 12, font: fontBold, color: rgb(0.12, 0.23, 0.35) });
+  const netStr = formatDTPdf(payslip.salaireNet);
+  const netWidth = fontBold.widthOfTextAtSize(netStr, 12);
+  page.drawText(netStr, { x: width - margin - netWidth, y, size: 12, font: fontBold, color: rgb(0.12, 0.23, 0.35) });
+
+  // ── Footer ──────────────────────────────────────────────────────────
+  y = margin;
+  page.drawText("Généré par Le Fiduciaire — Lot 8-4 (pdf-lib)", {
+    x: margin, y, size: 8, font, color: rgb(0.5, 0.5, 0.5),
+  });
+
+  const pdfBytes = await pdfDoc.save();
+  return Buffer.from(pdfBytes);
 }
