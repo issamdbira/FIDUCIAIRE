@@ -97,9 +97,15 @@ async function request<T>(
   // 401 → token expiré ou invalide → déconnecter
   if (res.status === 401) {
     removeToken();
-    // Rediriger vers /login si on n'y est pas déjà
-    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
-      window.location.href = "/login";
+    // Rediriger vers /login si on n'est pas déjà sur une page publique
+    // (login, création d'espace, mot de passe oublié, réinitialisation, invitation)
+    // Ces pages sont accessibles sans session — ne pas les rediriger vers /login
+    if (typeof window !== "undefined") {
+      const PUBLIC_PATHS = ["/login", "/creer-espace", "/mot-de-passe-oublie", "/reinitialisation", "/invitation"];
+      const isPublicPage = PUBLIC_PATHS.some(p => window.location.pathname.startsWith(p));
+      if (!isPublicPage) {
+        window.location.href = "/login";
+      }
     }
     throw { status: 401, message: "Session expirée. Veuillez vous reconnecter." } as ApiError;
   }
