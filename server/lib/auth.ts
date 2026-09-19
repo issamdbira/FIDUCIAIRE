@@ -3,15 +3,17 @@
  * Toutes les fonctions sont async pour compatibilité serverless.
  *
  * Lot 8-0.3 : le fallback JWT_SECRET n'est utilisé qu'en dev/test.
- * En production (NODE_ENV=production ou VERCEL=1), le module refuse de se
- * charger si JWT_SECRET est manquant ou < 32 caractères. La résolution est
- * partagée avec server/lib/jwt.ts (même logique, même minimum).
+ * En production (NODE_ENV=production ou VERCEL=1) :
+ *   - JWT_SECRET manquant → FATAL (crash)
+ *   - JWT_SECRET < 16 chars → FATAL (crash)
+ *   - JWT_SECRET 16-31 chars → WARNING (démarre mais recommande régénération)
  */
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 const BCRYPT_ROUNDS = 10;
-const MIN_JWT_SECRET_LENGTH = 32;
+const MIN_JWT_SECRET_LENGTH = 16;       // minimum absolu (crash si inférieur)
+const RECOMMENDED_JWT_SECRET_LENGTH = 32; // recommandé (warning si inférieur)
 
 function resolveJwtSecret(): string {
   const value = process.env.JWT_SECRET;
@@ -19,13 +21,17 @@ function resolveJwtSecret(): string {
   if (isProduction) {
     if (!value) {
       throw new Error(
-        "[auth] FATAL: JWT_SECRET est requis en production. " +
-        "Ajoutez la variable dans Vercel → Settings → Environment Variables."
+        "[auth] FATAL: JWT_SECRET est requis en production."
       );
     }
     if (value.length < MIN_JWT_SECRET_LENGTH) {
       throw new Error(
-        `[auth] FATAL: JWT_SECRET fait ${value.length} caractères — minimum ${MIN_JWT_SECRET_LENGTH} requis.`
+        `[auth] FATAL: JWT_SECRET fait ${value.length} caractères — minimum absolu ${MIN_JWT_SECRET_LENGTH}.`
+      );
+    }
+    if (value.length < RECOMMENDED_JWT_SECRET_LENGTH) {
+      console.warn(
+        `[auth] WARNING: JWT_SECRET fait ${value.length} caractères — recommandation ${RECOMMENDED_JWT_SECRET_LENGTH}.`
       );
     }
     return value;

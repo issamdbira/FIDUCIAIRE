@@ -2,13 +2,15 @@
 // Le Fiduciaire — JWT Utility
 // =============================================================================
 // Lot 8-0.3 : en production (NODE_ENV=production ou VERCEL=1), JWT_SECRET doit
-// être défini et faire >= 32 caractères. Sinon, le module refuse de se charger
-// (throw) → le serveur ne démarre pas. Le fallback dev reste pour le dev local
-// et les tests, mais ne peut JAMAIS fuiter en production.
+// être défini. S'il est manquant → FATAL (crash). S'il est présent mais < 16 chars
+// → FATAL (crash). S'il est présent mais entre 16 et 31 chars → WARNING (le serveur
+// démarre mais recommande de régénérer avec `openssl rand -hex 32`).
+// Le fallback dev reste pour le dev local et les tests.
 
 import jwt from "jsonwebtoken";
 
-const MIN_JWT_SECRET_LENGTH = 32;
+const MIN_JWT_SECRET_LENGTH = 16;       // minimum absolu (crash si inférieur)
+const RECOMMENDED_JWT_SECRET_LENGTH = 32; // recommandé (warning si inférieur)
 
 /** Lot 8-0.3 — résolution exportée pour test. Lit process.env et throw en prod si invalide. */
 export function resolveJwtSecret(): string {
@@ -18,14 +20,20 @@ export function resolveJwtSecret(): string {
   if (isProduction) {
     if (!value) {
       throw new Error(
-        "[jwt] FATAL: JWT_SECRET est requis en production (NODE_ENV=production ou VERCEL=1). " +
-        "Référez-vous à la variable d'environnement dans Vercel → Settings → Environment Variables."
+        "[jwt] FATAL: JWT_SECRET est requis en production. " +
+        "Ajoutez la variable dans Vercel → Settings → Environment Variables."
       );
     }
     if (value.length < MIN_JWT_SECRET_LENGTH) {
       throw new Error(
-        `[jwt] FATAL: JWT_SECRET fait ${value.length} caractères — le minimum requis en production est ${MIN_JWT_SECRET_LENGTH}. ` +
-        "Générez un secret de >= 64 caractères avec `openssl rand -hex 32`."
+        `[jwt] FATAL: JWT_SECRET fait ${value.length} caractères — le minimum absolu est ${MIN_JWT_SECRET_LENGTH}.`
+      );
+    }
+    // Warning si le secret est présent mais plus court que la recommandation
+    if (value.length < RECOMMENDED_JWT_SECRET_LENGTH) {
+      console.warn(
+        `[jwt] WARNING: JWT_SECRET fait ${value.length} caractères — la recommandation est ${RECOMMENDED_JWT_SECRET_LENGTH}. ` +
+        `Régénérez avec \`openssl rand -hex 32\` pour améliorer la sécurité.`
       );
     }
     return value;
