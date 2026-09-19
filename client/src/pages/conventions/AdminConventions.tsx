@@ -40,8 +40,14 @@ import {
   ChevronDown,
   ChevronRight,
   Lock,
+  // Lot 8-0.4 : icônes pour le fallback RBAC (remplace le gate password)
+  ShieldAlert,
+  ArrowLeft,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "wouter";
+import { useAuth } from "@/contexts/AuthContext";
+import { getWorkspaceId } from "@/lib/workspace";
 import { CONVENTIONS, getConventionBySlug } from "@/lib/conventions/data/index";
 import type {
   PrimeMensuelleStructuree,
@@ -85,76 +91,56 @@ interface EditingRow {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// AUTH — réutilise le même mot de passe que /admin
+// AUTH (Lot 8-0.4) — la porte mot de passe côté client a été supprimée.
+// L'accès est désormais réservé au PROPRIETAIRE du workspace actif, contrôle
+// réel via la même règle RBAC que /admin. Plus aucun mot de passe dans le bundle.
 // ═══════════════════════════════════════════════════════════════════════
 
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "fiduciaire2026";
-const SESSION_KEY = "fiduciaire_admin_auth";
+export default function AdminConventions() {
+  const { user, isLoading } = useAuth();
+  const workspaceId = user ? getWorkspaceId(user) : null;
+  const roleWs = workspaceId
+    ? user?.workspaces?.find((ws) => ws.id === workspaceId)?.role ?? null
+    : null;
 
-function isAdminAuthenticated(): boolean {
-  try { return sessionStorage.getItem(SESSION_KEY) === "true"; } catch { return false; }
-}
-function authenticateAdmin(): void {
-  try { sessionStorage.setItem(SESSION_KEY, "true"); } catch {}
-}
+  if (isLoading) {
+    return (
+      <div className="min-h-[calc(100vh-48px)] flex items-center justify-center">
+        <div className="h-8 w-8 border-4 border-primary border-r-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
-function AdminConventionsLogin({ onAuth }: { onAuth: () => void }) {
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState(false);
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) { authenticateAdmin(); onAuth(); }
-    else { setError(true); }
-  };
-  return (
-    <div className="max-w-sm mx-auto py-20 px-4">
-      <Card className="p-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-card">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-            <Lock className="h-5 w-5 text-primary" />
+  // Accès réservé au propriétaire du workspace actif (contrôle réel, côté serveur aussi)
+  if (!user || roleWs !== "PROPRIETAIRE" || !workspaceId) {
+    return (
+      <div className="min-h-[calc(100vh-48px)] flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-destructive/10 mx-auto mb-4">
+            <ShieldAlert className="h-6 w-6 text-destructive" />
           </div>
-          <h1 className="text-xl font-bold text-primary" style={{ fontFamily: "Montserrat, sans-serif" }}>
-            Admin — Conventions collectives
-          </h1>
+          <h2 className="text-lg font-semibold mb-2">Accès réservé au propriétaire</h2>
+          <p className="text-sm text-muted-foreground">
+            La gestion des conventions collectives ne peut être modifiée que par le
+            propriétaire de ce cabinet. Contactez-le si vous pensez qu'il s'agit
+            d'une erreur.
+          </p>
+          <Link href="/dashboard/workspace" className="inline-block mt-6">
+            <Button variant="outline" className="gap-2">
+              <ArrowLeft className="w-4 h-4" /> Retour au tableau de bord
+            </Button>
+          </Link>
         </div>
-        <p className="text-sm text-muted-foreground mb-6">
-          Gestion des primes, grilles et catégories par convention.
-        </p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="conv-admin-pwd">Mot de passe</Label>
-            <Input
-              id="conv-admin-pwd"
-              type="password"
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(false); }}
-              placeholder="Entrez le mot de passe"
-              className="mt-1"
-            />
-            {error && <p className="text-xs text-destructive mt-1">Mot de passe incorrect</p>}
-          </div>
-          <Button type="submit" className="w-full gap-2">
-            <Lock className="w-4 h-4" /> Connexion
-          </Button>
-        </form>
-      </Card>
-    </div>
-  );
+      </div>
+    );
+  }
+
+  return <AdminConventionsPanel />;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════
-
-export default function AdminConventions() {
-  const [authed, setAuthed] = useState(isAdminAuthenticated);
-
-  if (!authed) {
-    return <AdminConventionsLogin onAuth={() => setAuthed(true)} />;
-  }
-
-  return <AdminConventionsPanel />;
-}
 
 function AdminConventionsPanel() {
   // ─── Convention selector ────────────────────────────────────────────
