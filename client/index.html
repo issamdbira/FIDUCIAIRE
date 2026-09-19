@@ -15,10 +15,11 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script
-      defer
-      src="%VITE_ANALYTICS_ENDPOINT%/umami"
-      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
+    <!-- Lot 8-5.3 : analytics tag retiré — les placeholders %VITE_ANALYTICS_*%
+         provoquaient un warning Vite à chaque build et n'étaient jamais
+         substitués correctement. L'analytics (Umami) doit être configuré
+         via un script injecté par le serveur (Vercel rewrite ou middleware),
+         pas via des variables d'environnement client. -->
   </body>
 
 </html>

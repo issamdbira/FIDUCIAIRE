@@ -117,3 +117,4 @@ storage/
 # Vercel build output
 .vercel/
 .vercel
+package-lock.json

@@ -8,31 +8,39 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import GuidesIndex from "./pages/guides/GuidesIndex";
-import GuideCalculerSalaire from "./pages/guides/GuideCalculerSalaire";
-import GuideIRPP from "./pages/guides/GuideIRPP";
-import GuideFichierTXT from "./pages/guides/GuideFichierTXT";
-import GuideCotisationsCNSS from "./pages/guides/GuideCotisationsCNSS";
-import RetraiteCNSS from "./pages/calculateurs/RetraiteCNSS";
-import IRPP from "./pages/calculateurs/IRPP";
-import ActualisationSalaire from "./pages/calculateurs/ActualisationSalaire";
-import GenerateurFichePaie from "./pages/calculateurs/GenerateurFichePaie";
-import DeclarationsCNSS from "./pages/calculateurs/DeclarationsCNSS";
-import TesteurTXT from "./pages/calculateurs/TesteurTXT";
-import CalculerSalaire from "./pages/calculateurs/CalculerSalaire";
-import Admin from "./pages/Admin";
-import ReferentielAvantages from "./pages/calculateurs/ReferentielAvantages";
-import FormulairesCNSS from "./pages/FormulairesCNSS";
-import DeclarationsNeant from "./pages/calculateurs/DeclarationsNeant";
-import ConventionsList from "./pages/conventions/ConventionsList";
-import ConventionDetail from "./pages/conventions/ConventionDetail";
-import FichePaieConvention from "./pages/conventions/FichePaieConvention";
-import AdminConventions from "./pages/conventions/AdminConventions";
-import RegimesSociaux from "./pages/RegimesSociaux";
-import DashboardCabinet from "./pages/DashboardCabinet";
-import DashboardWorkspace from "./pages/DashboardWorkspace";
+
+// Lot 8-5.3 — Route-level lazy loading
+// Les pages publiques (About, Contact, Guides, Calculateurs, Conventions) sont
+// chargées à la demande. Home reste eager (première page vue, LCP critique).
+// Les pages protégées (Dashboard, Gestion, Admin) sont aussi lazy-loaded pour
+// éviter de charger toute la logique d'auth dans le bundle initial.
+import { lazy, Suspense } from "react";
+
+const About = lazy(() => import("./pages/About"));
+const Contact = lazy(() => import("./pages/Contact"));
+const GuidesIndex = lazy(() => import("./pages/guides/GuidesIndex"));
+const GuideCalculerSalaire = lazy(() => import("./pages/guides/GuideCalculerSalaire"));
+const GuideIRPP = lazy(() => import("./pages/guides/GuideIRPP"));
+const GuideFichierTXT = lazy(() => import("./pages/guides/GuideFichierTXT"));
+const GuideCotisationsCNSS = lazy(() => import("./pages/guides/GuideCotisationsCNSS"));
+const RetraiteCNSS = lazy(() => import("./pages/calculateurs/RetraiteCNSS"));
+const IRPP = lazy(() => import("./pages/calculateurs/IRPP"));
+const ActualisationSalaire = lazy(() => import("./pages/calculateurs/ActualisationSalaire"));
+const GenerateurFichePaie = lazy(() => import("./pages/calculateurs/GenerateurFichePaie"));
+const DeclarationsCNSS = lazy(() => import("./pages/calculateurs/DeclarationsCNSS"));
+const TesteurTXT = lazy(() => import("./pages/calculateurs/TesteurTXT"));
+const CalculerSalaire = lazy(() => import("./pages/calculateurs/CalculerSalaire"));
+const Admin = lazy(() => import("./pages/Admin"));
+const ReferentielAvantages = lazy(() => import("./pages/calculateurs/ReferentielAvantages"));
+const FormulairesCNSS = lazy(() => import("./pages/FormulairesCNSS"));
+const DeclarationsNeant = lazy(() => import("./pages/calculateurs/DeclarationsNeant"));
+const ConventionsList = lazy(() => import("./pages/conventions/ConventionsList"));
+const ConventionDetail = lazy(() => import("./pages/conventions/ConventionDetail"));
+const FichePaieConvention = lazy(() => import("./pages/conventions/FichePaieConvention"));
+const AdminConventions = lazy(() => import("./pages/conventions/AdminConventions"));
+const RegimesSociaux = lazy(() => import("./pages/RegimesSociaux"));
+const DashboardCabinet = lazy(() => import("./pages/DashboardCabinet"));
+const DashboardWorkspace = lazy(() => import("./pages/DashboardWorkspace"));
 import AuditLog from "./pages/AuditLog";
 import Login from "./pages/Login";
 import CreerEspace from "./pages/CreerEspace";
@@ -51,7 +59,9 @@ import GestionMembres from "./pages/gestion/GestionMembres";
 import MessagesContact from "./pages/gestion/MessagesContact";
 
 function AppRoutes() {
+  // Lot 8-5.3 : Suspense wrapper pour le route-level lazy loading
   const routes = (
+    <Suspense fallback={<div className="min-h-[calc(100vh-48px)] flex items-center justify-center"><div className="h-8 w-8 border-4 border-primary border-r-transparent rounded-full animate-spin" /></div>}>
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/about" component={About} />
@@ -158,6 +168,7 @@ function AppRoutes() {
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
+    </Suspense>
   );
 
   return <Layout>{routes}</Layout>;
