@@ -64,7 +64,7 @@ async function ensureApp() {
       try {
         const { PrismaClient } = await import("@prisma/client");
         const migrationClient = new PrismaClient();
-        await migrationClient.$executeRaw\`CREATE TYPE IF NOT EXISTS "ModePaie" AS ENUM ('SIMPLE', 'CONVENTIONNEL')\`;
+        await migrationClient.$executeRaw\`DO $$ BEGIN CREATE TYPE "ModePaie" AS ENUM ('SIMPLE', 'CONVENTIONNEL'); EXCEPTION WHEN duplicate_object THEN null; END $$\`;
         await migrationClient.$executeRaw\`ALTER TABLE "payroll_periods" ADD COLUMN IF NOT EXISTS "modePaie" "ModePaie" NOT NULL DEFAULT 'SIMPLE'\`;
         await migrationClient.$executeRaw\`ALTER TABLE "payslips" ADD COLUMN IF NOT EXISTS "salaireBaseGrille" DOUBLE PRECISION\`;
         await migrationClient.$executeRaw\`ALTER TABLE "payslips" ADD COLUMN IF NOT EXISTS "indemniteSupplementaire" DOUBLE PRECISION\`;
