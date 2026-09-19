@@ -20,8 +20,8 @@
 - **API routes** : GET/PUT /api/config/:workspaceId, POST /reset
 
 ### Utilisateurs seedés
-- Propriétaire : `proprietaire@lefiduciaire.tn` / `Fiduciaire2026!`
-- Gestionnaire : `gestionnaire@lefiduciaire.tn` / `Gestion2026!`
+- Les emails seedés (`proprietaire@lefiduciaire.tn`, `gestionnaire@lefiduciaire.tn`) ne sont plus créés par défaut — **le seeding nécessite désormais des variables d'environnement** `SEED_PROPRIETAIRE_PASSWORD` et `SEED_GESTIONNAIRE_PASSWORD` (voir `prisma/seed.ts`).
+- Les mots de passe par défaut ont été retirés de ce document — **ne jamais committer de credentials en clair** (cf. Lot 8-0.1 audit).
 - Workspace : `Fiduciaire — Cabinet principal`
 
 ### Fichiers créés

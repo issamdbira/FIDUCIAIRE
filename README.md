@@ -135,11 +135,13 @@ NEVER use external map libraries or request API keys from users - the Manus prox
 
 | Variable | Description | Défaut |
 |----------|-------------|--------|
-| `VITE_ADMIN_PASSWORD` | Mot de passe d'accès au panneau `/admin` | `fiduciaire2026` |
+| `DATABASE_URL` | Connection string PostgreSQL (Neon ou locale) | — (obligatoire) |
+| `JWT_SECRET` | Secret JWT (>= 32 chars) — **refusé en production** si manquant ou trop court | `dev-secret` (dev only) |
+| `SEED_PROPRIETAIRE_PASSWORD` | Mot de passe du compte propriétaire seedé (dev only) | — |
+| `SEED_GESTIONNAIRE_PASSWORD` | Mot de passe du compte gestionnaire seedé (dev only) | — |
 
-> **Note de sécurité** : la protection du panneau admin est côté client uniquement
-> (sessionStorage). Le mot de passe est lisible dans le code source du navigateur.
-> Ce mécanisme empêche l'accès accidentel, pas un attaquant déterminé.
+> **Note de sécurité (Lot 8-0.4)** : la route `/admin/conventions` est désormais protégée par la même règle RBAC PROPRIETAIRE côté serveur que `/admin`. La variable `VITE_ADMIN_PASSWORD` est **dépréciée** — si elle est définie, elle est ignorée.
+> **Note de sécurité (Lot 8-0.3)** : en production (`NODE_ENV=production` ou `VERCEL=1`), le serveur **refuse de démarrer** si `JWT_SECRET` est manquant ou a moins de 32 caractères.
 
 ---
 

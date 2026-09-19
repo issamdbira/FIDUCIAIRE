@@ -55,10 +55,12 @@ repo/
 | `employees` | Employés/salariés |
 
 ## Utilisateurs seedés
-| Email | Rôle | Mot de passe |
-|---|---|---|
-| proprietaire@lefiduciaire.tn | PROPRIETAIRE | Fiduciaire2026! |
-| gestionnaire@lefiduciaire.tn | GESTIONNAIRE | Gestion2026! |
+⚠️ **Aucun mot de passe n'est committé** — le seeding nécessite les variables d'environnement `SEED_PROPRIETAIRE_PASSWORD` et `SEED_GESTIONNAIRE_PASSWORD`. Les emails seedés (`proprietaire@lefiduciaire.tn`, `gestionnaire@lefiduciaire.tn`) ne doivent **jamais** être utilisés en production — réservés au dev local.
+
+| Email | Rôle (dev local) |
+|---|---|
+| proprietaire@lefiduciaire.tn | PROPRIETAIRE |
+| gestionnaire@lefiduciaire.tn | GESTIONNAIRE |
 
 ## Valeurs de calcul vérifiées (2026-09-13)
 - Barème IRPP : 8 tranches (0–40%) — CORRECT
@@ -75,7 +77,7 @@ repo/
 ## Déploiement
 - GitHub : `github.com/issamdbira/FIDUCIAIRE`
 - Vercel : `https://fiduciaire-nine.vercel.app/`
-- Admin : `/admin` et `/admin/conventions` (mdp `fiduciaire2026`)
+- Admin : `/admin` et `/admin/conventions` — **le mot de passe par lot est retiré depuis Lot 8-0.4** (la route `/admin/conventions` est désormais protégée par la même règle RBAC PROPRIETAIRE que `/admin`). La variable `VITE_ADMIN_PASSWORD` ne doit plus être utilisée.
 
 ## Dernière mise à jour
 - 2026-09-13 : Phase 1 — Neon + Prisma + auth JWT + roles + sessions + config paie DB
