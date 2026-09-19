@@ -97,13 +97,13 @@ async function request<T>(
   // 401 → token expiré ou invalide → déconnecter
   if (res.status === 401) {
     removeToken();
-    // Rediriger vers /login si on n'est pas déjà sur une page publique
-    // (login, création d'espace, mot de passe oublié, réinitialisation, invitation)
-    // Ces pages sont accessibles sans session — ne pas les rediriger vers /login
+    // Rediriger vers /login SEULEMENT si on est sur une page protégée
+    // (dashboard, gestion, admin, audit). Les pages publiques (accueil,
+    // calculateurs, guides, conventions, etc.) ne doivent pas être redirigées.
     if (typeof window !== "undefined") {
-      const PUBLIC_PATHS = ["/login", "/creer-espace", "/mot-de-passe-oublie", "/reinitialisation", "/invitation"];
-      const isPublicPage = PUBLIC_PATHS.some(p => window.location.pathname.startsWith(p));
-      if (!isPublicPage) {
+      const PROTECTED_PREFIXES = ["/dashboard", "/gestion", "/admin", "/audit"];
+      const isProtectedPage = PROTECTED_PREFIXES.some(p => window.location.pathname.startsWith(p));
+      if (isProtectedPage) {
         window.location.href = "/login";
       }
     }
