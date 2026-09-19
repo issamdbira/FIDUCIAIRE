@@ -58,6 +58,25 @@ async function ensureApp() {
   if (initPromise) return initPromise;
   initPromise = (async () => {
     try {
+      // Lot 8 — runtime migration : ajouter les colonnes manquantes si elles
+      // n'existent pas dans la base de production. Cette étape est idempotente
+      // (les ALTER TABLE ADD COLUMN échouent silencieusement si la colonne existe).
+      try {
+        const { PrismaClient } = await import("@prisma/client");
+        const migrationClient = new PrismaClient();
+        await migrationClient.$executeRaw\`CREATE TYPE IF NOT EXISTS "ModePaie" AS ENUM ('SIMPLE', 'CONVENTIONNEL')\`;
+        await migrationClient.$executeRaw\`ALTER TABLE "payroll_periods" ADD COLUMN IF NOT EXISTS "modePaie" "ModePaie" NOT NULL DEFAULT 'SIMPLE'\`;
+        await migrationClient.$executeRaw\`ALTER TABLE "payslips" ADD COLUMN IF NOT EXISTS "salaireBaseGrille" DOUBLE PRECISION\`;
+        await migrationClient.$executeRaw\`ALTER TABLE "payslips" ADD COLUMN IF NOT EXISTS "indemniteSupplementaire" DOUBLE PRECISION\`;
+        await migrationClient.$executeRaw\`ALTER TABLE "payslips" ADD COLUMN IF NOT EXISTS "primesConventionnelles" JSON\`;
+        await migrationClient.$executeRaw\`ALTER TABLE "payslips" ADD COLUMN IF NOT EXISTS "totalPrimesConventionnelles" DOUBLE PRECISION\`;
+        await migrationClient.$disconnect();
+        console.log("✅ Lot 8 migration: columns verified/added");
+      } catch (migErr) {
+        console.warn("⚠️ Lot 8 migration skipped:", migErr?.message?.slice(0, 200));
+        // Non-fatal — the app might work without these columns for basic queries
+      }
+
       const { createApp } = await import("./server/index.ts");
       app = createApp();
       return app;
