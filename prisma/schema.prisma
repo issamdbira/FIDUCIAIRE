@@ -1077,6 +1077,8 @@ model Payslip {
   salaireBrutEffectif Float // Brut effectif = brut contractuel × tauxPresence (mode SIMPLE) ou base grille + indemnité (mode CONVENTIONNEL)
   salaireBaseGrille   Float? // En mode CONVENTIONNEL : montant de la grille (échelle × échelon × année)
   indemniteSupplementaire Float? // En mode CONVENTIONNEL : excédent du brut au-dessus de la grille
+  primesConventionnelles Json? // En mode CONVENTIONNEL : [{code, label, montant}] des primes appliquées (Lot 8 suite)
+  totalPrimesConventionnelles Float? // En mode CONVENTIONNEL : somme des primes appliquées (Lot 8 suite)
   montantHeuresSup    Float // Montant heures supp.
   montantAbsence      Float // Déduction absence
   baseImposable       Float // Base imposable avant déductions

@@ -5,6 +5,15 @@
 
 import prisma from "./prisma.js";
 import { round2Exact } from "./money.js";
+// Lot 8 (suite) — import des primes conventionnelles depuis shared/
+// (fonction PURE, pas de dépendance vers lib/payroll/)
+import {
+  getEligiblePrimes,
+  getTotalPrimesEligibles,
+  type PrimeEligible,
+  type SalarieInfo,
+} from "../../shared/conventions/engine.js";
+import { getConventionBySlug } from "../../shared/conventions/data/index.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -722,12 +731,50 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
       let salaireBaseGrilleFinal: number | null = null;
       let indemniteSupplementaireFinal: number | null = null;
       let salaireBrutEffectifFinal = payslip.salaireBrutEffectif;
+      // Lot 8 (suite) : primes conventionnelles appliquées (mode CONVENTIONNEL)
+      let primesAppliquees: PrimeEligible[] = [];
+      let totalPrimesAppliquees: number | null = null;
 
       if (modePaie === "CONVENTIONNEL" && salaireBaseGrille !== null) {
         salaireBaseGrilleFinal = round2Exact(salaireBaseGrille * payslip.tauxPresence);
         indemniteSupplementaireFinal = round2Exact(indemniteSupplementaire * payslip.tauxPresence);
-        // Le brut effectif conventionnel = base grille + indemnité (proratisés par le taux de présence)
-        salaireBrutEffectifFinal = round2Exact(salaireBaseGrilleFinal + indemniteSupplementaireFinal);
+
+        // Lot 8 (suite) — appliquer les primes de la convention si la convention est l'une
+        // des conventions statiques connues (CONVENTION_CADRE ou CONVENTION_COMMERCE_GROS).
+        // Pour les conventions stockées en base (créées par l'utilisateur), pas de primes
+        // statiques — le brut reste grille + indemnité (sans primes).
+        let convStatic = conventionCache.get(conventionId!);
+        if (!convStatic) {
+          // Lire la convention de base pour son code (pour lookup dans le registre statique)
+          const convDb = await prisma.conventionCollective.findUnique({
+            where: { id: conventionId! },
+            select: { code: true, nom: true },
+          });
+          if (convDb) {
+            // Chercher dans le registre statique par slug (le code est utilisé comme slug)
+            const staticConv = getConventionBySlug(convDb.code);
+            if (staticConv) {
+              primesAppliquees = getEligiblePrimes(staticConv, {
+                categorieAgent: contractVersion.coefficient ?? "EXECUTION",
+                anciennete: computeAnciennete(contract.dateDebut, dateCalcul),
+                poste: contract.poste ?? undefined,
+              }, input.annee);
+              totalPrimesAppliquees = round2Exact(
+                primesAppliquees.reduce((sum, p) => sum + p.montant, 0) * payslip.tauxPresence
+              );
+            }
+          }
+          conventionCache.set(conventionId!, convDb);
+        }
+
+        // Le brut effectif conventionnel = base grille + indemnité + primes (proratisés par le taux de présence)
+        if (totalPrimesAppliquees !== null) {
+          salaireBrutEffectifFinal = round2Exact(
+            salaireBaseGrilleFinal + indemniteSupplementaireFinal + totalPrimesAppliquees
+          );
+        } else {
+          salaireBrutEffectifFinal = round2Exact(salaireBaseGrilleFinal + indemniteSupplementaireFinal);
+        }
       }
 
       // Créer le bulletin
@@ -750,6 +797,8 @@ export async function calculateMassPayroll(input: MassPayrollInput): Promise<Mas
           salaireBrutEffectif: salaireBrutEffectifFinal,
           salaireBaseGrille: salaireBaseGrilleFinal,
           indemniteSupplementaire: indemniteSupplementaireFinal,
+          primesConventionnelles: primesAppliquees.length > 0 ? primesAppliquees as any : undefined,
+          totalPrimesConventionnelles: totalPrimesAppliquees,
           montantHeuresSup: payslip.montantHeuresSup,
           montantAbsence: payslip.montantAbsence,
           baseImposable: payslip.baseImposable,
@@ -834,4 +883,19 @@ export function getJoursOuvresMois(mois: number, annee: number): number {
   }
 
   return joursOuvres;
+}
+
+// ============================================================================
+// Lot 8 (suite) — Utilitaires pour les primes conventionnelles
+// ============================================================================
+
+/**
+ * Calcule l'ancienneté en années (arrondi entier) entre la date de début
+ * du contrat et la date de référence (date de calcul de la paie).
+ * Utilisé par getEligiblePrimes pour vérifier l'ancienneteMin des primes.
+ */
+function computeAnciennete(dateDebut: Date, dateReference: Date): number {
+  const ms = dateReference.getTime() - dateDebut.getTime();
+  const years = ms / (365.25 * 24 * 60 * 60 * 1000);
+  return Math.floor(years);
 }
