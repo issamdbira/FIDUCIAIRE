@@ -81,3 +81,34 @@ repo/
 
 ## Dernière mise à jour
 - 2026-09-13 : Phase 1 — Neon + Prisma + auth JWT + roles + sessions + config paie DB
+
+## Lot 8 (2026-09-19) — État après "contenir, prouver, fiabiliser"
+
+### Sécurité
+- **JWT_SECRET** : obligatoire en production (>= 32 chars) — `server/lib/jwt.ts` et `server/lib/auth.ts` refusent de démarrer sinon
+- **Route /admin/conventions** : protégée par RBAC PROPRIETAIRE côté serveur (plus de mot de passe dans le bundle JS)
+- **Workflow gitleaks** : `.github/workflows/gitleaks.yml` scanne l'historique git à chaque push/PR
+- **Audit secrets** : `docs/AUDIT_SECRETS_LOT8.md` — 14 occurrences du mot de passe Neon DB identifiées dans l'historique git (commits `6af3fa2`, `fa1007b`, `4015611`, `8e2cc91`). **En attente de rotation humaine**.
+
+### Mode de paie SIMPLE / CONVENTIONNEL
+- `PayrollPeriod.modePaie` : `SIMPLE` (défaut) ou `CONVENTIONNEL`
+- En mode CONVENTIONNEL : décompose le brut en `salaireBaseGrille` (grille échelle×échelon×année) + `indemniteSupplementaire` (excédent)
+- N'applique PAS encore les primes conventionnelles (itération future)
+
+### PDF bulletins
+- `generateBulletinPdf()` : vrai PDF binaire avec pdf-lib (header `%PDF-`, footer `%%EOF`)
+- `generateBulletinHtml()` conservé en fallback pour affichage inline
+
+### Bundle
+- Route-level lazy loading : 24 pages en `lazy(() => import(...))`
+- Bundle principal : **968 KB → 492 KB** (gzip 88 KB, -49%)
+- `manualChunks` (Lot 7) : 5 chunks vendor (pdf, spreadsheet, charts, radix, motion)
+
+### Tests
+- 307 unitaires / 36 E2E (343 total)
+- Tests serveur nouveaux (Lot 8-3.1) : `money.test.ts`, `payroll-engine.test.ts`, `cnss-export.test.ts`, `document-generator.test.ts`, `jwt-secret-hardening.test.ts`
+
+### Documentation
+- `docs/AUDIT_SECRETS_LOT8.md` — rapport masqué de l'audit git history
+- `docs/DECISION_ROUNDING_LOT8.md` — analyse centimes vs millimes (read-only, en attente décision)
+- `docs/VERIFICATION_PROD_LOT8.md` — À PRODUIRE (Phase 1 non faite)
