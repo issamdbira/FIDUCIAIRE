@@ -1,0 +1,65 @@
+# =============================================================================
+# Lot 8-0.5 — Gitleaks secret scanner on push/PR
+# =============================================================================
+# Runs gitleaks on the full git history (all commits, all branches) on every
+# push to main/develop and every PR. Fails if any secret is found.
+#
+# Also scans the working tree (uncommitted files) for secrets.
+# =============================================================================
+
+name: gitleaks
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gitleaks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    name: Scan for secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history — gitleaks scans all commits
+
+      - name: Run gitleaks (history + working tree)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          # GITHUB_TOKEN is provided automatically by Actions — no secret needed
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Fail the workflow on any finding (exit code 1)
+          GITLEAKS_ENABLE_COMMENTS: true
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
+        with:
+          # Scan mode: detect leaks in the git history of this ref
+          scan-mode: repo
+          # Report format: sarif for upload to GitHub code scanning
+          report-format: sarif
+          report-path: gitleaks-report.sarif
+
+      - name: Upload SARIF report to GitHub code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gitleaks-report.sarif
+
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: gitleaks-report.sarif
+          retention-days: 30
