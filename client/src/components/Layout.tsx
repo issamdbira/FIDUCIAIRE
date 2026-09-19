@@ -18,6 +18,7 @@ import {
   Users,
   Settings,
   Inbox,
+  LogIn,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "./ThemeToggle";
@@ -146,11 +147,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            {/* Mobile hamburger */}
+            {/* Mobile hamburger — visible en-dessous de lg (1024px) */}
             <Button
               variant="ghost"
               size="icon"
-              className="sm:hidden text-muted-foreground"
+              className="lg:hidden text-muted-foreground"
               onClick={() => setSheetOpen(true)}
             >
               <Menu className="size-5" />
@@ -204,10 +205,42 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               Accueil
             </Link>
 
-            {/* Workspace selector mobile */}
-            <div className="px-3 py-1">
-              <WorkspaceSelector />
-            </div>
+            {/* Liens publics pour les visiteurs non authentifiés */}
+            {!user && (
+              <>
+                <Link href="/about" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
+                  À propos
+                </Link>
+                <Link href="/guides" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
+                  <BookOpen className="size-4" /> Guides
+                </Link>
+                <Link href="/conventions" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
+                  Conventions
+                </Link>
+                <Link href="/regimes-sociaux" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
+                  Régimes sociaux
+                </Link>
+                <Link href="/formulaires-cnss" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
+                  Formulaires CNSS
+                </Link>
+                <Link href="/contact" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
+                  Contact
+                </Link>
+                <Link href="/login" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10 transition-colors">
+                  <LogIn className="size-4" /> Se connecter
+                </Link>
+                <Link href="/creer-espace" onClick={() => setSheetOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-primary hover:bg-primary/10 transition-colors">
+                  <Building2 className="size-4" /> Créer mon espace
+                </Link>
+              </>
+            )}
+
+            {/* Workspace selector mobile — visible seulement si authentifié */}
+            {user && (
+              <div className="px-3 py-1">
+                <WorkspaceSelector />
+              </div>
+            )}
 
             <div className="pt-2 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pilotage</div>
             {can(role, "cabinetDashboard") && (
